@@ -22,7 +22,6 @@
 #define ntohl(x) htonl(x)
 #define ntohs(x) htons(x)
 
-//#define DEBUG
 #ifdef DEBUG
 #define dbgprintf(args...) printf(args)
 #else

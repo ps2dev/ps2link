@@ -1,5 +1,8 @@
 # Compilation variables
 
+# Set this to enable debug mode
+DEBUG = 0
+
 # Set this to 1 to build a highloading version, 0 for normal low version
 LOADHIGH = 0
 
@@ -20,7 +23,7 @@ IRXFILES=iop/ps2link.irx $(PS2SDK)/iop/irx/ps2ip.irx \
 	$(PS2DEV)/ps2eth/smap/ps2smap.irx \
 	$(PS2SDK)/iop/irx/iomanX.irx \
 	$(PS2SDK)/iop/irx/ps2dev9.irx
-VARIABLES=LOADHIGH=$(LOADHIGH) BUILTIN_IRXS=$(BUILTIN_IRXS) ZEROCOPY=$(ZEROCOPY)
+VARIABLES=DEBUG=$(DEBUG) LOADHIGH=$(LOADHIGH) BUILTIN_IRXS=$(BUILTIN_IRXS) ZEROCOPY=$(ZEROCOPY)
 
 ifeq ($(BUILTIN_IRXS),1)
 TARGETS = iop builtins ee

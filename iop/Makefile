@@ -19,6 +19,11 @@ ifeq ($(ZEROCOPY),1)
 IOP_CFLAGS += -DZEROCOPY
 endif
 
+# Enable debug mode
+ifeq ($(DEBUG),1)
+IOP_CFLAGS += -DDEBUG
+endif
+
 
 all: $(IOP_BIN)
 

@@ -17,7 +17,6 @@
 
 #include "net_fio.h"
 
-//#define DEBUG
 #ifdef DEBUG
 #define dbgprintf(args...) printf(args)
 #else

@@ -33,7 +33,6 @@ static char recv_packet[PACKET_MAXSIZE] __attribute__((aligned(16)));
 static int pko_fileio_sock = -1;
 static int pko_fileio_active = 0;
 
-//#define DEBUG
 #ifdef DEBUG
 #define dbgprintf(args...) printf(args)
 #else

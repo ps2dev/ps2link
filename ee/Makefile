@@ -33,6 +33,11 @@ EE_CFLAGS += -DBUILTIN_IRXS
 EE_LDFLAGS += ps2link_irx.o ps2ip_irx.o ps2smap_irx.o iomanX_irx.o ps2dev9_irx.o
 endif
 
+# This is to enable the debug mode into ps2link
+ifeq ($(DEBUG),1)
+EE_CFLAGS += -DDEBUG
+endif
+
 LDPARAMS := -Wl,--defsym -Wl,_stack_size=0x8000 -Wl,--defsym -Wl,_stack=$(STACKADDR)
 EE_LDFLAGS += -Wl,-Ttext -Wl,$(LOADADDR) $(LDPARAMS) -s
 

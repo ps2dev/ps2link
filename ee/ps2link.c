@@ -24,7 +24,6 @@
 
 extern int initCmdRpc(void);
 
-//#define DEBUG
 #ifdef DEBUG
 #define dbgprintf(args...) printf(args)
 #define dbgscr_printf(args...) scr_printf(args)
@@ -294,19 +293,19 @@ loadModules(void)
 
 #ifdef BUILTIN_IRXS
     getIpConfig();
-	    dbgscr_printf("Exec iomanX module. (%x,%d) ", iomanX_mod, iomanX_size);
+	    dbgscr_printf("Exec iomanX module. (%x,%d) ", iomanX_irx, size_iomanX_irx);
     SifExecModuleBuffer(iomanX_irx, size_iomanX_irx, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ps2dev9 module. (%x,%d) ", ps2dev9_mod, ps2dev9_size);
+	    dbgscr_printf("Exec ps2dev9 module. (%x,%d) ", ps2dev9_irx, size_ps2dev9_irx);
     SifExecModuleBuffer(ps2dev9_irx, size_ps2dev9_irx, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ps2ip module. (%x,%d) ", ps2ip_mod, ps2ip_size);
+	    dbgscr_printf("Exec ps2ip module. (%x,%d) ", ps2ip_irx, size_ps2ip_irx);
     SifExecModuleBuffer(ps2ip_irx, size_ps2ip_irx, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ps2smap module. (%x,%d) ", ps2smap_mod, ps2smap_size);
+	    dbgscr_printf("Exec ps2smap module. (%x,%d) ", ps2smap_irx, size_ps2smap_irx);
     SifExecModuleBuffer(ps2smap_irx, size_ps2smap_irx, if_conf_len, &if_conf[0],&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ps2link module. (%x,%d) ", ps2link_mod, ps2link_size);
+	    dbgscr_printf("Exec ps2link module. (%x,%d) ", ps2link_irx, size_ps2link_irx);
     SifExecModuleBuffer(ps2link_irx, size_ps2link_irx, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
 	    dbgscr_printf("All modules loaded on IOP.\n");
