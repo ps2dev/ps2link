@@ -8,9 +8,9 @@
 
 // Fu*k knows why net_fio & net_fsys are separated..
 
-#include <tamtypes.h>
-#include <fileio.h>
-#include <stdlib.h>
+#include <types.h>
+#include <ioman.h>
+#include <sysclib.h>
 #include <stdio.h>
 #include <kernel.h>
 

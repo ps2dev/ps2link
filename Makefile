@@ -1,9 +1,9 @@
 SHELL=/bin/bash
 EEFILES=ee/ps2link.elf
-IRXFILES=iop/ps2link.irx $(PS2DEV)/ps2ip/iop/bin/ps2ip.irx \
-	$(PS2DEV)/ps2eth/bin/ps2smap.irx \
-	$(PS2DEV)/ps2drv/iop/iomanX/iomanX.irx \
-	$(PS2DEV)/ps2drv/iop/ps2dev9/ps2dev9.irx
+IRXFILES=iop/ps2link.irx $(PS2SDK)/iop/irx/ps2ip.irx \
+	$(PS2SDK)/iop/irx/ps2smap.irx \
+	$(PS2SDK)/iop/irx/iomanX.irx \
+	$(PS2SDK)/iop/irx/ps2dev9.irx
 
 all:
 	$(MAKE) -C ee

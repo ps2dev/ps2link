@@ -15,7 +15,7 @@
 #include <fileio.h>
 #include <malloc.h>
 #include <string.h>
-
+#include "debug.h"
 #include "cd.h"
 #include "hostlink.h"
 #include "excepHandler.h"
@@ -24,7 +24,7 @@
 
 extern int initCmdRpc(void);
 
-//#define DEBUG
+#define DEBUG
 #ifdef DEBUG
 #define dbgprintf(args...) printf(args)
 #define dbgscr_printf(args...) scr_printf(args)
@@ -32,6 +32,9 @@ extern int initCmdRpc(void);
 #define dbgprintf(args...) do { } while(0)
 #define dbgscr_printf(args...) do { } while(0)
 #endif
+
+//#define BGCOLOR	((volatile unsigned long*)0x120000e0)
+//#define GS_SET_BGCOLOR(R,G,B) *BGCOLOR = ((u64)(R)<< 0) | ((u64)(G)<< 8) | ((u64)(B)<< 16)
 
 #define IRX_BUFFER_BASE 0x1F80000
 int irx_buffer_addr = 0;
@@ -46,12 +49,15 @@ char elfPath[256];
 
 char iomanX_path[PKO_MAX_PATH];
 char ps2dev9_path[PKO_MAX_PATH];
+//char ttyudp_path[PKO_MAX_PATH];
 char ps2ip_path[PKO_MAX_PATH];
 char ps2smap_path[PKO_MAX_PATH];
 char ps2link_path[PKO_MAX_PATH];
 
-void *iomanX_mod, *ps2dev9_mod, *ps2ip_mod, *ps2smap_mod, *ps2link_mod;
-int iomanX_size, ps2dev9_size, ps2ip_size, ps2smap_size, ps2link_size;
+static void *iomanX_mod, *ps2dev9_mod, *ps2ip_mod, *ps2smap_mod, *ps2link_mod;
+static int iomanX_size, ps2dev9_size, ps2ip_size, ps2smap_size, ps2link_size;
+//void *ttyudp_mod;
+//int ttyudp_size;
 
 const char *eeloadimg = "rom0:UDNL rom0:EELOADCNF";
 char *imgcmd;
@@ -167,6 +173,7 @@ pkoLoadModule(char *path, int argc, char *argv)
         scr_printf("Could not load module %s: %d\n", path, ret);
         SleepThread();
     }
+	dbgscr_printf("[%d] returned\n", ret);
 }
 
 /* Load a module into RAM.  */
@@ -233,7 +240,9 @@ static int loadHostModBuffers()
 static void
 loadModules(void)
 {
-    printf(" loadModules \n");
+	int ret;
+
+    dbgscr_printf("loadModules \n");
     if (boot == B_MC)
     {
         pkoLoadModule("rom0:SIO2MAN", 0, NULL);
@@ -242,18 +251,35 @@ loadModules(void)
     }
 
     if (boot == B_HOST) {
-        SifExecModuleBuffer(iomanX_mod, iomanX_size, 0, NULL,NULL);
-        SifExecModuleBuffer(ps2dev9_mod, ps2dev9_size, 0, NULL,NULL);
-        SifExecModuleBuffer(ps2ip_mod, ps2ip_size, 0, NULL,NULL);
-        SifExecModuleBuffer(ps2smap_mod, ps2smap_size, if_conf_len, &if_conf[0],NULL);
-        SifExecModuleBuffer(ps2link_mod, ps2link_size, 0, NULL,NULL);
+		dbgscr_printf("Exec iomanX module. (%x) ", iomanX_mod);
+        SifExecModuleBuffer(iomanX_mod, iomanX_size, 0, NULL,&ret);
+		dbgscr_printf("[%d] returned\n", ret);
+		dbgscr_printf("Exec ps2dev9 module. (%x) ", ps2dev9_mod);
+        SifExecModuleBuffer(ps2dev9_mod, ps2dev9_size, 0, NULL,&ret);
+		dbgscr_printf("[%d] returned\n", ret);
+		dbgscr_printf("Exec ps2ip module. (%x) ", ps2ip_mod);
+        SifExecModuleBuffer(ps2ip_mod, ps2ip_size, 0, NULL,&ret);
+		dbgscr_printf("[%d] returned\n", ret);
+		dbgscr_printf("Exec ps2smap module. (%x) ", ps2smap_mod);
+        SifExecModuleBuffer(ps2smap_mod, ps2smap_size, if_conf_len, &if_conf[0],&ret);
+		dbgscr_printf("[%d] returned\n", ret);
+		dbgscr_printf("Exec ps2link module. (%x) ", ps2link_mod);
+        SifExecModuleBuffer(ps2link_mod, ps2link_size, 0, NULL,&ret);
+		dbgscr_printf("[%d] returned\n", ret);
+		dbgscr_printf("All modules loaded on IOP.\n");
     } else {
         getIpConfig();
+		dbgscr_printf("Exec iomanX module. ");
         pkoLoadModule(iomanX_path, 0, NULL);
+		dbgscr_printf("Exec ps2dev9 module. ");
         pkoLoadModule(ps2dev9_path, 0, NULL);
+		dbgscr_printf("Exec ps2ip module. ");
         pkoLoadModule(ps2ip_path, 0, NULL);
+		dbgscr_printf("Exec ps2smap module. ");
         pkoLoadModule(ps2smap_path, if_conf_len, &if_conf[0]);
+		dbgscr_printf("Exec ps2link module. ");
         pkoLoadModule(ps2link_path, 0, NULL);
+		dbgscr_printf("All modules loaded on IOP. ");
     }
 }
 
@@ -311,6 +337,7 @@ setPathInfo(char *path)
     /* Paths to modules.  */
     sprintf(iomanX_path, "%s%s", elfPath, "IOMANX.IRX");
     sprintf(ps2dev9_path, "%s%s", elfPath, "PS2DEV9.IRX");
+//    sprintf(ttyudp_path, "%s%s", elfPath, "UDPTTY.IRX");
     sprintf(ps2ip_path, "%s%s", elfPath, "PS2IP.IRX");
     sprintf(ps2smap_path, "%s%s", elfPath, "PS2SMAP.IRX");
     sprintf(ps2link_path, "%s%s", elfPath, "PS2LINK.IRX");
@@ -369,7 +396,7 @@ main(int argc, char *argv[])
 
     init_scr();
     installExceptionHandlers();
-    scr_printf("Welcome to ps2link v1.23\n");
+    scr_printf("Welcome to ps2link v1.24b\n");
 #ifdef _LOADHIGHVER
     scr_printf("Highload version\n");
 #endif
@@ -462,7 +489,7 @@ main(int argc, char *argv[])
     initCmdRpc();
 
     scr_printf("Ready\n");
-    printf("Main done\n");
+//    printf("Main done\n");
 
     //    SleepThread();
     ExitDeleteThread();

@@ -6,10 +6,10 @@
  * details.
  */
 
-#include <tamtypes.h>
+#include <types.h>
 #include <kernel.h>
-#include <fileio.h>
-#include <stdlib.h>
+#include <ioman.h>
+#include <sysclib.h>
 #include <stdio.h>
 #include <intrman.h>
 #include <loadcore.h>
@@ -24,11 +24,10 @@
 #define dbgprintf(args...) do { } while(0)
 #endif
 
-
 static char fsname[] = "host";
 
 ////////////////////////////////////////////////////////////////////////
-static struct fileio_driver fsys_driver;
+//static iop_device_t fsys_driver;
 
 /* File desc struct is probably larger than this, but we only
  * need to access the word @ offset 0x0C (in which we put our identifier)
@@ -47,8 +46,7 @@ struct filedesc_info
  */
 static int fsys_sema;
 static int fsys_pid = 0;
-static struct fileio_driver fsys_driver;
-static void *fsys_functarray[16];
+//static iop_device_t fsys_driver;
 
 ////////////////////////////////////////////////////////////////////////
 static int dummy5()
@@ -58,20 +56,20 @@ static int dummy5()
 }
 
 ////////////////////////////////////////////////////////////////////////
-static void fsysInit( struct fileio_driver *driver)
+static void fsysInit(iop_device_t *driver)
 {
-    struct t_thread mythread;
+    struct _iop_thread mythread;
     int pid;
     int i;
 
-    dbgprintf("initializing %s\n", driver->device);
+    dbgprintf("initializing %s\n", driver->name);
 
     // Start socket server thread
 
-    mythread.type = 0x02000000; // attr
-    mythread.unknown = 0; // option
-    mythread.function = (void *)pko_file_serv; // entry
-    mythread.stackSize = 0x800;
+    mythread.attr = 0x02000000; // attr
+    mythread.option = 0; // option
+    mythread.thread = (void *)pko_file_serv; // entry
+    mythread.stacksize = 0x800;
     mythread.priority = 0x45; // We really should choose prio w more effort
 
     pid = CreateThread(&mythread);
@@ -258,46 +256,35 @@ static int fsysDclose(int fd)
     return ret;
 }
 
+iop_device_ops_t fsys_functarray = { (void *)fsysInit, (void *)fsysDestroy, (void *)dummy5, 
+	(void *)fsysOpen, (void *)fsysClose, (void *)fsysRead, 
+	(void *)fsysWrite, (void *)fsysLseek, (void *)dummy5,
+	(void *)dummy5, (void *)dummy5, (void *)dummy5,
+	(void *)fsysDopen, (void *)fsysDclose, (void *)fsysDread,
+	(void *)dummy5,  (void *)dummy5 };
+
+iop_device_t fsys_driver = { fsname, 16, 1, "fsys driver", 
+							&fsys_functarray };
 ////////////////////////////////////////////////////////////////////////
 // Entry point for mounting the file system
 int fsysMount(void)
 {
-    int	i;
-    struct t_sema sema_info;
-
-    fsys_driver.device = fsname;
-    fsys_driver.xx1 = 16;
-    fsys_driver.version = 1;
-    fsys_driver.description = "fsys driver";
-    fsys_driver.function_list = fsys_functarray;
-    for (i=0;i < 16; i++)
-        fsys_functarray[i] = dummy5;
-    fsys_functarray[0] = fsysInit;
-    fsys_functarray[1] = fsysDestroy;
-    fsys_functarray[3] = fsysOpen;
-    fsys_functarray[4] = fsysClose;
-    fsys_functarray[5] = fsysRead;
-    fsys_functarray[6] = fsysWrite;
-    fsys_functarray[7] = fsysLseek;
-
-    fsys_functarray[12] = fsysDopen;
-    fsys_functarray[13] = fsysDclose;
-    fsys_functarray[14] = fsysDread;
+    iop_sema_t sema_info;
 
     sema_info.attr = 1;
     sema_info.option = 0;
-    sema_info.init_count = 1;
-    sema_info.max_count = 1;
+    sema_info.initial = 1;
+    sema_info.max = 1;
     fsys_sema = CreateSema(&sema_info);
 
-    FILEIO_del(fsname);
-    FILEIO_add(&fsys_driver);
+    DelDrv(fsname);
+    AddDrv(&fsys_driver);
 
     return 0;
 }
 
 int fsysUnmount(void)
 {
-    FILEIO_del(fsname);
+    DelDrv(fsname);
     return 0;
 }

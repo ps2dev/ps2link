@@ -13,12 +13,15 @@
 #include <iopcontrol.h>
 #include <fileio.h>
 #include <string.h>
+#include "debug.h"
 
 #include "cd.h"
 #include "byteorder.h"
 #include "ps2regs.h"
 #include "hostlink.h"
 
+//#define scr_printf(args...) printf(args)
+//#define init_scr() do { } while(0)
 #ifdef DEBUG
 #define dbgprintf(args...) printf(args)
 #else

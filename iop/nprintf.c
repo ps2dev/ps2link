@@ -5,11 +5,11 @@
  * details.
  */
 
-#include <tamtypes.h>
+#include <types.h>
 #include <kernel.h>
-#include <stdlib.h>
+#include <sysclib.h>
 #include <stdio.h>
-#include <fileio.h>
+#include <ioman.h>
 #include <intrman.h>
 #include <loadcore.h>
 
@@ -55,14 +55,14 @@ napThread(void *arg)
 int
 naplinkRpcInit(void)
 {
-    struct t_thread th_attr;
+    struct _iop_thread th_attr;
     int ret;
     int pid;
 
-    th_attr.type = 0x02000000;
-    th_attr.unknown = 0;
-    th_attr.function = napThread;
-    th_attr.stackSize = 0x800;
+    th_attr.attr = 0x02000000;
+    th_attr.option = 0;
+    th_attr.thread = napThread;
+    th_attr.stacksize = 0x800;
     th_attr.priority = 0x4f;
 
     pid = CreateThread(&th_attr);

@@ -7,7 +7,7 @@ EE_INCS += -I../include
 SBVLITE = $(PS2DEV)/sbv-1.0-lite
 EE_INCS += -I$(SBVLITE)/include
 EE_LDFLAGS += -L$(SBVLITE)/lib
-EE_LIBS += -lsbv_patches
+EE_LIBS += -lsbv_patches -ldebug
 
 # Set this to 1 to build a highloading version, 0 for normal low version
 LOADHIGH = 0
@@ -31,5 +31,5 @@ all: $(EE_BIN)
 clean:
 	-rm -f $(EE_OBJS) $(EE_BIN)
 
-include $(PS2LIB)/Makefile.pref
-include $(PS2LIB)/Makefile.eeglobal
+include $(PS2SDK)/samples/Makefile.pref
+include $(PS2SDK)/samples/Makefile.eeglobal

@@ -5,43 +5,41 @@
  * details.
  */
 
-#include <stdlib.h>
+#include <stdio.h>
+#include <sysclib.h>
 #include <loadcore.h>
 #include <intrman.h>
-#include <tamtypes.h>
+#include <types.h>
 #include <sifrpc.h>
-#include <cdvd.h>
-
+#include <cdvdman.h>
 
 // Entry points
 extern int fsysMount(void);
 extern int cmdHandlerInit(void);
 extern int ttyMount(void);
 extern int naplinkRpcInit(void);
-
 ////////////////////////////////////////////////////////////////////////
 // main
 //   start threads & init rpc & filesys
 int
 _start( int argc, char **argv)
 {
-
     FlushDcache();
     CpuEnableIntr(0);
 
-    CdInit(1);
-    CdStop();
+    sceCdInit(1);
+    sceCdStop();
 
     SifInitRpc(0);
 
-    if ((argc < 2) || (strncmp(argv[1], "-notty", 6))) {
-        ttyMount();
+/*    if ((argc < 2) || (strncmp(argv[1], "-notty", 6))) {
+		ttyMount();
         // Oh well.. There's a bug in either smapif or lwip's etharp
         // that thrashes udp msgs which are queued while waiting for arp
         // request
         // alas, this msg will probably not be displayed
         printf("tty mounted\n");
-    }
+    }*/
 
     fsysMount();
     cmdHandlerInit();

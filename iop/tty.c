@@ -5,9 +5,9 @@
  * details.
  */
 
-#include <tamtypes.h>
+#include <types.h>
 #include <kernel.h>
-#include <stdlib.h>
+#include <sysclib.h>
 #include <stdio.h>
 #include <ioman.h>
 #include <intrman.h>
@@ -18,18 +18,11 @@
 #include "hostlink.h"
 
 ////////////////////////////////////////////////////////////////////////
-static void *tty_functarray[16];
-static char ttyname[] = "tty";
-static struct fileio_driver tty_driver = { 
-    &ttyname[0],
-    1,
-    1,
-    "TTY via Udp",
-    &tty_functarray[0]
-};
 
 static int tty_socket = 0;
 static int tty_sema = -1;
+
+static char ttyname[] = "tty";
 
 ////////////////////////////////////////////////////////////////////////
 static int dummy()
@@ -44,14 +37,14 @@ static int dummy0()
 }
 
 ////////////////////////////////////////////////////////////////////////
-static int ttyInit(struct fileio_driver *driver)
+static int ttyInit(iop_device_t *driver)
 {
-    struct t_sema sema_info;
+    iop_sema_t sema_info;
     struct sockaddr_in saddr;
 
     sema_info.attr       = 0;
-    sema_info.init_count = 1;	/* Unlocked.  */
-    sema_info.max_count  = 1;
+    sema_info.initial = 1;	/* Unlocked.  */
+    sema_info.max  = 1;
     if ((tty_sema = CreateSema(&sema_info)) < 0)
 	    return -1;
 
@@ -98,31 +91,24 @@ static int ttyWrite(iop_file_t *file, char *buf, int size)
     return res;
 }
 
+iop_device_ops_t tty_functarray = { ttyInit, dummy0, (void *)dummy,
+	(void *)ttyOpen, (void *)ttyClose, (void *)dummy,
+	(void *)ttyWrite, (void *)dummy, (void *)dummy,
+	(void *)dummy, (void *)dummy, (void *)dummy,
+	(void *)dummy, (void *)dummy, (void *)dummy,
+	(void *)dummy, (void *)dummy };
+
+iop_device_t tty_driver = { ttyname, 3, 1, "TTY via Udp",
+							&tty_functarray };
+
 ////////////////////////////////////////////////////////////////////////
 // Entry point for mounting the file system
 int ttyMount(void)
 {
-    int	i;
-
-
-    tty_driver.device = "tty";
-    tty_driver.xx1 = 3;
-    tty_driver.version = 1;
-    tty_driver.description = "TTY via Udp";
-    tty_driver.function_list = tty_functarray;
-
-    for (i=0;i < 16; i++)
-        tty_functarray[i] = dummy;
-    tty_functarray[0] = ttyInit;
-    tty_functarray[1] = dummy0;
-    tty_functarray[3] = ttyOpen;
-    tty_functarray[4] = ttyClose;
-    tty_functarray[6] = ttyWrite;
-
     close(0);
     close(1);
-    FILEIO_del("tty");
-    FILEIO_add(&tty_driver);
+    DelDrv(ttyname);
+    AddDrv(&tty_driver);
     open("tty00:", 0x1003);
     open("tty00:", 2);
 

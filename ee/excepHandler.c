@@ -9,6 +9,7 @@
 #include <tamtypes.h>
 #include <kernel.h>
 #include "excepHandler.h"
+#include "debug.h"
 
 extern int _gp;
 extern int userThreadID;

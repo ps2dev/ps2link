@@ -6,12 +6,12 @@
  * details.
  */
 
-#include <tamtypes.h>
-#include <fileio.h>
-#include <stdlib.h>
+#include <types.h>
+#include <ioman.h>
+#include <sysclib.h>
 #include <stdio.h>
 #include <kernel.h>
-#include <sifdma.h>
+#include <sifman.h>
 #include <sifrpc.h>
 #include <modload.h>
 
@@ -33,7 +33,7 @@
  */
 extern void dev9Shutdown(void);
 extern void dev9IntrDisable(int mask);
-
+extern int sceSifSetDma(SifDmaTransfer_t *dmat, int count);
 //////////////////////////////////////////////////////////////////////////
 // How about a header file?..
 extern int fsysUnmount(void);
@@ -102,7 +102,7 @@ pkoSetSifDma(void *dest, void *src, unsigned int length, unsigned int mode)
     sendData.attr = mode;
 
     CpuSuspendIntr(&oldIrq);
-    id = SifSetDma(&sendData, 1);
+    id = sceSifSetDma(&sendData, 1);
     CpuResumeIntr(oldIrq);
 
     return id;
@@ -193,7 +193,7 @@ pkoReset(char *buf, int len)
     printf("unmounting\n");
     fsysUnmount();
     printf("unmounted\n");
-    FILEIO_del("tty");
+    DelDrv("tty");
 
     // This is to do the dev9 shutdown on reset
     dev9IntrDisable(-1);
@@ -320,7 +320,7 @@ cmdThread(void *arg)
         ExitDeleteThread();
     }
 
-    memset(&serv_addr, 0, sizeof(serv_addr ));
+    memset((void *)&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     serv_addr.sin_port = htons(PKO_CMD_PORT);
@@ -343,7 +343,7 @@ cmdThread(void *arg)
 //////////////////////////////////////////////////////////////////////////
 int cmdHandlerInit(void)
 {
-    struct t_thread thread;
+    iop_thread_t thread;
     int pid;
     int ret;
 
@@ -351,10 +351,10 @@ int cmdHandlerInit(void)
 
     SifInitRpc(0);
 
-    thread.type = 0x02000000;
-    thread.unknown = 0;
-    thread.function = cmdThread;
-    thread.stackSize = 0x800;
+    thread.attr = 0x02000000;
+    thread.option = 0;
+    thread.thread = (void *)cmdThread;
+    thread.stacksize = 0x800;
     thread.priority = 60; //0x1e;
 
     pid = CreateThread(&thread);
