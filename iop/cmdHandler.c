@@ -72,7 +72,7 @@ pkoExecIop(char *buf, int len)
     // Make sure arg vector is null-terminated
     cmd->argv[PKO_MAX_PATH-1] = '\0';
 
-    printf("IOP cmd: %d args\n", cmd->argc);
+    printf("IOP cmd: %d args\n", ntohl(cmd->argc));
 
     path = &cmd->argv[0];
     args = &cmd->argv[strlen(cmd->argv) + 1];
