@@ -9,22 +9,13 @@
 #include <kernel.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <fileio.h>
+#include <ioman.h>
 #include <intrman.h>
 #include <loadcore.h>
 
 #include "ps2ip.h"
 #include "net_fio.h"
 #include "hostlink.h"
-
-
-struct filedesc_info
-{
-    int unkn0;
-    int unkn4;
-    int device_id;   // the X in hostX
-    int own_fd;
-};
 
 ////////////////////////////////////////////////////////////////////////
 static void *tty_functarray[16];
@@ -38,6 +29,7 @@ static struct fileio_driver tty_driver = {
 };
 
 static int tty_socket = 0;
+static int tty_sema = -1;
 
 ////////////////////////////////////////////////////////////////////////
 static int dummy()
@@ -54,25 +46,24 @@ static int dummy0()
 ////////////////////////////////////////////////////////////////////////
 static int ttyInit(struct fileio_driver *driver)
 {
-    int sock;
+    struct t_sema sema_info;
     struct sockaddr_in saddr;
-    int n;
+
+    sema_info.attr       = 0;
+    sema_info.init_count = 1;	/* Unlocked.  */
+    sema_info.max_count  = 1;
+    if ((tty_sema = CreateSema(&sema_info)) < 0)
+	    return -1;
 
     // Create/open udp socket
-    sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    if (sock < 0) {
-        return -1;
-    }
+    if ((tty_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
+	    return -1;
 
-    tty_socket = sock;
-
-    memset(&saddr, 0, sizeof(saddr));
-    saddr.sin_family = AF_INET;
+    saddr.sin_family      = AF_INET;
     saddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    saddr.sin_port = htons(PKO_PRINTF_PORT);
-    n = bind(sock, (struct sockaddr *)&saddr, sizeof(saddr));
+    saddr.sin_port        = htons(PKO_PRINTF_PORT);
 
-    return 0;
+    return bind(tty_socket, (struct sockaddr *)&saddr, sizeof(saddr));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -89,27 +80,22 @@ static int ttyClose( int fd)
 
 
 ////////////////////////////////////////////////////////////////////////
-static int ttyWrite( int fd, char *buf, int size)
+static int ttyWrite(iop_file_t *file, char *buf, int size)
 {
     struct sockaddr_in dstaddr;
-    int n;    
-    struct filedesc_info *fd_info;
+    int res;    
 
-    fd_info = (struct filedesc_info *)fd;
+    WaitSema(tty_sema);
 
-    if (fd_info->unkn4 >= 2) {
-        return size;
-    }
+    dstaddr.sin_family      = AF_INET;
+    dstaddr.sin_addr.s_addr = remote_pc_addr;
+    dstaddr.sin_port        = htons(PKO_PRINTF_PORT);
 
-    memset(&dstaddr, 0, sizeof(dstaddr));
-    dstaddr.sin_family = AF_INET;
-	dstaddr.sin_addr.s_addr = remote_pc_addr;
-    dstaddr.sin_port = htons(PKO_PRINTF_PORT);
-
-    n = sendto(tty_socket, buf, size, 0, (struct sockaddr *)&dstaddr, 
+    res = sendto(tty_socket, buf, size, 0, (struct sockaddr *)&dstaddr, 
                     sizeof(dstaddr));
 
-    return size;
+    SignalSema(tty_sema);
+    return res;
 }
 
 ////////////////////////////////////////////////////////////////////////
