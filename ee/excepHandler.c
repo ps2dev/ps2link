@@ -6,6 +6,7 @@
  * details.
  */
 
+#include "stdio.h"
 #include <tamtypes.h>
 #include <kernel.h>
 #include "excepHandler.h"
