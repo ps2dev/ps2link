@@ -2,6 +2,9 @@ PS2Link (C) 2003 Tord Lindstrom (pukko@home.se)
         (C) 2003,2004 adresd (adresd_ps2dev@yahoo.com)
 ------------------------------------------------------------------------
 
+2004-02-08 Version 1.23
+    - Some new commands stop/start vu, dump mem, dump reg, gsexec
+
 2004-02-06 Version 1.22
       - HOST: getdir support (so ps2 can get filelist from host:, using ioman calls)
 
