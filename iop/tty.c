@@ -6,7 +6,8 @@
  */
 
 #include <types.h>
-#include <kernel.h>
+#include <thbase.h>
+#include <thsemap.h>
 #include <sysclib.h>
 #include <stdio.h>
 #include <ioman.h>

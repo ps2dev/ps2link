@@ -12,7 +12,7 @@
 #include <ioman.h>
 #include <sysclib.h>
 #include <stdio.h>
-#include <kernel.h>
+#include <thbase.h>
 
 #include <io_common.h>
 

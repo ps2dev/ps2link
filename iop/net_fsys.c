@@ -7,7 +7,7 @@
  */
 
 #include <types.h>
-#include <kernel.h>
+#include <thbase.h>
 #include <ioman.h>
 #include <sysclib.h>
 #include <stdio.h>

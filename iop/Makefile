@@ -22,5 +22,8 @@ endif
 
 all: $(IOP_BIN)
 
+clean:
+	-rm -f $(IOP_OBJS) $(IOP_BIN)
+
 include $(PS2SDK)/Defs.make
-include $(PS2SDK)/iop/Rules.make
+include Rules.make
