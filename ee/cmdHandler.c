@@ -223,6 +223,7 @@ pkoReset(void)
     cdvdExit();
     SifExitRpc();
 #endif
+    FlushCache(0);
     // XXX: there's something wrong with elfName..
     if ((boot == B_MC) || (boot == B_HOST) || (boot == B_UNKN)) {
         argv[0] = elfName;
@@ -335,6 +336,6 @@ initCmdRpc(void)
         SifSetDChain();
 
     sif0HandlerId = AddDmacHandler(5, pkoCmdIntrHandler, 0);
-    hEnableDmac(5); 
+    EnableDmac(5); 
     return 0;
 }
