@@ -1,43 +1,19 @@
 
-include ../Makefile.env
+EE_BIN  = ps2link.elf
+EE_OBJS = ps2link.o cmdHandler.o excepHandler.o exceptions.o cd.o
 
+EE_INCS += -I../include
 
-######################################################################
+LOADADDR = 0xc0000
+ifeq ($(DEBUG),1)
+LOADADDR = 0xd00000
+endif
+EE_LDFLAGS += -Wl,-Ttext -Wl,$(LOADADDR)
 
-HEADERS = 	../include/hostlink.h Makefile
-OFILES = 	crt0.o \
-			ps2link.o \
-			cmdHandler.o \
-			excepHandler.o \
-			exceptions.o \
-			cd.o
-
-TARGET = ps2link
-
-######################################################################
-DEFINES +=
-
-ASFLAGS	+= -mcpu=5900 -EL -G0
-CFLAGS	+=	
-LDFLAGS +=
-LOCAL_LIBS = -lkernel
-
-######################################################################
-$(TARGET).elf: $(OFILES)
-		$(EELINK) $(EELIBDIR) -o $(TARGET).elf $(LDFLAGS) $(OFILES) $(LOCAL_LIBS)
-#		$(STRIP) --strip-all $(TARGET).elf
-		@echo "done"
-
-all:	$(TARGET).elf  
-
-dbg:	
-		$(MAKE) 'LDFLAGS+=-Ttext 0xd00000' $(TARGET).elf
-
-%.o: %.c $(HEADERS)
-		$(EECOMPILE) $(DEFINES) -c $(CFLAGS) $< -o $@
-
-%.o: %.s
-		$(EECOMPILE) $(DEFINES) -xassembler-with-cpp -c $(ASFLAGS) $< -o $@
+all: $(EE_BIN)
 
 clean:
-	rm -f $(OFILES) $(TARGET).elf 
+	-rm -f $(EE_OBJS) $(EE_BIN)
+
+include $(PS2LIB)/Makefile.pref
+include $(PS2LIB)/Makefile.eeglobal
