@@ -23,8 +23,9 @@ char ps2link_path[PKO_MAX_PATH];
 void *ps2ip_mod, *ps2smap_mod, *ps2link_mod;
 int ps2ip_size, ps2smap_size, ps2link_size;
 
-const char *eeloadimg = "rom0:UDNL rom0:EELOADCNF";
-char *imgcmd;
+const char *updateloader = "rom0:UDNL ";
+const char *eeloadcnf = "rom0:EELOADCNF";
+char imgcmd[64];
 
 static boot_info_t boot_info[] =
 { {"cdrom", BOOT_FULL}, {"mc", BOOT_MEM}, {"host", BOOT_HOST},
@@ -356,11 +357,69 @@ wipeUserMem(void)
     }
 }
 
+/* Simple wrapper around repetitive CDVD init calls.  */
+static int pko_cdvd_init(int mode)
+{
+	int res;
+
+	if ((res = cdvdInit(mode)) < 0) {
+		if (mode == CDVD_EXIT)
+			S_PRINTF(S_SCREEN, "Unable to shutdown the disc drive (%d).\n", res);
+		else
+			S_PRINTF(S_SCREEN, "Unable to initilaize the disc drive (%d).\n", res);
+
+		return -1;
+	}
+
+	return 0;
+}
+
+/* Reset the IOP and all of its subsystems.  */
+int full_reset()
+{
+	int fd;
+
+	/* The CDVD must be initialized here (before shutdown) or else the PS2
+	   could hang on reboot.  I'm not sure why this happens.  */
+	if (pko_cdvd_init(CDVD_INIT_NOWAIT) < 0)
+		return -1;
+
+	/* Here we detect which IOP image we want to reset with.  Older Japanese
+	   models don't have EELOADCNF, so we fall back on the default image
+	   if necessary.  */
+	*imgcmd = '\0';
+
+	if ((fd = fioOpen(eeloadcnf, O_RDONLY)) >= 0) {
+		fioClose(fd);
+
+		strcpy(imgcmd, updateloader);
+		strcat(imgcmd, eeloadcnf);
+	}
+
+	D_PRINTF("Shutting down subsystems.\n");
+
+	if (pko_cdvd_init(CDVD_EXIT) < 0)
+		return -1;
+
+	cdvdExit();
+	fioExit();
+	SifExitIopHeap();
+	SifLoadFileExit();
+	SifExitRpc();
+
+	SifIopReset(imgcmd, 0);
+	while (!SifIopSync()) ;
+
+	SifInitRpc(0);
+	FlushCache(0);
+
+	return 0;
+}
+
 ////////////////////////////////////////////////////////////////////////
 int
 main(int argc, char *argv[])
 {
-    //    int ret;
     char *bootPath;
     int i, fd;
 
@@ -381,7 +440,6 @@ main(int argc, char *argv[])
     }
 
     SifInitRpc(0);
-    cdvdInit(CDVD_INIT_NOWAIT);
     D_PRINTF("Checking argv\n");
 
     setPathInfo(bootPath);
@@ -399,6 +457,10 @@ main(int argc, char *argv[])
 	    cur_boot_info = &boot_info[BOOT_INFO_LEN - 1];
 	    S_PRINTF(S_SCREEN, "Booting from unknown location '%s'.\n", bootPath);
     }
+
+    /* Initialize the CDVD subsystem.  */
+    if (pko_cdvd_init(CDVD_INIT_NOWAIT) < 0)
+	    goto out;
 
     /* System initialization: if we're booting from the memory card, we'll need the
        appropiate modules in place to read the IPCONFIG.DAT file.  */
@@ -423,31 +485,21 @@ main(int argc, char *argv[])
 	goto out;
     }
 
-    /* TODO: Check that eeloadcnf exists in ROM.  */
-    imgcmd = (char *)eeloadimg;
-
-    D_PRINTF("Shutting down subsystems.\n");
-    cdvdInit(CDVD_EXIT);
-    cdvdExit();
-    fioExit();
-    SifExitIopHeap();
-    SifLoadFileExit();
-    SifExitRpc();
-
-    D_PRINTF("reset iop\n");
-    SifIopReset(imgcmd, 0);
-    while (!SifIopSync()) ;
+    S_PRINTF(S_SCREEN, "ps2link initializing... ");
 
     /* If loading from host:, we might be loaded high, so don't wipe ourselves!  */
     if (cur_boot_info->boot != BOOT_HOST)
         wipeUserMem();
 
-    D_PRINTF("rpc init\n");
-    SifInitRpc(0);
-    cdvdInit(CDVD_INIT_NOWAIT);
+    /* Prepare to load our drivers by resetting the IOP.  */
+    if (full_reset() < 0) {
+	    S_PRINTF(S_SCREEN, "Unable to reboot the IOP, exiting.\n");
+	    goto out;
+    }
 
-    S_PRINTF(S_SCREEN, "ps2link initializing... ");
-    D_PRINTF("loading modules\n");
+    if (pko_cdvd_init(CDVD_INIT_NOWAIT) < 0)
+	    S_PRINTF(S_SCREEN, "Warning: disc drive initialization failed.\n");
+
     if (load_modules() < 0) {
 	    S_PRINTF(S_SCREEN, "Unable to load required boot modules, exiting.\n");
 	    goto out;

@@ -193,19 +193,10 @@ pkoReset(void)
     RemoveDmacHandler(5, sif0HandlerId);
     sif0HandlerId = 0;
 
-    SifInitRpc(0);
-    cdvdInit(CDVD_INIT_NOWAIT);
-    cdvdInit(CDVD_EXIT);
-    cdvdExit();
-    fioExit();
-    SifExitIopHeap();
-    SifLoadFileExit();
-    SifExitRpc();
+    if (full_reset() < 0)
+	    S_PRINTF(S_SCREEN|S_HOST,
+		"Warning: Unable to reboot the IOP from the RESET command.\n");
 
-    SifIopReset("rom0:UDNL rom0:EELOADCNF", 0);
-    while (!SifIopSync());
-
-    SifInitRpc(0);
     SifExitRpc();
 
     FlushCache(0);
