@@ -4,7 +4,7 @@
 DEBUG = 0
 
 # Set this to 1 to build a highloading version, 0 for normal low version
-LOADHIGH = 0
+LOADHIGH = 1
 
 # Set this to 1 to build ps2link with all the needed IRX builtins
 BUILTIN_IRXS = 1
@@ -16,7 +16,7 @@ include $(PS2SDK)/Defs.make
 
 SHELL=/bin/bash
 EEFILES=ee/ps2link.elf
-BIN2O=ee-ld -r -b binary -O elf32-littlemips -m elf32l5900
+BIN2O=$(PS2SDK)/bin/bin2o
 RM=rm -f
 IRXFILES=iop/ps2link.irx $(PS2SDK)/iop/irx/ps2ip.irx \
 	$(PS2DEV)/ps2eth/smap/ps2smap.irx \
@@ -93,9 +93,7 @@ builtins:
 		basefile=$${file/*\//}; \
 		basefile=$${basefile/\.*/}; \
 		echo "Embedding IRX file $$basefile"; \
-		cp $$file .; \
-		$(BIN2O) $$basefile.irx -o ee/$${basefile}_irx.o; \
-		rm $$basefile.irx; \
+		$(BIN2O) $$file ee/$${basefile}_irx.o _binary_$${basefile}_irx; \
 	done;
 
 .PHONY: iop ee
