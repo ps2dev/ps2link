@@ -17,14 +17,6 @@
 #define ALIGN(x, align) (((x)+((align)-1))&~((align)-1))
 #endif
 
-#ifdef DEBUG
-#define dbgprintf(args...) printf(args)
-#define dbgscr_printf(args...) scr_printf(args)
-#else
-#define dbgprintf(args...) do { } while(0)
-#define dbgscr_printf(args...) do { } while(0)
-#endif
-
 #ifdef _EE
 
 #include "string.h"
@@ -38,6 +30,13 @@
 #include "cd.h"
 #include "hostlink.h"
 #include "excepHandler.h"
+
+#ifdef DEBUG
+#define D_PRINTF(format, args...)			\
+	scr_printf(__FUNCTION__ ": " format, ## args)
+#else
+#define D_PRINTF(format, args...)
+#endif
 
 #define S_SCREEN	0x01
 #define S_HOST		0x02
@@ -78,6 +77,12 @@ int initCmdRpc(void);
 #include "cdvd.h"
 
 #include "ps2ip.h"
+
+#ifdef DEBUG
+#define dbgprintf(args...) printf(args)
+#else
+#define dbgprintf(args...) do { } while(0)
+#endif
 
 #define ntohl(x) htonl(x)
 #define ntohs(x) htons(x)
