@@ -55,6 +55,8 @@ dist:
 	done;
 	@cd bin; \
 	tar -jcf ps2link.tar.bz2 *.IRX *.ELF system.cnf IPCONFIG.DAT extra.cnf
+
+RELEASE_FILES=bin/*IRX bin/*DAT bin/*cnf bin/*ELF LICENSE README
 #
 # Creates zip with iso and all necessary files of last release
 release:
@@ -77,7 +79,7 @@ release:
 	dd if=/dev/zero of=bin/dummy bs=1024 count=28*1024; \
 	ps2mkisofs -o ps2link_$$VERSION.iso bin/; \
 	rm bin/dummy; \
-	tar -jcf ps2link_$$VERSION.bz2 bin/* ps2link_$$VERSION.iso
+	tar -jcf ps2link_$$VERSION.tbz $(RELEASE_FILES) ps2link_$$VERSION.iso
 
 docs:
 	doxygen doxy.conf
