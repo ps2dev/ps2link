@@ -62,8 +62,10 @@ int ioptrap_size = 0, iomanX_size = 0, ps2dev9_size = 0, ps2ip_size = 0, ps2smap
 #endif
 
 #ifdef BUILTIN_IRXS
-extern unsigned char ioptrap_irx[], iomanX_irx[], ps2dev9_irx[], ps2ip_irx[], ps2smap_irx[], ps2link_irx[];
-extern unsigned int size_ioptrap_irx, size_iomanX_irx, size_ps2dev9_irx, size_ps2ip_irx, size_ps2smap_irx, size_ps2link_irx;
+extern unsigned char _binary_ioptrap_irx_start[], _binary_iomanX_irx_start[], _binary_ps2dev9_irx_start[], \
+                     _binary_ps2ip_irx_start[], _binary_ps2smap_irx_start[], _binary_ps2link_irx_start[];
+extern unsigned int _binary_ioptrap_irx_size, _binary_iomanX_irx_size, _binary_ps2dev9_irx_size, \
+                    _binary_ps2ip_irx_size, _binary_ps2smap_irx_size, _binary_ps2link_irx_size;
 #endif
 
 const char *eeloadimg = "rom0:UDNL rom0:EELOADCNF";
@@ -383,23 +385,23 @@ loadModules(void)
 
 #ifdef BUILTIN_IRXS
     getIpConfig();
-	    dbgscr_printf("Exec iomanX module. (%x,%d) ", iomanX_irx, size_iomanX_irx);
-    SifExecModuleBuffer(iomanX_irx, size_iomanX_irx, 0, NULL,&ret);
+	    dbgscr_printf("Exec iomanX module. (%x,%d) ", _binary_iomanX_irx_start, _binary_iomanX_irx_size);
+    SifExecModuleBuffer(_binary_iomanX_irx_start, _binary_iomanX_irx_size, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ps2dev9 module. (%x,%d) ", ps2dev9_irx, size_ps2dev9_irx);
-    SifExecModuleBuffer(ps2dev9_irx, size_ps2dev9_irx, 0, NULL,&ret);
+	    dbgscr_printf("Exec ps2dev9 module. (%x,%d) ", _binary_iomanX_ps2dev9_irx_start, _binary_ps2dev9_irx_size);
+    SifExecModuleBuffer(_binary_ps2dev9_irx_start, _binary_ps2dev9_irx_size, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ps2ip module. (%x,%d) ", ps2ip_irx, size_ps2ip_irx);
-    SifExecModuleBuffer(ps2ip_irx, size_ps2ip_irx, 0, NULL,&ret);
+	    dbgscr_printf("Exec ps2ip module. (%x,%d) ", _binary_iomanX_ps2ip_irx_start, _binary_ps2ip_irx_size);
+    SifExecModuleBuffer(_binary_ps2ip_irx_start, _binary_ps2ip_irx_size, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ps2smap module. (%x,%d) ", ps2smap_irx, size_ps2smap_irx);
-    SifExecModuleBuffer(ps2smap_irx, size_ps2smap_irx, if_conf_len, &if_conf[0],&ret);
+	    dbgscr_printf("Exec ps2smap module. (%x,%d) ", _binary_iomanX_ps2smap_irx_start, _binary_ps2smap_irx_size);
+    SifExecModuleBuffer(_binary_ps2smap_irx_start, _binary_ps2smap_irx_size, if_conf_len, &if_conf[0],&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ioptrap module. (%x,%d) ", ioptrap_irx, size_ioptrap_irx);
-    SifExecModuleBuffer(ioptrap_irx, size_ioptrap_irx, 0, NULL,&ret);
+	    dbgscr_printf("Exec ioptrap module. (%x,%d) ", _binary_iomanX_ioptrap_irx_start, _binary_ioptrap_irx_size);
+    SifExecModuleBuffer(_binary_ioptrap_irx_start, _binary_ioptrap_irx_size, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-		dbgscr_printf("Exec ps2link module. (%x,%d) ", ps2link_irx, size_ps2link_irx);
-    SifExecModuleBuffer(ps2link_irx, size_ps2link_irx, 0, NULL,&ret);
+		dbgscr_printf("Exec ps2link module. (%x,%d) ", _binary_iomanX_ps2link_irx_start, _binary_ps2link_irx_size);
+    SifExecModuleBuffer(_binary_ps2link_irx_start, _binary_ps2link_irx_size, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
 	    dbgscr_printf("All modules loaded on IOP.\n");
 #else

@@ -7,7 +7,7 @@ DEBUG = 0
 LOADHIGH = 0
 
 # Set this to 1 to build ps2link with all the needed IRX builtins
-BUILTIN_IRXS = 0
+BUILTIN_IRXS = 1
 
 # Set this to 1 to enable zero-copy on fileio writes.
 ZEROCOPY = 0
@@ -16,7 +16,7 @@ include $(PS2SDK)/Defs.make
 
 SHELL=/bin/bash
 EEFILES=ee/ps2link.elf
-BIN2S=$(PS2SDK)/bin/bin2s
+BIN2O=ee-ld -r -b binary -O elf32-littlemips -m elf32l5900
 RM=rm -f
 IRXFILES=iop/ps2link.irx $(PS2SDK)/iop/irx/ps2ip.irx \
 	$(PS2DEV)/ps2eth/smap/ps2smap.irx \
@@ -92,13 +92,10 @@ builtins:
 	@for file in $(IRXFILES); do \
 		basefile=$${file/*\//}; \
 		basefile=$${basefile/\.*/}; \
-		lname=$${basefile}_irx; \
-		sfile=$${lname}.s; \
-		ofile=$${lname}.o; \
 		echo "Embedding IRX file $$basefile"; \
-		$(BIN2S) $$file $$sfile $$lname; \
-		$(EE_CC) -c -o ee/$$ofile $$sfile; \
-		$(RM) $$sfile; \
+		cp $$file .; \
+		$(BIN2O) $$basefile.irx -o ee/$${basefile}_irx.o; \
+		rm $$basefile.irx; \
 	done;
 
 .PHONY: iop ee
