@@ -224,7 +224,7 @@ pkoReset(void)
     SifExitRpc();
 #endif
     // XXX: there's something wrong with elfName..
-    if ((boot == B_MC) || (boot == B_UNKN)) {
+    if ((boot == B_MC) || (boot == B_HOST) || (boot == B_UNKN)) {
         argv[0] = elfName;
         ExecPS2(&_start, 0, 1, argv);
     }
