@@ -5,11 +5,23 @@
  * details.
  */
 
-
-#include "ps2link.h"
+#include <tamtypes.h>
+#include <kernel.h>
+#include <sifrpc.h>
+#include <loadfile.h>
+#include <iopcontrol.h>
 
 #include "cd.h"
+#include "byteorder.h"
 #include "ps2regs.h"
+#include "hostlink.h"
+
+//#define DEBUG
+#ifdef DEBUG
+#define dbgprintf(args...) printf(args)
+#else
+#define dbgprintf(args...) do { } while(0)
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -18,10 +30,18 @@ static int pkoExecEE(pko_pkt_execee_req *cmd);
 static void pkoReset(void);
 static int pkoLoadElf(char *path);
 
+// Flags for which type of boot (oh crap, make a header file dammit)
+#define B_CD 1
+#define B_MC 2
+#define B_HOST 3
+#define B_DMS3 4
+#define B_UNKN 5
+
 ////////////////////////////////////////////////////////////////////////
 // Globals
 extern u32 _start;
 extern int _gp;
+extern int boot;
 extern char elfName[];
 
 int userThreadID = 0;
@@ -68,14 +88,14 @@ makeArgs(int cmdargc, char *cmdargv, struct argData *arg_data)
 
     memcpy(argvStrings, cmdargv, PKO_MAX_PATH);
 
-    D_PRINTF("cmd->argc %d, argv[0]: %s\n", cmdargc, cmdargv);
+    dbgprintf("cmd->argc %d, argv[0]: %s\n", cmdargc, cmdargv);
 
     i = 0;
     t = 0;
     do {
         arg_data->argv[i] = &argvStrings[t];
-        D_PRINTF("arg_data[%d]=%s\n", i, arg_data->argv[i]);
-        D_PRINTF("argvStrings[%d]=%s\n", t, &argvStrings[t]);
+        dbgprintf("arg_data[%d]=%s\n", i, arg_data->argv[i]);
+        dbgprintf("argvStrings[%d]=%s\n", t, &argvStrings[t]);
         t += strlen(&argvStrings[t]);
         t++;
         i++;
@@ -102,13 +122,13 @@ pkoLoadElf(char *path)
     FlushCache(0);
     FlushCache(2);
 
-    D_PRINTF("EE: LoadElf returned %d\n", ret);
+    dbgprintf("EE: LoadElf returned %d\n", ret);
 
-    D_PRINTF("EE: Creating user thread (ent: %x, gp: %x, st: %x)\n", 
+    dbgprintf("EE: Creating user thread (ent: %x, gp: %x, st: %x)\n", 
               elfdata.epc, elfdata.gp, elfdata.sp);
 
     if (elfdata.epc == 0) {
-        D_PRINTF("EE: Could not load file\n");
+        dbgprintf("EE: Could not load file\n");
         return -1;
     }
 
@@ -124,7 +144,7 @@ pkoLoadElf(char *path)
         return -1;
     }
 
-    D_PRINTF("EE: Created user thread: %d\n", pid);
+    dbgprintf("EE: Created user thread: %d\n", pid);
 
     return pid;
 }
@@ -143,7 +163,7 @@ pkoExecEE(pko_pkt_execee_req *cmd)
         return -1;
     }
 
-    D_PRINTF("EE: Executing file %s...\n", cmd->argv);
+    dbgprintf("EE: Executing file %s...\n", cmd->argv);
     memcpy(path, cmd->argv, PKO_MAX_PATH);
 
     scr_printf("Executing file %s...\n", path);
@@ -180,7 +200,6 @@ pkoReset(void)
 {
     char *argv[1];
     // Check if user thread is running, if so kill it
-
 #if 1
     if (userThreadID) {
         TerminateThread(userThreadID);
@@ -192,21 +211,26 @@ pkoReset(void)
     RemoveDmacHandler(5, sif0HandlerId);
     sif0HandlerId = 0;
 
-    if (full_reset() < 0)
-	    S_PRINTF(S_SCREEN|S_HOST,
-		"Warning: Unable to reboot the IOP from the RESET command.\n");
-
+    SifInitRpc(0);
+    cdvdInit(CDVD_INIT_NOWAIT);
+    cdvdInit(CDVD_EXIT);
+    SifIopReset(NULL, 0);
     SifExitRpc();
-
+    while(SifIopSync());
+#if 1
+    SifInitRpc(0);
+    cdvdExit();
+    SifExitRpc();
+#endif
     FlushCache(0);
-    FlushCache(2);
 
-    if (cur_boot_info->boot != BOOT_FULL) {
+    if ((boot == B_MC) || (boot == B_HOST) || (boot == B_UNKN)) {
         argv[0] = elfName;
         ExecPS2(&_start, 0, 1, argv);
     }
-    
-    LoadExecPS2(elfName, 0, NULL);
+    else {
+        LoadExecPS2(elfName, 0, NULL);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -241,7 +265,7 @@ cmdThread()
     unsigned int cmd;
     int ret;
     int done;
-    D_PRINTF("EE: Cmd thread\n");
+    dbgprintf("EE: Cmd thread\n");
 
     done = 0;
     while(!done) {
@@ -258,7 +282,7 @@ cmdThread()
             break;
         
         case PKO_EXECEE_CMD: 
-            D_PRINTF("EE: Rpc EXECEE called\n");
+            dbgprintf("EE: Rpc EXECEE called\n");
             ret = pkoExecEE(pkt);
             break;
         default: 

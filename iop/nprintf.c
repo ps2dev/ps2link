@@ -5,7 +5,13 @@
  * details.
  */
 
-#include "ps2link.h"
+#include <tamtypes.h>
+#include <kernel.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <fileio.h>
+#include <intrman.h>
+#include <loadcore.h>
 
 ////////////////////////////////////////////////////////////////////////
 #define NPM_PUTS     0x01
@@ -49,13 +55,14 @@ napThread(void *arg)
 int
 naplinkRpcInit(void)
 {
-    iop_thread_t th_attr;
+    struct t_thread th_attr;
     int ret;
     int pid;
 
-    th_attr.attr = TH_C;
-    th_attr.thread = napThread;
-    th_attr.stacksize = 0x800;
+    th_attr.type = 0x02000000;
+    th_attr.unknown = 0;
+    th_attr.function = napThread;
+    th_attr.stackSize = 0x800;
     th_attr.priority = 0x4f;
 
     pid = CreateThread(&th_attr);

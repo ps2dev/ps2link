@@ -5,7 +5,19 @@
  * details.
  */
 
-#include "ps2link.h"
+#include <stdlib.h>
+#include <loadcore.h>
+#include <intrman.h>
+#include <tamtypes.h>
+#include <sifrpc.h>
+#include <cdvd.h>
+
+
+// Entry points
+extern int fsysMount(void);
+extern int cmdHandlerInit(void);
+extern int ttyMount(void);
+extern int naplinkRpcInit(void);
 
 ////////////////////////////////////////////////////////////////////////
 // main
@@ -13,8 +25,12 @@
 int
 _start( int argc, char **argv)
 {
-    sceCdInit(1);
-    sceCdStop();
+
+    FlushDcache();
+    CpuEnableIntr(0);
+
+    CdInit(1);
+    CdStop();
 
     SifInitRpc(0);
 

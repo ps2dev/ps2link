@@ -7,9 +7,18 @@
 
 // Fu*k knows why net_fio & net_fsys are separated..
 
-#include "ps2link.h"
+#include <tamtypes.h>
+#include <fileio.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <kernel.h>
 
+#include "ps2ip.h"
 #include "net_fio.h"
+#include "hostlink.h"
+
+#define ntohl(x) htonl(x)
+#define ntohs(x) htons(x)
 
 unsigned int remote_pc_addr = 0xffffffff;
 
@@ -20,6 +29,13 @@ static char recv_packet[PACKET_MAXSIZE] __attribute__((aligned(16)));
 
 static int pko_fileio_sock = -1;
 static int pko_fileio_active = 0;
+
+//#define DEBUG
+#ifdef DEBUG
+#define dbgprintf(args...) printf(args)
+#else
+#define dbgprintf(args...) do { } while(0)
+#endif
 
 //---------------------------------------------------------------------- 
 //
@@ -144,7 +160,7 @@ int pko_accept_pkt(int sock, char *buf, int len, int pkt_type)
 
 //----------------------------------------------------------------------
 //
-int pko_open_file(const char *path, int flags)
+int pko_open_file(char *path, int flags)
 {
     pko_pkt_open_req *openreq;
     pko_pkt_file_rly *openrly;
