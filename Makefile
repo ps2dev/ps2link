@@ -43,8 +43,11 @@ clean:
 	$(MAKE) -C ee clean
 	$(MAKE) -C iop clean
 
+check:
+	$(VARIABLES) $(MAKE) -C ee check
+
 # Creates a zip from what you have
-dist: 
+dist: all check
 	@for file in $(IRXFILES); do \
 		new=`echo $${file/*\//}|tr "[:lower:]" "[:upper:]"`; \
 		cp $$file bin/$$new; \
@@ -67,6 +70,7 @@ release:
 	cvs co -r $$VERSION ps2link; \
 	cd ps2link; \
 	make; \
+	make check; \
 	mkdir -p bin; \
 	for file in $(IRXFILES); do \
 		new=`echo $${file/*\//}|tr "[:lower:]" "[:upper:]"`; \
