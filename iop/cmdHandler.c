@@ -228,6 +228,12 @@ pkoDumpReg(char *buf, int len) {
     ret = pkoSendSifCmd(PKO_RPC_DUMPREG, buf, len);
 };
 
+static void
+pkoWriteMem(char *buf, int len) {
+    int ret;
+    ret = pkoSendSifCmd(PKO_RPC_WRITEMEM, buf, len);
+};
+
 //////////////////////////////////////////////////////////////////////////
 static void 
 cmdListener(int sock)
@@ -294,6 +300,9 @@ cmdListener(int sock)
 		case PKO_GSEXEC_CMD:
 			pkoGSExec(recvbuf, len);
 			break;
+        case PKO_WRITE_MEM:
+            pkoWriteMem(recvbuf, len);
+            break;
         default: 
             dbgprintf("IOP cmd: Uknown cmd received\n");
             break;

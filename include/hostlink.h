@@ -38,6 +38,7 @@
 #define PKO_STOP_VU         0xbabe0209
 #define PKO_DUMP_REG 		0xbabe020a
 #define PKO_GSEXEC_CMD		0xbabe020b
+#define PKO_WRITE_MEM       0xbabe020c
 
 #define PKO_RPC_RESET   1
 #define PKO_RPC_EXECEE  2
@@ -49,6 +50,7 @@
 #define PKO_RPC_DUMPMEM 8
 #define PKO_RPC_DUMPREG 9
 #define PKO_RPC_GSEXEC  10
+#define PKO_RPC_WRITEMEM 11
 
 #define PKO_MAX_PATH   256
 
@@ -209,7 +211,7 @@ typedef struct
     unsigned int offset;
     unsigned int size;
     char argv[PKO_MAX_PATH];
-} __attribute__((packed)) pko_pkt_dump_mem;
+} __attribute__((packed)) pko_pkt_mem_io;
 
 typedef struct {
     unsigned int cmd;
@@ -223,7 +225,6 @@ typedef struct {
 	unsigned short len;
 	unsigned int regs[79];
 } __attribute__((packed)) pko_pkt_send_regs;
-
 
 #define PKO_MAX_WRITE_SEGMENT (1460 - sizeof(pko_pkt_write_req))
 #define PKO_MAX_READ_SEGMENT  (1460 - sizeof(pko_pkt_read_rly))

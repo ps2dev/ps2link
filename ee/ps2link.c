@@ -74,9 +74,10 @@ static void pkoLoadModule(char *path, int argc, char *argv);
 static void getIpConfig(void);
 
 ////////////////////////////////////////////////////////////////////////
-#define IPCONF_MAX_LEN  (3*16)
+#define IPCONF_MAX_LEN (3*16)
 
 char if_conf[IPCONF_MAX_LEN] = "";
+char fExtraConfig[256];
 int if_conf_len = 0;
 
 char ip[16] __attribute__((aligned(16))) = "192.168.0.10";
@@ -94,7 +95,7 @@ getIpConfig(void)
     int t;
     int len;
     char c;
-    char buf[IPCONF_MAX_LEN];
+    char buf[IPCONF_MAX_LEN+256];
     static char path[256];
 
     if (boot == B_CD) {
@@ -127,9 +128,9 @@ getIpConfig(void)
     }
 
     memset(if_conf, 0x00, IPCONF_MAX_LEN);
-    memset(buf, 0x00, IPCONF_MAX_LEN);
+    memset(buf, 0x00, IPCONF_MAX_LEN+256);
 
-    len = fioRead(fd, buf, IPCONF_MAX_LEN - 1); // Let the last byte be '\0'
+    len = fioRead(fd, buf, IPCONF_MAX_LEN + 256 - 1); // Let the last byte be '\0'
     fioClose(fd);
 
     if (len < 0) {
@@ -154,8 +155,40 @@ getIpConfig(void)
         i += strlen(&if_conf[i]) + 1;
     }
     scr_printf("\n");
-
+    // get extra config filename
+    strncpy(fExtraConfig, &buf[i+1], 256);
+    scr_printf("extra conf: %s\n", fExtraConfig);
     if_conf_len = i;
+}
+
+void
+getExtraConfig() {
+    int fd, size, ret;
+    char *buf, *ptr, *ptr2;
+    fd = fioOpen(fExtraConfig, O_RDONLY);
+    if ( fd < 0 ) {
+        scr_printf("failed to open extra conf file\n");
+        return;
+    }
+    size = fioLseek(fd, 0, SEEK_END);
+    fioLseek(fd, 0, SEEK_SET);
+    buf = malloc(size);
+    ret = fioRead(fd, buf, size);
+    fioClose(fd);
+    ptr = buf;
+    ptr2 = buf;
+    while(ptr < buf+size) {
+        ptr2 = strstr(ptr, "\n");
+        if ( ptr2 == 0 ) {
+            break;
+        }
+        ptr[ptr2-ptr] = 0;
+        scr_printf("loading %s\n", ptr);
+        pkoLoadModule(ptr, 0, NULL);
+        ptr = ptr2+1;
+    }
+    free(buf);
+    return;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -394,7 +427,7 @@ main(int argc, char *argv[])
 
     init_scr();
     installExceptionHandlers();
-    scr_printf("Welcome to ps2link v1.24b\n");
+    scr_printf("Welcome to ps2link v1.24b : bd haxored\n");
 #ifdef _LOADHIGHVER
     scr_printf("Highload version\n");
 #endif
@@ -486,6 +519,9 @@ main(int argc, char *argv[])
 
     dbgscr_printf("init cmdrpc\n");
     initCmdRpc();
+
+    // get extra config
+    getExtraConfig();
 
     scr_printf("Ready\n");
 //    printf("Main done\n");

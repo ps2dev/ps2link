@@ -34,12 +34,12 @@ static int cmdThread(void);
 static int pkoExecEE(pko_pkt_execee_req *cmd);
 static int pkoStopVU(pko_pkt_stop_vu *);
 static int pkoStartVU(pko_pkt_start_vu *);
-static int pkoDumpMem(pko_pkt_dump_mem *);
+static int pkoDumpMem(pko_pkt_mem_io *);
 static int pkoDumpReg(pko_pkt_dump_regs *);
 static void pkoReset(void);
 static int pkoLoadElf(char *path);
 static int pkoGSExec(pko_pkt_gsexec_req *);
-/* static int pkoWriteMem(pko_pkt_write_mem *); */
+static int pkoWriteMem(pko_pkt_mem_io *);
 
 // Flags for which type of boot (oh crap, make a header file dammit)
 #define B_CD 1
@@ -57,8 +57,9 @@ extern char elfName[];
 
 int userThreadID = 0;
 static int cmdThreadID = 0;
-static char userThreadStack[16*1024] __attribute__((aligned(16)));
-static char cmdThreadStack[16*1024] __attribute__((aligned(64)));
+static char userThreadStack[16*1024]    __attribute__((aligned(16)));
+static char cmdThreadStack[16*1024]     __attribute__((aligned(64)));
+static char dataBuffer[16384]           __attribute__((aligned(16)));
 
 // The 'global' argv string area
 static char argvStrings[PKO_MAX_PATH];
@@ -210,14 +211,13 @@ pkoExecEE(pko_pkt_execee_req *cmd)
 // takes cmd->data and sends it to GIF via path1
 static int
 pkoGSExec(pko_pkt_gsexec_req *cmd) {
-    char data[16384] __attribute__((aligned(16)));
 	int fd;
     int len;
 	fd = fioOpen(cmd->file, O_RDONLY);
 	if ( fd < 0 ) {
 		return fd;
 	}
-	len = fioRead(fd, data, 128);
+	len = fioRead(fd, dataBuffer, 128);
 	fioClose(fd);
     // stop/reset dma02
 
@@ -230,7 +230,7 @@ pkoGSExec(pko_pkt_gsexec_req *cmd) {
         "sw     $10, -24560($8);"
         "ori    $9, $0, 0x101;"
         "sw     $9, -24576($8);"
-	:: "r" (data), "r" ((ntohs(cmd->size))/16) );
+	:: "r" (dataBuffer), "r" ((ntohs(cmd->size))/16) );
 
     // dmawait for GIF channel
     asm __volatile__(
@@ -249,8 +249,9 @@ pkoGSExec(pko_pkt_gsexec_req *cmd) {
 ////////////////////////////////////////////////////////////////////////
 // command to dump cmd->size bytes of memory from cmd->offset
 static int 
-pkoDumpMem(pko_pkt_dump_mem *cmd) {
+pkoDumpMem(pko_pkt_mem_io *cmd) {
 	int fd;
+    int total, len;
 	unsigned int offset;
 	unsigned int size;
     char path[PKO_MAX_PATH];
@@ -262,20 +263,66 @@ pkoDumpMem(pko_pkt_dump_mem *cmd) {
 		);
     memcpy(path, cmd->argv, PKO_MAX_PATH);
 	fd = fioOpen(path, O_WRONLY|O_CREAT);
+    total = 0;
+    len = 16*1024;
 	if ( fd > 0 ) {
-		if ((ret = fioWrite(fd, (void *)offset, size)) > 0) {
-		} else {
-			printf("EE: pkoDumpMem() fioWrite failed\n");
-			return fd;
-		}
-	}
+        while(total < size) {
+            if ( size < len) {
+                len = size;
+            } else if ((size - total) < len) {
+                len = size - total;
+            }
+            
+            memcpy(dataBuffer, (void *)offset, len);
+            
+            if ((ret = fioWrite(fd, (void *)dataBuffer, len)) > 0) {
+            } else {
+                printf("EE: pkoDumpMem() fioWrite failed\n");
+                return fd;
+            }
+            total += len;
+        }
+    }
 	fioClose(fd);
 	return ret;
 }
 
-/* static int */
-/* pkoWriteMem(pko_pkt_write_mem *cmd) { */
-/* } */
+static int
+pkoWriteMem(pko_pkt_mem_io *cmd) {
+	int fd, len, total;
+	unsigned int offset;
+	unsigned int size;
+    char path[PKO_MAX_PATH];
+    int ret = 0;
+   	size = ntohl(cmd->size);
+    offset = ntohl(cmd->offset);
+	scr_printf("write mem to 0x%x, size %d\n", 
+		ntohl(cmd->offset), ntohl(cmd->size)
+		);
+    memcpy(path, cmd->argv, PKO_MAX_PATH);
+	fd = fioOpen(path, O_WRONLY|O_CREAT);
+    if( fd > 0) {
+        while(total < size) {
+            if ( size < len) {
+                len = size;
+            } else if ((size - total) < len) {
+                len = size - total;
+            }
+
+            if ((ret = fioRead(fd, (void *)dataBuffer, len)) > 0) {
+            } else {
+                printf("EE: pkoDumpMem() fioWrite failed\n");
+                return fd;
+            }
+
+            memcpy((void *)offset, dataBuffer, len);
+            offset = offset + len;
+            total += len;
+        }
+    }
+    fioClose(fd);
+    return ret;
+}
 
 ////////////////////////////////////////////////////////////////////////
 // command to dump various registers ( gs|vif|intc etc )
@@ -767,6 +814,10 @@ cmdThread()
 			dbgprintf("EE: GS Exec\n");
 			ret = pkoGSExec(pkt);
 			break;
+        case PKO_WRITE_MEM:
+            dbgprintf("EE: Write Mem\n");
+            ret = pkoWriteMem(pkt);
+            break;
         default: 
             printf("EE: Unknown rpc cmd (%x)!\n", cmd);
             ret = -1;
