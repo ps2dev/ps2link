@@ -3,10 +3,10 @@ EE_OBJS = ps2link.o cmdHandler.o excepHandler.o exceptions.o cd.o
 EE_INCS += -I../include
 
 # This is for the sbv patch
-SBVLITE = $(PS2DEV)/sbv-1.0-lite
+SBVLITE = $(PS2SDK)/sbv
 EE_INCS += -I$(SBVLITE)/include
 EE_LDFLAGS += -L$(SBVLITE)/lib
-EE_LIBS += -lsbv_patches -ldebug
+EE_LIBS += -lpatches -ldebug
 
 # Normal low loading version
 ifeq ($(BUILTIN_IRXS),1)
