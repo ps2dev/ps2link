@@ -36,6 +36,7 @@ static int pkoDumpReg(pko_pkt_dump_regs *);
 static void pkoReset(void);
 static int pkoLoadElf(char *path);
 static int pkoGSExec(pko_pkt_gsexec_req *);
+/* static int pkoWriteMem(pko_pkt_write_mem *); */
 
 // Flags for which type of boot (oh crap, make a header file dammit)
 #define B_CD 1
@@ -206,7 +207,7 @@ pkoExecEE(pko_pkt_execee_req *cmd)
 // takes cmd->data and sends it to GIF via path1
 static int
 pkoGSExec(pko_pkt_gsexec_req *cmd) {
-    char data[16384];
+    char data[16384] __attribute__((aligned(16)));
 	int fd;
     int len;
 	fd = fioOpen(cmd->file, O_RDONLY);
@@ -268,6 +269,10 @@ pkoDumpMem(pko_pkt_dump_mem *cmd) {
 	fioClose(fd);
 	return ret;
 }
+
+/* static int */
+/* pkoWriteMem(pko_pkt_write_mem *cmd) { */
+/* } */
 
 ////////////////////////////////////////////////////////////////////////
 // command to dump various registers ( gs|vif|intc etc )
@@ -411,7 +416,7 @@ pkoDumpReg(pko_pkt_dump_regs *cmd) {
 				"move	$8, %0;"			// save away dst
 				"ori	$1, $0, 1024;"		// start of vu1 mapped floats
 				"ctc2   $1, $vi01;"			// ctc2 t0, vi1
-				"ori	$1, $0, 31;"
+				"ori	$1, $0, 32;"
 				"vu1_float_loop:"
 				"vlqi	$vf01, ($vi01++);"
 				"sqc2   $vf01, 0($8);"
@@ -423,7 +428,7 @@ pkoDumpReg(pko_pkt_dump_regs *cmd) {
 				// Save VU1 Integers
 				"ori	$1, $0, 1056;"
 				"ctc2   $1, $vi01;"			// ctc2 t0, vi1
-				"ori	$1, $0, 15;"
+				"ori	$1, $0, 16;"
 				"vu1_int_loop:"
 				"vlqi	$vf01, ($vi01++);"
 				"sqc2   $vf01, 0($8);"
