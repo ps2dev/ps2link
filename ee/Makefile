@@ -5,7 +5,7 @@ EE_INCS += -I../include
 # This is for the sbv patch
 SBVLITE = $(PS2SDK)/sbv
 EE_INCS += -I$(SBVLITE)/include
-EE_LDFLAGS += -L$(SBVLITE)/lib
+EE_LDFLAGS += -L$(SBVLITE)/lib -s
 EE_LIBS += -lpatches -ldebug
 
 # Normal low loading version
