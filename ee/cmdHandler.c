@@ -252,7 +252,7 @@ pkoCmdIntrHandler()
         iWakeupThread(cmdThreadID);
     }
     asm __volatile__("sync");
-    EI;
+    asm __volatile__("ei");
     return 0;
 }
 

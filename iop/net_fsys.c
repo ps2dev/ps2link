@@ -69,7 +69,7 @@ static void fsysInit( struct fileio_driver *driver)
 
     mythread.type = 0x02000000; // attr
     mythread.unknown = 0; // option
-    mythread.function = pko_file_serv; // entry
+    mythread.function = (void *)pko_file_serv; // entry
     mythread.stackSize = 0x800;
     mythread.priority = 0x45; // We really should choose prio w more effort
 

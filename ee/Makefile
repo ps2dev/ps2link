@@ -11,7 +11,7 @@ LOADADDR  = 0xd00000
 STACKADDR = 0xd40000
 endif
 LDPARAMS := -Wl,--defsym -Wl,_stack_size=0x8000 -Wl,--defsym -Wl,_stack=$(STACKADDR)
-EE_LDFLAGS += -Wl,-Ttext -Wl,$(LOADADDR) $(LDPARAMS)
+EE_LDFLAGS += -Wl,-Ttext -Wl,$(LOADADDR) $(LDPARAMS) -s
 
 all: $(EE_BIN)
 
