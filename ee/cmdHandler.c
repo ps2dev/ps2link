@@ -12,12 +12,9 @@
 #include <iopcontrol.h>
 
 #include "cd.h"
-#include "ps2ip.h"
+#include "byteorder.h"
 #include "ps2regs.h"
 #include "hostlink.h"
-
-#define ntohl(x) htonl(x)
-#define ntohs(s) htons(x)
 
 //#define DEBUG
 #ifdef DEBUG
