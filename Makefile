@@ -7,14 +7,14 @@ DEBUG = 0
 LOADHIGH = 1
 
 # Set this to 1 to build ps2link with all the needed IRX builtins
-BUILTIN_IRXS = 1
+BUILTIN_IRXS = 0
 
 # Set this to 1 to enable zero-copy on fileio writes.
 ZEROCOPY = 0
 
 include $(PS2SDK)/Defs.make
 
-SHELL=/bin/bash
+SHELL=/usr/bin/env bash
 EEFILES=ee/ps2link.elf
 BIN2O=$(PS2SDK)/bin/bin2o
 RM=rm -f
