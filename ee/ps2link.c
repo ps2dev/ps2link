@@ -56,6 +56,11 @@ char ps2link_path[PKO_MAX_PATH];
 void *iomanX_mod = NULL, *ps2dev9_mod = NULL, *ps2ip_mod = NULL, *ps2smap_mod = NULL, *ps2link_mod = NULL;
 int iomanX_size = 0, ps2dev9_size = 0, ps2ip_size = 0, ps2smap_size = 0, ps2link_size = 0;
 
+#ifdef BUILTIN_IRXS
+extern unsigned char iomanX_irx[], ps2dev9_irx[], ps2ip_irx[], ps2smap_irx[], ps2link_irx[];
+extern unsigned int size_iomanX_irx, size_ps2dev9_irx, size_ps2ip_irx, size_ps2smap_irx, size_ps2link_irx;
+#endif
+
 const char *eeloadimg = "rom0:UDNL rom0:EELOADCNF";
 char *imgcmd;
 
@@ -283,6 +288,25 @@ loadModules(void)
         pkoLoadModule("rom0:MCSERV", 0, NULL); 
     }
 
+#ifdef BUILTIN_IRXS
+    getIpConfig();
+	    dbgscr_printf("Exec iomanX module. (%x,%d) ", iomanX_mod, iomanX_size);
+    SifExecModuleBuffer(iomanX_irx, size_iomanX_irx, 0, NULL,&ret);
+	    dbgscr_printf("[%d] returned\n", ret);
+	    dbgscr_printf("Exec ps2dev9 module. (%x,%d) ", ps2dev9_mod, ps2dev9_size);
+    SifExecModuleBuffer(ps2dev9_irx, size_ps2dev9_irx, 0, NULL,&ret);
+	    dbgscr_printf("[%d] returned\n", ret);
+	    dbgscr_printf("Exec ps2ip module. (%x,%d) ", ps2ip_mod, ps2ip_size);
+    SifExecModuleBuffer(ps2ip_irx, size_ps2ip_irx, 0, NULL,&ret);
+	    dbgscr_printf("[%d] returned\n", ret);
+	    dbgscr_printf("Exec ps2smap module. (%x,%d) ", ps2smap_mod, ps2smap_size);
+    SifExecModuleBuffer(ps2smap_irx, size_ps2smap_irx, if_conf_len, &if_conf[0],&ret);
+	    dbgscr_printf("[%d] returned\n", ret);
+	    dbgscr_printf("Exec ps2link module. (%x,%d) ", ps2link_mod, ps2link_size);
+    SifExecModuleBuffer(ps2link_irx, size_ps2link_irx, 0, NULL,&ret);
+	    dbgscr_printf("[%d] returned\n", ret);
+	    dbgscr_printf("All modules loaded on IOP.\n");
+#else
     if (boot == B_HOST) {
 		dbgscr_printf("Exec iomanX module. (%x,%d) ", iomanX_mod, iomanX_size);
         SifExecModuleBuffer(iomanX_mod, iomanX_size, 0, NULL,&ret);
@@ -314,6 +338,7 @@ loadModules(void)
         pkoLoadModule(ps2link_path, 0, NULL);
 		dbgscr_printf("All modules loaded on IOP. ");
     }
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -473,13 +498,15 @@ main(int argc, char *argv[])
     }
 
     // System initalisation
+#ifndef BUILTIN_IRXS
     if (boot == B_HOST) {
         if (loadHostModBuffers() < 0) {
             dbgscr_printf("Unable to load modules from host:!\n");
             SleepThread();
 	}
     }
-	
+#endif
+
 //    if (boot == B_MC)
 //        imgcmd = (char *)eeloadimg;
 

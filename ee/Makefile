@@ -1,4 +1,3 @@
-
 EE_BIN  = ps2link.elf
 EE_OBJS = ps2link.o cmdHandler.o excepHandler.o exceptions.o cd.o
 EE_INCS += -I../include
@@ -9,9 +8,6 @@ EE_INCS += -I$(SBVLITE)/include
 EE_LDFLAGS += -L$(SBVLITE)/lib
 EE_LIBS += -lsbv_patches -ldebug
 
-# Set this to 1 to build a highloading version, 0 for normal low version
-LOADHIGH = 0
-
 # Normal low loading version
 LOADADDR  = 0xc0000
 STACKADDR = 0x100000
@@ -21,6 +17,12 @@ ifeq ($(LOADHIGH),1)
 LOADADDR  = 0x1f00000
 STACKADDR = 0x1f40000
 EE_CFLAGS += -D_LOADHIGHVER
+endif
+
+# This is to builtin the IRXs into ps2link
+ifeq ($(BUILTIN_IRXS),1)
+EE_CFLAGS += -DBUILTIN_IRXS
+EE_LDFLAGS += ps2link_irx.o ps2ip_irx.o ps2smap_irx.o iomanX_irx.o ps2dev9_irx.o
 endif
 
 LDPARAMS := -Wl,--defsym -Wl,_stack_size=0x8000 -Wl,--defsym -Wl,_stack=$(STACKADDR)
