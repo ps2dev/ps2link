@@ -18,6 +18,11 @@ IOP_CFLAGS += -Wall
 # This is to enable the ps2dev9 shutdown
 IOP_CFLAGS += -DPS2DEV9_COMPAT
 
+# Enable zero-copy on fileio writes.
+ifeq ($(ZEROCOPY),1)
+IOP_CFLAGS += -DZEROCOPY
+endif
+
 
 all: $(IOP_BIN)
 

@@ -301,30 +301,6 @@ int pko_write_file(int fd, char *buf, int length)
     writecmd->len = htons(hlen);
     writecmd->fd = htonl(fd);
 
-    // Lwip/smap driver didnt like me sending a big chunk of data to 
-    // transmit (probably need output buffer in driver), so I divide
-    // the write request into smaller packets instead..
-#if 0
-    // Not fixed for htonl/s
-    writecmd->nbytes = length;    
-
-    send(pko_fileio_sock, writecmd, writecmd->len, 0);
-    ret = send(pko_fileio_sock, buf, length, 0);
-    if ((ret < 0) || (ret != length)) {
-        dbgprintf("pko_file: write_file: lwip_send failed (should send %d, sent %d)\n", length, ret);
-        return -1;
-    }
-
-    if(!pko_accept_pkt(pko_fileio_sock, (char *)writerly, 
-                       sizeof(pko_pkt_file_rly), PKO_WRITE_RLY)) {
-        dbgprintf("pko_file: pko_close_file: did not receive PKO_WRITE_RLY\n");
-        return -1;
-    }
-
-    dbgprintf("pko_file: pko_write_file: write reply received (ret %d)\n", 
-              writerly->retval);
-    return writerly->retval;
-#else
     // Divide the write request
     writtenbytes = 0;
     while (writtenbytes < length) {
@@ -338,14 +314,22 @@ int pko_write_file(int fd, char *buf, int length)
         }
 
         writecmd->nbytes = htonl(nbytes);
+#ifdef ZEROCOPY
+        /* Send the packet header.  */
+	if (pko_lwip_send(pko_fileio_sock, writecmd, hlen, 0) < 0)
+		return -1;
+	/* Send the write() data.  */
+        if (pko_lwip_send(pko_fileio_sock, &buf[writtenbytes], nbytes, 0) < 0)
+		return -1;
+#else
         // Copy data to the acutal packet
         memcpy(&send_packet[sizeof(pko_pkt_write_req)], &buf[writtenbytes],
                nbytes);
 
-        // Sent the packet
-        if (pko_lwip_send(pko_fileio_sock, writecmd, hlen + nbytes, 0) < 0) {
-            return -1;
-        }
+	if (pko_lwip_send(pko_fileio_sock, writecmd, hlen + nbytes, 0) < 0)
+		return -1;
+#endif
+
 
         // Get reply
         if(!pko_accept_pkt(pko_fileio_sock, (char *)writerly, 
@@ -373,7 +357,6 @@ int pko_write_file(int fd, char *buf, int length)
         }
     }
     return writtenbytes;
-#endif
 }
 
 //----------------------------------------------------------------------
