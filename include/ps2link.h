@@ -52,7 +52,13 @@
 	} while (0);
 
 enum _boot { BOOT_UNKNOWN, BOOT_FULL, BOOT_MEM, BOOT_HOST };
-extern enum _boot boot;
+
+typedef struct {
+	const char *prefix;
+	enum _boot boot;
+} boot_info_t;
+
+extern boot_info_t *cur_boot_info;
 
 /* From cmdHandler.c  */
 int initCmdRpc(void);

@@ -10,8 +10,6 @@
 ////////////////////////////////////////////////////////////////////////
 // Globals
 
-enum _boot boot;
-
 // Argv name+path & just path
 char elfName[256] __attribute__((aligned(16)));
 char elfPath[256];
@@ -26,18 +24,17 @@ int ps2ip_size, ps2smap_size, ps2link_size;
 const char *eeloadimg = "rom0:UDNL rom0:EELOADCNF";
 char *imgcmd;
 
-// Flags for which type of boot
-#define B_CD 1
-#define B_MC 2
-#define B_HOST 3
-#define B_DMS3 4
-#define B_UNKN 5
+static boot_info_t boot_info[] =
+{ {"cdrom", BOOT_FULL}, {"mc", BOOT_MEM}, {"host", BOOT_HOST},
+ {"unknown", BOOT_UNKNOWN} };
+#define BOOT_INFO_LEN	((sizeof boot_info)/(sizeof(boot_info_t)))
 
+boot_info_t *cur_boot_info;
 
 ////////////////////////////////////////////////////////////////////////
 // Prototypes
-static void loadModules(void);
-static void pkoLoadModule(char *path, int argc, char *argv);
+static int load_modules(void);
+static int pkoLoadModule(const char *path, int arglen, void *args);
 static void getIpConfig(void);
 
 ////////////////////////////////////////////////////////////////////////
@@ -64,12 +61,7 @@ getIpConfig(void)
     char buf[IPCONF_MAX_LEN];
     static char path[256];
 
-    if (boot == B_CD) {
-        sprintf(path, "%s%s;1", elfPath, "IPCONFIG.DAT");
-    }
-    else {
-        sprintf(path, "%s%s", elfPath, "IPCONFIG.DAT");
-    }
+    sprintf(path, "%s%s", elfPath, "IPCONFIG.DAT");
     fd = fioOpen(path, O_RDONLY);
 
     if (fd < 0) 
@@ -127,57 +119,51 @@ getIpConfig(void)
 
 ////////////////////////////////////////////////////////////////////////
 // Wrapper to load irx module from disc/rom
-static void
-pkoLoadModule(char *path, int argc, char *argv)
+static int pkoLoadModule(const char *path, int arglen, void *args)
 {
     int ret;
 
-    ret = SifLoadModule(path, argc, argv);
-    if (ret < 0) {
-        scr_printf("Could not load module %s: %d\n", path, ret);
-        SleepThread();
-    }
+    if ((ret = SifLoadModule(path, arglen, args)) < 0)
+	    S_PRINTF(S_SCREEN, "Could not load module '%s': error %d.\n", path, ret);
+
+    return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////
 // Wrapper to load module from disc/rom/mc
 // Max irx size hardcoded to 300kb atm..
-static void
-pkoLoadMcModule(char *path, int argc, char *argv)
+static int pkoLoadMcModule(char *path, int arglen, void *args)
 {
-    void *iop_mem;
-    int ret;
+	void *iopmem;
+	int res = -1;
+	
+	if (!(iopmem = SifAllocIopHeap(1024*300))) {
+		S_PRINTF(S_SCREEN, "Unable to reserve memory on the IOP (LMM).");
+		return res;
+	}
 
-    dbgscr_printf("LoadMcModule %s\n", path);
-    iop_mem = SifAllocIopHeap(1024*300);
-    if (iop_mem == NULL) {
-        scr_printf("allocIopHeap failed\n");
-        SleepThread();
-    }
-    ret = SifLoadIopHeap(path, iop_mem);
-    if (ret < 0) {
-        scr_printf("loadIopHeap %s ret %d\n", path, ret);
-        SleepThread();
-    }
-    else {
-        ret = SifLoadModuleBuffer(iop_mem, argc, argv);
-        if (ret < 0) {
-            scr_printf("loadModuleBuffer %s ret %d\n", path, ret);
-            SleepThread();
-        }
-    }
-    SifFreeIopHeap(iop_mem);
+	if ((res = SifLoadIopHeap(path, iopmem)) < 0) {
+		S_PRINTF(S_SCREEN, "Unable to load module '%s' into IOP RAM (%d).\n",
+				path, res);
+		SifFreeIopHeap(iopmem);
+		return res;
+	}
+
+        res = SifLoadModuleBuffer(iopmem, arglen, args);
+
+	SifFreeIopHeap(iopmem);
+	return res;
 }
 
-static void pkoLoadHostModule(void *module, u32 size, int arglen, void *args)
+static int pkoLoadHostModule(void *module, u32 size, int arglen, void *args)
 {
 	SifDmaTransfer_t dmat;
 	void *iopmem;
-	int res;
+	int res = -1;
 
 	if (!(iopmem = SifAllocIopHeap(size))) {
-		scr_printf("allocIopHeap failed\n");
-		SleepThread();
+		S_PRINTF(S_SCREEN, "Unable to reserve memory on the IOP (LHM).");
+		return res;
 	}
 
 	dmat.src = module;
@@ -188,12 +174,10 @@ static void pkoLoadHostModule(void *module, u32 size, int arglen, void *args)
 	while (!SifSetDma(&dmat, 1))
 		nopdelay();
 
-	if ((res = SifLoadModuleBuffer(iopmem, arglen, args)) < 0) {
-		SifFreeIopHeap(iopmem);
-		SleepThread();
-	}
+	res = SifLoadModuleBuffer(iopmem, arglen, args);
 
 	SifFreeIopHeap(iopmem);
+	return res;
 }
 
 static void *morecore(u32 size)
@@ -247,7 +231,7 @@ out:
 	return res;
 }
 
-static int loadHostModBuffers()
+static int preload_host_modules()
 {
     if (!(ps2ip_mod = modbuf_load(ps2ip_path, &ps2ip_size)))
         return -1;
@@ -261,32 +245,58 @@ static int loadHostModBuffers()
     return 0;
 }
 
+static int preload_mc_modules()
+{
+	if (pkoLoadModule("rom0:SECRMAN", 0, NULL) < 0)
+		return -1;
+	if (pkoLoadModule("rom0:SIO2MAN", 0, NULL) < 0)
+		return -1;
+	if (pkoLoadModule("rom0:MCMAN", 0, NULL) < 0)
+		return -1;
+
+	return 0;
+}
+
 ////////////////////////////////////////////////////////////////////////
 // Load all the irx modules we need, according to 'boot mode'
-static void
-loadModules(void)
+static int load_modules(void)
 {
-    if ((boot == B_MC)  || (boot == B_DMS3))
-    {
-        pkoLoadModule("rom0:SIO2MAN", 0, NULL);
-        pkoLoadModule("rom0:MCMAN", 0, NULL);  	
-        pkoLoadModule("rom0:MCSERV", 0, NULL); 
-    }
+	int boot = cur_boot_info->boot;
 
-    if (boot == B_MC) {
-        pkoLoadMcModule(ps2ip_path, 0, NULL);
-        pkoLoadMcModule(ps2smap_path, if_conf_len, &if_conf[0]);
-        pkoLoadMcModule(ps2link_path, 0, NULL);
-        //    pkoLoadMcModule(FSYS "PS2LINK.IRX" FSVER, strlen("-notty") + 1, "-notty");
-    } else if (boot == B_HOST) {
-        pkoLoadHostModule(ps2ip_mod, ps2ip_size, 0, NULL);
-	pkoLoadHostModule(ps2smap_mod, ps2smap_size, if_conf_len, &if_conf[0]);
-	pkoLoadHostModule(ps2link_mod, ps2link_size, 0, NULL);
-    } else {
-        pkoLoadModule(ps2ip_path, 0, NULL);
-        pkoLoadModule(ps2smap_path, if_conf_len, &if_conf[0]);
-        pkoLoadModule(ps2link_path, 0, NULL);
-    }
+	if (boot == BOOT_MEM && preload_mc_modules() != 0)
+		return -1;
+
+	switch (boot) {
+		case BOOT_FULL:
+			if (pkoLoadModule(ps2ip_path, 0, NULL) < 0)
+				return -1;
+			if (pkoLoadModule(ps2smap_path, if_conf_len, &if_conf[0]) < 0)
+				return -1;
+			if (pkoLoadModule(ps2link_path, 0, NULL) < 0)
+				return -1;
+			break;
+		case BOOT_MEM:
+        		if (pkoLoadMcModule(ps2ip_path, 0, NULL) < 0)
+				return -1;
+        		if (pkoLoadMcModule(ps2smap_path, if_conf_len, &if_conf[0]) < 0)
+				return -1;
+			if (pkoLoadMcModule(ps2link_path, 0, NULL) < 0)
+				return -1;
+			break;
+		case BOOT_HOST:
+			if (pkoLoadHostModule(ps2ip_mod, ps2ip_size, 0, NULL) < 0)
+				return -1;
+			if (pkoLoadHostModule(ps2smap_mod, ps2smap_size, if_conf_len, &if_conf[0]) < 0)
+				return -1;
+			if (pkoLoadHostModule(ps2link_mod, ps2link_size, 0, NULL) < 0)
+				return -1;
+			break;
+		default:
+			S_PRINTF(S_SCREEN, "ps2link doesn't know how to load 'unknown' modules.\n");
+			return -1;
+	}
+
+	return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -323,11 +333,6 @@ setPathInfo(char *path)
     sprintf(ps2ip_path, "%s%s", elfPath, "PS2IP.IRX");
     sprintf(ps2smap_path, "%s%s", elfPath, "PS2SMAP.IRX");
     sprintf(ps2link_path, "%s%s", elfPath, "PS2LINK.IRX");
-    if (boot == B_CD) {
-	    strcat(ps2ip_path, ";1");
-	    strcat(ps2smap_path, ";1");
-	    strcat(ps2link_path, ";1");
-    }
 
     dbgscr_printf("path is %s\n", elfPath);
 }
@@ -355,10 +360,11 @@ main(int argc, char *argv[])
 {
     //    int ret;
     char *bootPath;
+    int i;
 
     init_scr();
     installExceptionHandlers();
-    scr_printf("Welcome to ps2link v1.1\n");
+    S_PRINTF(S_SCREEN, "Welcome to ps2link v1.1\n");
 
     // argc == 0 usually means naplink..
     if (argc == 0) {
@@ -375,54 +381,43 @@ main(int argc, char *argv[])
     SifInitRpc(0);
     cdvdInit(CDVD_INIT_NOWAIT);
     dbgscr_printf("Checking argv\n");
-    boot = 0;
 
     setPathInfo(bootPath);
 
-    if (!strncmp(bootPath, "cdrom", strlen("cdrom"))) {
-        // Booting from cd
-        scr_printf("Booting from cdrom (%s)\n", bootPath);
-        boot = B_CD;
+    /* Find our boot prefix and determine our current boot method.  */
+    for (i = 0; i < BOOT_INFO_LEN; i++) {
+	    if (!strncmp(bootPath, boot_info[i].prefix, strlen(boot_info[i].prefix))) {
+		    cur_boot_info = &boot_info[i];
+		    S_PRINTF(S_SCREEN, "Booting from '%s'.\n", cur_boot_info->prefix);
+		    break;
+	    }
     }
-    else if(!strncmp(bootPath, "mc0:/PUKK", strlen("mc0:/PUKK"))) {
-        // Booting from my mc
-        scr_printf("Booting from mc dir (%s)\n", bootPath);
-        boot = B_MC;
+
+    if (cur_boot_info == NULL) {
+	    cur_boot_info = &boot_info[BOOT_INFO_LEN - 1];
+	    S_PRINTF(S_SCREEN, "Booting from unknown location '%s'.\n", bootPath);
     }
-    else if(!strncmp(bootPath, "mc0:/BWLINUX", strlen("mc0:/BWLINUX"))) {
-        // Booting from linux mc
-        scr_printf("Booting from rte\n", bootPath);
-        boot = B_MC;
-    }
-    else if(!strncmp(bootPath, "mc", strlen("mc"))) {
-        // DMS3 boot?
-        scr_printf("Independence boot mode (%s)\n", bootPath);
-        boot = B_DMS3;
-    }
-    else if(!strncmp(bootPath, "host", strlen("host"))) {
-        // Host
-        scr_printf("Booting from host (%s)\n", bootPath);
-        boot = B_HOST;
-    }
-    else {
-        // Unknown
-        scr_printf("Booting from unrecognized place %s\n", bootPath);
-        boot = B_UNKN;
+
+    /* System initialization: if we're booting from the memory card, we'll need the
+       appropiate modules in place to read the IPCONFIG.DAT file.  */
+    if (cur_boot_info->boot == BOOT_MEM && preload_mc_modules() != 0) {
+	S_PRINTF(S_SCREEN, "Unable to load required MC modules, exiting.\n");
+	goto out;
     }
 
     getIpConfig();
 
-    // System initalisation
-    if (boot == B_HOST) {
-        if (loadHostModBuffers() < 0) {
-            dbgscr_printf("Unable to load modules from host:!\n");
-            SleepThread();
-	}
+    /* Modules from the host filesystem must be loaded into RAM before we
+       reboot, because the host: fs is inaccessible after the IOP is reset.  */
+    if (cur_boot_info->boot == BOOT_HOST && preload_host_modules() != 0) {
+	S_PRINTF(S_SCREEN, "Unable to load required modules, exiting.\n");
+	goto out;
     }
 
     /* TODO: Check that eeloadcnf exists in ROM.  */
     imgcmd = (char *)eeloadimg;
 
+    dbgscr_printf("Shutting down subsystems.\n");
     cdvdInit(CDVD_EXIT);
     cdvdExit();
     fioExit();
@@ -435,23 +430,26 @@ main(int argc, char *argv[])
     while (!SifIopSync()) ;
 
     /* If loading from host:, we might be loaded high, so don't wipe ourselves!  */
-    if (boot != B_HOST)
+    if (cur_boot_info->boot != BOOT_HOST)
         wipeUserMem();
 
     dbgscr_printf("rpc init\n");
     SifInitRpc(0);
     cdvdInit(CDVD_INIT_NOWAIT);
 
-    scr_printf("Initalizing...\n");
+    S_PRINTF(S_SCREEN, "ps2link initializing... ");
     dbgscr_printf("loading modules\n");
-    loadModules();
+    if (load_modules() < 0) {
+	    S_PRINTF(S_SCREEN, "Unable to load required boot modules, exiting.\n");
+	    goto out;
+    }
 
     dbgscr_printf("init cmdrpc\n");
     initCmdRpc();
 
-    S_PRINTF(S_SCREEN|S_HOST, "ps2link ready.\n");
+    S_PRINTF(S_SCREEN|S_HOST, "Ready.\n\n");
 
-    //    SleepThread();
+out:
     ExitDeleteThread();
     return 0;
 }

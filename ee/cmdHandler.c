@@ -5,23 +5,12 @@
  * details.
  */
 
-#include <tamtypes.h>
-#include <kernel.h>
-#include <sifrpc.h>
-#include <loadfile.h>
-#include <iopcontrol.h>
+
+#include "ps2link.h"
 
 #include "cd.h"
 #include "byteorder.h"
 #include "ps2regs.h"
-#include "hostlink.h"
-
-//#define DEBUG
-#ifdef DEBUG
-#define dbgprintf(args...) printf(args)
-#else
-#define dbgprintf(args...) do { } while(0)
-#endif
 
 ////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -30,18 +19,10 @@ static int pkoExecEE(pko_pkt_execee_req *cmd);
 static void pkoReset(void);
 static int pkoLoadElf(char *path);
 
-// Flags for which type of boot (oh crap, make a header file dammit)
-#define B_CD 1
-#define B_MC 2
-#define B_HOST 3
-#define B_DMS3 4
-#define B_UNKN 5
-
 ////////////////////////////////////////////////////////////////////////
 // Globals
 extern u32 _start;
 extern int _gp;
-extern int boot;
 extern char elfName[];
 
 int userThreadID = 0;
@@ -201,6 +182,7 @@ pkoReset(void)
     char *argv[1];
     // Check if user thread is running, if so kill it
 
+    S_PRINTF(S_SCREEN, "Host: Reset ps2link.\n");
 #if 1
     if (userThreadID) {
         TerminateThread(userThreadID);
@@ -227,13 +209,12 @@ pkoReset(void)
     FlushCache(0);
     FlushCache(2);
 
-    if ((boot == B_MC) || (boot == B_HOST) || (boot == B_UNKN) /*mrb*/ || (boot == B_DMS3)) {
+    if (cur_boot_info->boot != BOOT_FULL) {
         argv[0] = elfName;
         ExecPS2(&_start, 0, 1, argv);
     }
-    else {
-        LoadExecPS2(elfName, 0, NULL);
-    }
+    
+    LoadExecPS2(elfName, 0, NULL);
 }
 
 ////////////////////////////////////////////////////////////////////////
