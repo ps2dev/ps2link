@@ -62,8 +62,8 @@ int ioptrap_size = 0, iomanX_size = 0, ps2dev9_size = 0, ps2ip_size = 0, ps2smap
 #endif
 
 #ifdef BUILTIN_IRXS
-extern unsigned char iomanX_irx[], ps2dev9_irx[], ps2ip_irx[], ps2smap_irx[], ps2link_irx[];
-extern unsigned int size_iomanX_irx, size_ps2dev9_irx, size_ps2ip_irx, size_ps2smap_irx, size_ps2link_irx;
+extern unsigned char ioptrap_irx[], iomanX_irx[], ps2dev9_irx[], ps2ip_irx[], ps2smap_irx[], ps2link_irx[];
+extern unsigned int size_ioptrap_irx, size_iomanX_irx, size_ps2dev9_irx, size_ps2ip_irx, size_ps2smap_irx, size_ps2link_irx;
 #endif
 
 const char *eeloadimg = "rom0:UDNL rom0:EELOADCNF";
@@ -398,7 +398,7 @@ loadModules(void)
     SifExecModuleBuffer(ps2link_irx, size_ps2link_irx, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
 		dbgscr_printf("Exec ioptrap module. (%x,%d) ", ioptrap_irx, size_ioptrap_irx);
-    SifExecModuleBuffer(ioptrap_irxx, size_ioptrap_irx, 0, NULL,&ret);
+    SifExecModuleBuffer(ioptrap_irx, size_ioptrap_irx, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
 	    dbgscr_printf("All modules loaded on IOP.\n");
 #else
