@@ -59,12 +59,12 @@ char ps2link_path[PKO_MAX_PATH];
 
 void *ioptrap_mod = NULL, *iomanX_mod = NULL, *ps2dev9_mod = NULL, *ps2ip_mod = NULL, *ps2smap_mod = NULL, *ps2link_mod = NULL;
 int ioptrap_size = 0, iomanX_size = 0, ps2dev9_size = 0, ps2ip_size = 0, ps2smap_size = 0, ps2link_size = 0;
-#endif
-
-#ifdef BUILTIN_IRXS
+#else
 extern unsigned char _binary_ioptrap_irx_start[], _binary_iomanX_irx_start[], _binary_ps2dev9_irx_start[], \
                      _binary_ps2ip_irx_start[], _binary_ps2smap_irx_start[], _binary_ps2link_irx_start[];
-extern unsigned int _binary_ioptrap_irx_size, _binary_iomanX_irx_size, _binary_ps2dev9_irx_size, \
+extern unsigned char _binary_ioptrap_irx_end[], _binary_iomanX_irx_end[], _binary_ps2dev9_irx_end[], \
+                     _binary_ps2ip_irx_end[], _binary_ps2smap_irx_end[], _binary_ps2link_irx_end[];
+static unsigned int _binary_ioptrap_irx_size, _binary_iomanX_irx_size, _binary_ps2dev9_irx_size, \
                     _binary_ps2ip_irx_size, _binary_ps2smap_irx_size, _binary_ps2link_irx_size;
 #endif
 
@@ -384,23 +384,30 @@ loadModules(void)
     }
 
 #ifdef BUILTIN_IRXS
+    _binary_ioptrap_irx_size = _binary_ioptrap_irx_end - _binary_ioptrap_irx_start;
+    _binary_iomanX_irx_size = _binary_iomanX_irx_end - _binary_iomanX_irx_start;
+    _binary_ps2dev9_irx_size = _binary_ps2dev9_irx_end - _binary_ps2dev9_irx_start;
+    _binary_ps2ip_irx_size = _binary_ps2ip_irx_end - _binary_ps2ip_irx_start;
+    _binary_ps2smap_irx_size = _binary_ps2smap_irx_end - _binary_ps2smap_irx_start;
+    _binary_ps2link_irx_size = _binary_ps2link_irx_end - _binary_ps2link_irx_start;
+
     getIpConfig();
 	    dbgscr_printf("Exec iomanX module. (%x,%d) ", _binary_iomanX_irx_start, _binary_iomanX_irx_size);
     SifExecModuleBuffer(_binary_iomanX_irx_start, _binary_iomanX_irx_size, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ps2dev9 module. (%x,%d) ", _binary_iomanX_ps2dev9_irx_start, _binary_ps2dev9_irx_size);
+	    dbgscr_printf("Exec ps2dev9 module. (%x,%d) ", _binary_ps2dev9_irx_start, _binary_ps2dev9_irx_size);
     SifExecModuleBuffer(_binary_ps2dev9_irx_start, _binary_ps2dev9_irx_size, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ps2ip module. (%x,%d) ", _binary_iomanX_ps2ip_irx_start, _binary_ps2ip_irx_size);
+	    dbgscr_printf("Exec ps2ip module. (%x,%d) ", _binary_ps2ip_irx_start, _binary_ps2ip_irx_size);
     SifExecModuleBuffer(_binary_ps2ip_irx_start, _binary_ps2ip_irx_size, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ps2smap module. (%x,%d) ", _binary_iomanX_ps2smap_irx_start, _binary_ps2smap_irx_size);
+	    dbgscr_printf("Exec ps2smap module. (%x,%d) ", _binary_ps2smap_irx_start, _binary_ps2smap_irx_size);
     SifExecModuleBuffer(_binary_ps2smap_irx_start, _binary_ps2smap_irx_size, if_conf_len, &if_conf[0],&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ioptrap module. (%x,%d) ", _binary_iomanX_ioptrap_irx_start, _binary_ioptrap_irx_size);
+	    dbgscr_printf("Exec ioptrap module. (%x,%d) ", _binary_ioptrap_irx_start, _binary_ioptrap_irx_size);
     SifExecModuleBuffer(_binary_ioptrap_irx_start, _binary_ioptrap_irx_size, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-		dbgscr_printf("Exec ps2link module. (%x,%d) ", _binary_iomanX_ps2link_irx_start, _binary_ps2link_irx_size);
+		dbgscr_printf("Exec ps2link module. (%x,%d) ", _binary_ps2link_irx_start, _binary_ps2link_irx_size);
     SifExecModuleBuffer(_binary_ps2link_irx_start, _binary_ps2link_irx_size, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
 	    dbgscr_printf("All modules loaded on IOP.\n");
@@ -582,7 +589,6 @@ main(int argc, char *argv[])
     }
 
     SifInitRpc(0);
-    cdvdInit(CDVD_INIT_NOWAIT);
     dbgscr_printf("Checking argv\n");
     boot = 0;
 
@@ -592,6 +598,7 @@ main(int argc, char *argv[])
         // Booting from cd
         scr_printf("Booting from cdrom (%s)\n", bootPath);
         boot = B_CD;
+	cdvdInit(CDVD_INIT_NOWAIT);
     }
     else if(!strncmp(bootPath, "mc", strlen("mc"))) {
         // Booting from my mc
@@ -622,8 +629,10 @@ main(int argc, char *argv[])
 //    if (boot == B_MC)
 //        imgcmd = (char *)eeloadimg;
 
-    cdvdInit(CDVD_EXIT);
-    cdvdExit();
+    if (boot == B_CD) {
+        cdvdInit(CDVD_EXIT);
+        cdvdExit();
+    }
     fioExit();
     SifExitIopHeap();
     SifLoadFileExit();

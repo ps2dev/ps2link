@@ -5,7 +5,7 @@ EE_INCS += -I../include
 # This is for the sbv patch
 SBVLITE = $(PS2SDK)/sbv
 EE_INCS += -I$(SBVLITE)/include
-EE_LDFLAGS += -L$(SBVLITE)/lib -s
+EE_LDFLAGS += -L$(SBVLITE)/lib
 EE_LIBS += -lpatches -ldebug
 
 # Normal low loading version
@@ -35,11 +35,17 @@ endif
 
 # This is to enable the debug mode into ps2link
 ifeq ($(DEBUG),1)
-EE_CFLAGS += -DDEBUG
+EE_CFLAGS += -DDEBUG -g
 endif
 
 LDPARAMS := -Wl,--defsym -Wl,_stack_size=0x8000 -Wl,--defsym -Wl,_stack=$(STACKADDR)
 EE_LDFLAGS += -Wl,-Ttext -Wl,$(LOADADDR) $(LDPARAMS)
+
+ifeq ($(DEBUG),1)
+EE_LDFLAGS += -g
+else
+EE_LDFLAGS += -s
+endif
 
 all: $(EE_BIN)
 
