@@ -139,7 +139,14 @@ pkoExecEE(char *buf, int len)
 
     ret = pkoSendSifCmd(PKO_RPC_EXECEE, buf, len);
 };
+//////////////////////////////////////////////////////////////////////////
+static void 
+pkoGSExec(char *buf, int len)
+{
+    int ret;
 
+    ret = pkoSendSifCmd(PKO_RPC_GSEXEC, buf, len);
+};
 //////////////////////////////////////////////////////////////////////////
 static void 
 pkoNetDump(char *buf, int len)
@@ -195,6 +202,30 @@ pkoReset(char *buf, int len)
     ret = pkoSendSifCmd(PKO_RPC_RESET, buf, len);
 };
 
+static void
+pkoStopVU(char *buf, int len) {
+    int ret;
+
+    ret = pkoSendSifCmd(PKO_RPC_STOPVU, buf, len);
+};
+
+static void
+pkoStartVU(char *buf, int len)  {
+    int ret;
+    ret = pkoSendSifCmd(PKO_RPC_STARTVU, buf, len);
+};
+
+static void
+pkoDumpMem(char *buf, int len) {
+    int ret;
+    ret = pkoSendSifCmd(PKO_RPC_DUMPMEM, buf, len);
+};
+
+static void
+pkoDumpReg(char *buf, int len) {
+    int ret;
+    ret = pkoSendSifCmd(PKO_RPC_DUMPREG, buf, len);
+};
 
 //////////////////////////////////////////////////////////////////////////
 static void 
@@ -247,7 +278,21 @@ cmdListener(int sock)
         case PKO_NETDUMP_CMD:
             pkoNetDump(recvbuf, len);
             break;
-
+		case PKO_START_VU:
+			pkoStartVU(recvbuf, len);
+			break;
+		case PKO_STOP_VU:
+			pkoStopVU(recvbuf, len);
+			break;
+		case PKO_DUMP_MEM:
+			pkoDumpMem(recvbuf, len);
+			break;
+		case PKO_DUMP_REG:
+			pkoDumpReg(recvbuf, len);
+			break;
+		case PKO_GSEXEC_CMD:
+			pkoGSExec(recvbuf, len);
+			break;
         default: 
             dbgprintf("IOP cmd: Uknown cmd received\n");
             break;
@@ -278,7 +323,7 @@ cmdThread(void *arg)
     memset(&serv_addr, 0, sizeof(serv_addr ));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    serv_addr.sin_port = htons(PKO_PRINTF_PORT);
+    serv_addr.sin_port = htons(PKO_CMD_PORT);
    
     ret = bind(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
     if (ret < 0) {
