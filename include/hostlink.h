@@ -30,14 +30,14 @@
 #define PKO_EXECIOP_CMD     0xbabe0202
 #define PKO_EXECEE_CMD      0xbabe0203
 #define PKO_POWEROFF_CMD    0xbabe0204
-#define PKO_SCRDUMP_CMD     0xbabe205
-#define PKO_NETDUMP_CMD     0xbabe206
+#define PKO_SCRDUMP_CMD     0xbabe0205
+#define PKO_NETDUMP_CMD     0xbabe0206
 
-#define PKO_DUMP_MEM        0xbabe207
-#define PKO_START_VU        0xbabe208
-#define PKO_STOP_VU         0xbabe209
-#define PKO_DUMP_REG 		0xbabe2010
-#define PKO_GSEXEC_CMD		0xbabe2011
+#define PKO_DUMP_MEM        0xbabe0207
+#define PKO_START_VU        0xbabe0208
+#define PKO_STOP_VU         0xbabe0209
+#define PKO_DUMP_REG 		0xbabe020a
+#define PKO_GSEXEC_CMD		0xbabe020b
 
 #define PKO_RPC_RESET   1
 #define PKO_RPC_EXECEE  2
