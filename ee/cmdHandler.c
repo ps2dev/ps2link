@@ -300,7 +300,9 @@ pkoWriteMem(pko_pkt_mem_io *cmd) {
 		ntohl(cmd->offset), ntohl(cmd->size)
 		);
     memcpy(path, cmd->argv, PKO_MAX_PATH);
-	fd = fioOpen(path, O_WRONLY|O_CREAT);
+	fd = fioOpen(path, O_RDONLY);
+    total = 0;
+    len = 16*1024;
     if( fd > 0) {
         while(total < size) {
             if ( size < len) {

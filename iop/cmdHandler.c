@@ -307,7 +307,6 @@ cmdListener(int sock)
             dbgprintf("IOP cmd: Uknown cmd received\n");
             break;
         }
-
         dbgprintf("IOP cmd: waiting for next pkt\n");
     }
 }
