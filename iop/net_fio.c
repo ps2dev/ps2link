@@ -498,7 +498,7 @@ int pko_read_dir(int fd, void *buf)
     dirent->stat.attr    = ntohl(dirrly->attr);
     dirent->stat.size    = ntohl(dirrly->size);
     dirent->stat.hisize  = ntohl(dirrly->hisize);
-    strncpy(dirent->stat.ctime,dirrly->ctime,8*3);
+    memcpy(dirent->stat.ctime,dirrly->ctime,8*3);
     strncpy(dirent->name,dirrly->name,256);
     dirent->unknown = 0;
 
