@@ -1,50 +1,21 @@
 /*********************************************************************
  * Copyright (C) 2003 Tord Lindstrom (pukko@home.se)
+ * Copyright (c) 2003 Marcus R. Brown <mrbrown@0xd6.org>
+ *
  * This file is subject to the terms and conditions of the PS2Link License.
  * See the file LICENSE in the main directory of this distribution for more
  * details.
  */
 
-
 #include "ps2link.h"
-
-#include "net_fio.h"
-
-struct filedesc_info
-{
-    int unkn0;
-    int unkn4;
-    int device_id;   // the X in hostX
-    int own_fd;
-};
-
-////////////////////////////////////////////////////////////////////////
-static void *tty_functarray[16];
-static char ttyname[] = "tty";
-static struct fileio_driver tty_driver = { 
-    &ttyname[0],
-    1,
-    1,
-    "TTY via Udp",
-    &tty_functarray[0]
-};
 
 static int tty_socket = 0;
 
 ////////////////////////////////////////////////////////////////////////
-static int dummy()
-{
-    return -5;
-}
+static int ttyError() { return -ESRCH; }
 
 ////////////////////////////////////////////////////////////////////////
-static int dummy0()
-{
-    return 0;
-}
-
-////////////////////////////////////////////////////////////////////////
-static int ttyInit(struct fileio_driver *driver)
+static int ttyInit(iop_device_t *driver)
 {
     int sock;
     struct sockaddr_in saddr;
@@ -67,29 +38,34 @@ static int ttyInit(struct fileio_driver *driver)
     return 0;
 }
 
-////////////////////////////////////////////////////////////////////////
-static int ttyOpen( int fd, char *name, int mode)
+static int ttyDeinit(iop_device_t *driver)
 {
-    return 1;
-}
-
-////////////////////////////////////////////////////////////////////////
-static int ttyClose( int fd)
-{
-    return 1;
+    return 0;
 }
 
 
 ////////////////////////////////////////////////////////////////////////
-static int ttyWrite( int fd, char *buf, int size)
+static int ttyOpen(iop_file_t *file, char *name, int mode)
+{
+    /* Assume it's STDOUT.  */
+    file->privdata = (void *)1;
+    return 1;
+}
+
+////////////////////////////////////////////////////////////////////////
+static int ttyClose(iop_file_t *file)
+{
+    return 1;
+}
+
+
+////////////////////////////////////////////////////////////////////////
+static int ttyWrite(iop_file_t *file, char *buf, int size)
 {
     struct sockaddr_in dstaddr;
     int n;    
-    struct filedesc_info *fd_info;
 
-    fd_info = (struct filedesc_info *)fd;
-
-    if (fd_info->unkn4 >= 2) {
+    if ((int)file->privdata != 1) {
         return size;
     }
 
@@ -104,33 +80,32 @@ static int ttyWrite( int fd, char *buf, int size)
     return size;
 }
 
+static void * tty_ops[] = { ttyInit, ttyDeinit, ttyError, ttyOpen, ttyClose,
+	ttyError, ttyWrite, ttyError, ttyError, ttyError, ttyError, ttyError,
+	ttyError, ttyError, ttyError, ttyError, ttyError
+};
+
+iop_device_t tty_driver = {
+	"tty",
+	IOP_DT_CONS|IOP_DT_CHAR,
+	1,
+	"TTY via Udp",
+	(iop_device_ops_t *)&tty_ops
+};
+
 ////////////////////////////////////////////////////////////////////////
 // Entry point for mounting the file system
 int ttyMount(void)
 {
-    int	i;
-
-
-    tty_driver.device = "tty";
-    tty_driver.xx1 = 3;
-    tty_driver.version = 1;
-    tty_driver.description = "TTY via Udp";
-    tty_driver.function_list = tty_functarray;
-
-    for (i=0;i < 16; i++)
-        tty_functarray[i] = dummy;
-    tty_functarray[0] = ttyInit;
-    tty_functarray[1] = dummy0;
-    tty_functarray[3] = ttyOpen;
-    tty_functarray[4] = ttyClose;
-    tty_functarray[6] = ttyWrite;
-
     close(0);
     close(1);
-    FILEIO_del("tty");
-    FILEIO_add(&tty_driver);
-    open("tty00:", 0x1003);
-    open("tty00:", 2);
+
+    DelDrv("tty");
+    AddDrv(&tty_driver);
+
+    /* Create STDIN and STDOUT.  */
+    open("tty00:", O_RDONLY);
+    open("tty00:", O_WRONLY);
 
     return 0;
 }

@@ -8,8 +8,6 @@
 #ifndef PS2LINK_H
 #define PS2LINK_H
 
-#include "tamtypes.h"
-
 #include "hostlink.h"
 
 /* Definitions shared by both portions of ps2link.  */
@@ -18,6 +16,8 @@
 #endif
 
 #ifdef _EE
+
+#include "tamtypes.h"
 
 #include "string.h"
 #include "kernel.h"
@@ -59,25 +59,28 @@ typedef struct {
 
 extern boot_info_t *cur_boot_info;
 
-/* From ps2link.c  */
+/* From ee/ps2link.c  */
 int full_reset(void);
 
-/* From cmdHandler.c  */
+/* From ee/cmdHandler.c  */
 int initCmdRpc(void);
 
 #else	/* !_EE */
 
-#include "loadcore.h"
+#include "defs.h"
+#include "types.h"
+#include "errno.h"
+
 #include "intrman.h"
 #include "modload.h"
 #include "thbase.h"
 #include "thsemap.h"
-#include "sifdma.h"
-#include "sifrpc.h"
+#include "sifman.h"
+#include "sifcmd.h"
 #include "ioman.h"
-#include "stdlib.h"
+#include "sysclib.h"
 #include "stdio.h"
-#include "cdvd.h"
+#include "cdvdman.h"
 
 #include "ps2ip.h"
 
@@ -87,8 +90,11 @@ int initCmdRpc(void);
 #define dbgprintf(args...) do { } while(0)
 #endif
 
-#define ntohl(x) htonl(x)
-#define ntohs(x) htons(x)
+/*
+ * Don't want printfs to broadcast in case more than 1 ps2 on the same network, so at
+ * connect time, the remote PC's IP is stored here and used as destination for printfs.
+ */
+extern unsigned int remote_pc_addr;
 
 /* From iop/net_fsys.c  */
 int fsysMount(void);
@@ -104,5 +110,24 @@ int ttyMount(void);
 int naplinkRpcInit(void);
 
 #endif /* _EE */
+
+#undef htons
+#undef htonl
+#undef ntohs
+#undef ntohl
+
+#define ntohl(x) htonl(x)
+#define ntohs(x) htons(x)
+
+static inline u16 htons(u16 x)
+{
+	return ((x & 0xff) << 8 ) | ((x & 0xff00) >> 8);
+}
+
+static inline u32 htonl(u32 x)
+{
+	return ((x & 0xff) << 24 ) | ((x & 0xff00) << 8) | 
+		((x & 0xff0000) >> 8) | ((x & 0xff000000) >> 24);
+}
 
 #endif /* PS2LINK_H */

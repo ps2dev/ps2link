@@ -1,5 +1,7 @@
 /*********************************************************************
  * Copyright (C) 2003 Tord Lindstrom (pukko@home.se)
+ * Copyright (c) 2003 Marcus R. Brown <mrbrown@0xd6.org>
+ *
  * This file is subject to the terms and conditions of the PS2Link License.
  * See the file LICENSE in the main directory of this distribution for more
  * details.
@@ -156,7 +158,7 @@ pkoReset(char *buf, int len)
     printf("unmounting\n");
     fsysUnmount();
     printf("unmounted\n");
-    FILEIO_del("tty");
+    DelDrv("tty");
     ret = pkoSendSifCmd(PKO_RPC_RESET, buf, len);
 };
 
@@ -263,7 +265,7 @@ cmdThread(void *arg)
 //////////////////////////////////////////////////////////////////////////
 int cmdHandlerInit(void)
 {
-    struct t_thread thread;
+    iop_thread_t thread;
     int pid;
     int ret;
 
@@ -271,10 +273,9 @@ int cmdHandlerInit(void)
 
     SifInitRpc(0);
 
-    thread.type = 0x02000000;
-    thread.unknown = 0;
-    thread.function = cmdThread;
-    thread.stackSize = 0x800;
+    thread.attr = TH_C;
+    thread.thread = cmdThread;
+    thread.stacksize = 0x800;
     thread.priority = 60; //0x1e;
 
     pid = CreateThread(&thread);

@@ -144,7 +144,7 @@ int pko_accept_pkt(int sock, char *buf, int len, int pkt_type)
 
 //----------------------------------------------------------------------
 //
-int pko_open_file(char *path, int flags)
+int pko_open_file(const char *path, int flags)
 {
     pko_pkt_open_req *openreq;
     pko_pkt_file_rly *openrly;

@@ -49,14 +49,13 @@ napThread(void *arg)
 int
 naplinkRpcInit(void)
 {
-    struct t_thread th_attr;
+    iop_thread_t th_attr;
     int ret;
     int pid;
 
-    th_attr.type = 0x02000000;
-    th_attr.unknown = 0;
-    th_attr.function = napThread;
-    th_attr.stackSize = 0x800;
+    th_attr.attr = TH_C;
+    th_attr.thread = napThread;
+    th_attr.stacksize = 0x800;
     th_attr.priority = 0x4f;
 
     pid = CreateThread(&th_attr);

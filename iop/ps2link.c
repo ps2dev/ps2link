@@ -13,12 +13,8 @@
 int
 _start( int argc, char **argv)
 {
-
-    FlushDcache();
-    CpuEnableIntr(0);
-
-    CdInit(1);
-    CdStop();
+    sceCdInit(1);
+    sceCdStop();
 
     SifInitRpc(0);
 

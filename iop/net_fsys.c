@@ -1,5 +1,7 @@
 /*********************************************************************
  * Copyright (C) 2003 Tord Lindstrom (pukko@home.se)
+ * Copyright (c) 2003 Marcus R. Brown <mrbrown@0xd6.org>
+ *
  * This file is subject to the terms and conditions of the PS2Link License.
  * See the file LICENSE in the main directory of this distribution for more
  * details.
@@ -12,50 +14,33 @@
 static char fsname[] = "host";
 
 ////////////////////////////////////////////////////////////////////////
-static struct fileio_driver fsys_driver;
-
-/* File desc struct is probably larger than this, but we only
- * need to access the word @ offset 0x0C (in which we put our identifier)
- */
-struct filedesc_info
-{
-    int unkn0;
-    int unkn4;
-    int device_id;   // the X in hostX
-    int own_fd;
-};
-
-////////////////////////////////////////////////////////////////////////
 /* We need(?) to protect the net access, so the server doesn't get
  * confused if two processes calls a fsys func at the same time
  */
 static int fsys_sema;
 static int fsys_pid = 0;
-static struct fileio_driver fsys_driver;
 static void *fsys_functarray[16];
 
 ////////////////////////////////////////////////////////////////////////
-static int dummy5()
+static int fsysError()
 {
-    printf("dummy function called\n");
-    return -5;
+    return -ESRCH;
 }
 
 ////////////////////////////////////////////////////////////////////////
-static void fsysInit( struct fileio_driver *driver)
+static int fsysInit(iop_device_t *driver)
 {
-    struct t_thread mythread;
+    iop_thread_t mythread;
     int pid;
     int i;
 
-    dbgprintf("initializing %s\n", driver->device);
+    dbgprintf("initializing %s\n", driver->name);
 
     // Start socket server thread
 
-    mythread.type = 0x02000000; // attr
-    mythread.unknown = 0; // option
-    mythread.function = pko_file_serv; // entry
-    mythread.stackSize = 0x800;
+    mythread.attr = TH_C; // attr
+    mythread.thread = (void *)pko_file_serv; // entry
+    mythread.stacksize = 0x800;
     mythread.priority = 0x45; // We really should choose prio w more effort
 
     pid = CreateThread(&mythread);
@@ -71,10 +56,12 @@ static void fsysInit( struct fileio_driver *driver)
     
     fsys_pid = pid;
     dbgprintf("Thread id: %x\n", pid);
+
+    return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////
-static int fsysDestroy(void)
+static int fsysDestroy(iop_device_t *driver)
 {
     WaitSema(fsys_sema);
     pko_close_fsys();
@@ -86,38 +73,33 @@ static int fsysDestroy(void)
 
 
 ////////////////////////////////////////////////////////////////////////
-static int fsysOpen( int fd, char *name, int mode)
+static int fsysOpen(iop_file_t *file, const char *name, int mode)
 {
-    struct filedesc_info *fd_info;
     int fsys_fd;
     
     dbgprintf("fsysOpen..\n");
-    dbgprintf("  fd: %x, name: %s, mode: %d\n\n", fd, name, mode);
-
-    fd_info = (struct filedesc_info *)fd;
+    dbgprintf("  fd: %x, name: %s, mode: %d\n\n", file, name, mode);
 
     WaitSema(fsys_sema);
     fsys_fd = pko_open_file(name, mode);
     SignalSema(fsys_sema);
-    fd_info->own_fd = fsys_fd;
 
+    file->privdata = (void *)fsys_fd;
     return fsys_fd;
 }
 
 
 
 ////////////////////////////////////////////////////////////////////////
-static int fsysClose( int fd)
+static int fsysClose(iop_file_t *file)
 {
-    struct filedesc_info *fd_info;
     int ret;
     
     dbgprintf("fsys_close..\n"
-           "  fd: %x\n\n", fd);
+           "  fd: %x\n\n", file);
     
-    fd_info = (struct filedesc_info *)fd;
     WaitSema(fsys_sema);
-    ret = pko_close_file(fd_info->own_fd);    
+    ret = pko_close_file((int)file->privdata);
     SignalSema(fsys_sema);
 
     return ret;
@@ -126,21 +108,18 @@ static int fsysClose( int fd)
 
 
 ////////////////////////////////////////////////////////////////////////
-static int fsysRead( int fd, char *buf, int size)
+static int fsysRead(iop_file_t *file, char *buf, int size)
 {
-    struct filedesc_info *fd_info;
-    int ret;
-
-    fd_info = (struct filedesc_info *)fd;
+    int ret, fd = (int)file->privdata;
 
     dbgprintf("fsysRead..."
            "  fd: %x\n"
            "  bf: %x\n"
            "  sz: %d\n"
-           "  ow: %d\n\n", fd, (int)buf, size, fd_info->own_fd);
+           "  ow: %d\n\n", file, (int)buf, size, fd);
 
     WaitSema(fsys_sema);
-    ret = pko_read_file(fd_info->own_fd, buf, size);
+    ret = pko_read_file(fd, buf, size);
     SignalSema(fsys_sema);
 
     return ret;
@@ -150,77 +129,71 @@ static int fsysRead( int fd, char *buf, int size)
 
 
 ////////////////////////////////////////////////////////////////////////
-static int fsysWrite( int fd, char *buf, int size)
+static int fsysWrite(iop_file_t *file, char *buf, int size)
 {
-    struct filedesc_info *fd_info;
-    int ret;
+    int ret, fd = (int)file->privdata;
     
     dbgprintf("fsysWrite..."
-           "  fd: %x\n", fd);
+           "  fd: %x\n", file);
 
-    fd_info = (struct filedesc_info *)fd;
     WaitSema(fsys_sema);
-    ret = pko_write_file(fd_info->own_fd, buf, size);
+    ret = pko_write_file(fd, buf, size);
     SignalSema(fsys_sema);
+
     return ret;
 }
 
 
 
 ////////////////////////////////////////////////////////////////////////
-static int fsysLseek( int fd, unsigned int offset, int whence)
+static int fsysLseek(iop_file_t *file, long offset, int whence)
 {
-    struct filedesc_info *fd_info;
-    int ret;
+    int ret, fd = (int)file->privdata;
 
     dbgprintf("fsysLseek..\n"
            "  fd: %x\n"
            "  of: %x\n"
-           "  wh: %x\n\n", fd, offset, whence);
+           "  wh: %x\n\n", file, offset, whence);
 
-    fd_info = (struct filedesc_info *)fd;
     WaitSema(fsys_sema);
-    ret = pko_lseek_file(fd_info->own_fd, offset, whence);
+    ret = pko_lseek_file(fd, offset, whence);
     SignalSema(fsys_sema);
+
     return ret;
 }
+
+static void * fsd_ops[] = { fsysInit, fsysDestroy, fsysError, fsysOpen, fsysClose,
+	fsysRead, fsysWrite, fsysLseek, fsysError, fsysError, fsysError, fsysError,
+	fsysError, fsysError, fsysError, fsysError, fsysError
+};
+
+iop_device_t fsys_driver = {
+	"host",
+	IOP_DT_FS,
+	1,
+	"fsys driver",
+	(iop_device_ops_t *)&fsd_ops
+};
 
 ////////////////////////////////////////////////////////////////////////
 // Entry point for mounting the file system
 int fsysMount(void)
 {
-    int	i;
-    struct t_sema sema_info;
-
-    fsys_driver.device = fsname;
-    fsys_driver.xx1 = 16;
-    fsys_driver.version = 1;
-    fsys_driver.description = "fsys driver";
-    fsys_driver.function_list = fsys_functarray;
-    for (i=0;i < 16; i++)
-        fsys_functarray[i] = dummy5;
-    fsys_functarray[0] = fsysInit;
-    fsys_functarray[1] = fsysDestroy;
-    fsys_functarray[3] = fsysOpen;
-    fsys_functarray[4] = fsysClose;
-    fsys_functarray[5] = fsysRead;
-    fsys_functarray[6] = fsysWrite;
-    fsys_functarray[7] = fsysLseek;
+    iop_sema_t sema_info;
 
     sema_info.attr = 1;
-    sema_info.option = 0;
-    sema_info.init_count = 1;
-    sema_info.max_count = 1;
+    sema_info.initial = 1;
+    sema_info.max = 1;
     fsys_sema = CreateSema(&sema_info);
 
-    FILEIO_del(fsname);
-    FILEIO_add(&fsys_driver);
+    DelDrv(fsname);
+    AddDrv(&fsys_driver);
 
     return 0;
 }
 
 int fsysUnmount(void)
 {
-    FILEIO_del(fsname);
+    DelDrv(fsname);
     return 0;
 }
