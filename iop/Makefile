@@ -6,44 +6,19 @@
 # Generated automatically from Makefile.in by configure.
 #.SUFFIXES: .S .c .o .s .elf .irx
 
-include ../Makefile.env
+PS2IP := $(PS2DEV)/ps2ip
 
-#  ------------------------------------------------------------------------
-#  PROJECTS TO BUILD
+IOP_BIN  = ps2link.irx
+IOP_OBJS = net_fsys.o net_fio.o ps2link.o cmdHandler.o tty.o nprintf.o
 
-all: ps2link.irx
-#	cp ps2link.irx $(HOME)/ipirxs/
+IOP_INCS += -I../include -I$(PS2IP)/include -I$(PS2IP)/iop/ps2ip/include
+IOP_LIBS += -liop_ps2ip
+IOP_LDFLAGS += -L$(PS2IP)/iop/lib
+
+all: $(IOP_BIN)
 
 clean:
-	rm -f *.o *.irx *.a *.elf
+	-rm -f $(IOP_OBJS) $(IOP_BIN)
 
-
-DEFINES +=
-
-#  ------------------------------------------------------------------------
-#  PS2IP.IRX BUILD INSTRUCTIONS
-
-ps2link_LDFLAGS = -L$(PS2LIB)/iop/lib -L$(PS2IP)/iop/lib -s
-ps2link_LDADD = -lkernel -liop_ps2ip
-ps2link_OBJECTS = net_fsys.o net_fio.o ps2link.o cmdHandler.o tty.o nprintf.o
-
-ps2link.irx: $(ps2link_OBJECTS) 
-	$(IOPLINK) $(ps2link_OBJECTS) $(ps2link_LDFLAGS) $(ps2link_LDADD) -o $@
-
-net_fsys.o: net_fsys.c net_fio.h
-	$(IOPCOMPILE) $(DEFINES) -o $@ -c $<
-
-net_fio.o: net_fio.c net_fio.h
-	$(IOPCOMPILE) $(DEFINES) -o $@ -c $<
-
-ps2link.o: ps2link.c
-	$(IOPCOMPILE) $(DEFINES) -o $@ -c $<
-
-cmdHandler.o: cmdHandler.c ../include/hostlink.h
-	$(IOPCOMPILE) $(DEFINES) -o $@ -c $<
-
-tty.o: tty.c ../include/hostlink.h
-	$(IOPCOMPILE) $(DEFINES) -o $@ -c $<
-
-nprintf.o: nprintf.c
-	$(IOPCOMPILE) $(DEFINES) -o $@ -c $<
+include $(PS2LIB)/Makefile.pref
+include $(PS2LIB)/Makefile.iopglobal
