@@ -19,7 +19,7 @@ PS2DEV9.IRX                     ps2sdk
 PS2IP.IRX                       ps2sdk
 PS2SMAP.IRX                     ps2sdk
 
-For buildint against ps2sdk make sure PS2SDK is set to your ps2sdk release
+For building against ps2sdk make sure PS2SDK is set to your ps2sdk release
 dir. If you do not have ps2sdk built, check it out from cvs and set PS2SDK and
 PS2SDKSRC = checked out ps2sdk dir, do 'make' and 'make release'.
 
@@ -34,3 +34,5 @@ IPCONFIG.DAT FILENAME SHOULD BE UPPERCASE.
 IPCONFIG.DAT uses the following format:
 PS2IPADDRESS NETMASK GATEWAYIP
 seperated by a single space.
+
+If you have any questions or bugreports about ps2link go to forums.ps2dev.org.

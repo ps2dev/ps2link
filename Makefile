@@ -43,7 +43,8 @@ clean:
 	$(MAKE) -C ee clean
 	$(MAKE) -C iop clean
 
-dist:
+# Creates a zip from what you have
+dist: 
 	@for file in $(IRXFILES); do \
 		new=`echo $${file/*\//}|tr "[:lower:]" "[:upper:]"`; \
 		cp $$file bin/$$new; \
@@ -53,7 +54,29 @@ dist:
 		cp $$file bin/$$new; \
 	done;
 	@cd bin; \
-	tar -jcf ps2link.tar.bz2 *.IRX *.ELF system.cnf IPCONFIG.DAT
+	tar -jcf ps2link.tar.bz2 *.IRX *.ELF system.cnf IPCONFIG.DAT extra.cnf
+#
+# Creates zip with iso and all necessary files of last release
+release:
+	@rm -rf RELEASE
+	@mkdir -p RELEASE
+	@VERSION=`cvs log Makefile | grep -A 1 symbolic | tail -1 | awk '{print substr($$1, 0, length($$1)-1)}'`; \
+	cd RELEASE; \
+	cvs co -r $$VERSION ps2link; \
+	cd ps2link; \
+	mkdir -p bin; \
+	for file in $(IRXFILES); do \
+		new=`echo $${file/*\//}|tr "[:lower:]" "[:upper:]"`; \
+		cp $$file bin/$$new; \
+	done; \
+	for file in $(EEFILES); do \
+		new=`echo $${file/*\//}|tr "[:lower:]" "[:upper:]"`; \
+		cp $$file bin/$$new; \
+	done; \
+	dd if=/dev/zero of=bin/dummy bs=1024 count=28*1024; \
+	ps2mkisofs -o ps2link_$$VERSION.iso bin/; \
+	rm bin/dummy; \
+	tar -jcf ps2link_$$VERSION.bz2 bin/* ps2link_$$VERSION.iso
 
 docs:
 	doxygen doxy.conf
