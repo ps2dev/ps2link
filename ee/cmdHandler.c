@@ -681,6 +681,7 @@ pkoReset(void)
 
     if ((boot == B_MC) || (boot == B_HOST) || (boot == B_UNKN || B_DMS3)) {
         argv[0] = elfName;
+		SifLoadFileExit();
         ExecPS2(&_start, 0, 1, argv);
     }
     else {

@@ -49,15 +49,12 @@ char elfPath[256];
 
 char iomanX_path[PKO_MAX_PATH];
 char ps2dev9_path[PKO_MAX_PATH];
-//char ttyudp_path[PKO_MAX_PATH];
 char ps2ip_path[PKO_MAX_PATH];
 char ps2smap_path[PKO_MAX_PATH];
 char ps2link_path[PKO_MAX_PATH];
 
-static void *iomanX_mod, *ps2dev9_mod, *ps2ip_mod, *ps2smap_mod, *ps2link_mod;
-static int iomanX_size, ps2dev9_size, ps2ip_size, ps2smap_size, ps2link_size;
-//void *ttyudp_mod;
-//int ttyudp_size;
+void *iomanX_mod = NULL, *ps2dev9_mod = NULL, *ps2ip_mod = NULL, *ps2smap_mod = NULL, *ps2link_mod = NULL;
+int iomanX_size = 0, ps2dev9_size = 0, ps2ip_size = 0, ps2smap_size = 0, ps2link_size = 0;
 
 const char *eeloadimg = "rom0:UDNL rom0:EELOADCNF";
 char *imgcmd;
@@ -79,8 +76,8 @@ static void getIpConfig(void);
 ////////////////////////////////////////////////////////////////////////
 #define IPCONF_MAX_LEN  (3*16)
 
-char if_conf[IPCONF_MAX_LEN];
-int if_conf_len;
+char if_conf[IPCONF_MAX_LEN] = "";
+int if_conf_len = 0;
 
 char ip[16] __attribute__((aligned(16))) = "192.168.0.10";
 char netmask[16] __attribute__((aligned(16))) = "255.255.255.0";
@@ -231,7 +228,10 @@ static int loadHostModBuffers()
     if (!(ps2link_mod = modbuf_load(ps2link_path, &ps2link_size)))
         return -1;
     }
-    else dbgscr_printf("Using Cached Modules\n");
+    else
+	{
+		dbgscr_printf("Using Cached Modules\n");
+	}
     return 0;
 }
 
@@ -251,19 +251,19 @@ loadModules(void)
     }
 
     if (boot == B_HOST) {
-		dbgscr_printf("Exec iomanX module. (%x) ", iomanX_mod);
+		dbgscr_printf("Exec iomanX module. (%x,%d) ", iomanX_mod, iomanX_size);
         SifExecModuleBuffer(iomanX_mod, iomanX_size, 0, NULL,&ret);
 		dbgscr_printf("[%d] returned\n", ret);
-		dbgscr_printf("Exec ps2dev9 module. (%x) ", ps2dev9_mod);
+		dbgscr_printf("Exec ps2dev9 module. (%x,%d) ", ps2dev9_mod, ps2dev9_size);
         SifExecModuleBuffer(ps2dev9_mod, ps2dev9_size, 0, NULL,&ret);
 		dbgscr_printf("[%d] returned\n", ret);
-		dbgscr_printf("Exec ps2ip module. (%x) ", ps2ip_mod);
+		dbgscr_printf("Exec ps2ip module. (%x,%d) ", ps2ip_mod, ps2ip_size);
         SifExecModuleBuffer(ps2ip_mod, ps2ip_size, 0, NULL,&ret);
 		dbgscr_printf("[%d] returned\n", ret);
-		dbgscr_printf("Exec ps2smap module. (%x) ", ps2smap_mod);
+		dbgscr_printf("Exec ps2smap module. (%x,%d) ", ps2smap_mod, ps2smap_size);
         SifExecModuleBuffer(ps2smap_mod, ps2smap_size, if_conf_len, &if_conf[0],&ret);
 		dbgscr_printf("[%d] returned\n", ret);
-		dbgscr_printf("Exec ps2link module. (%x) ", ps2link_mod);
+		dbgscr_printf("Exec ps2link module. (%x,%d) ", ps2link_mod, ps2link_size);
         SifExecModuleBuffer(ps2link_mod, ps2link_size, 0, NULL,&ret);
 		dbgscr_printf("[%d] returned\n", ret);
 		dbgscr_printf("All modules loaded on IOP.\n");
@@ -337,7 +337,6 @@ setPathInfo(char *path)
     /* Paths to modules.  */
     sprintf(iomanX_path, "%s%s", elfPath, "IOMANX.IRX");
     sprintf(ps2dev9_path, "%s%s", elfPath, "PS2DEV9.IRX");
-//    sprintf(ttyudp_path, "%s%s", elfPath, "UDPTTY.IRX");
     sprintf(ps2ip_path, "%s%s", elfPath, "PS2IP.IRX");
     sprintf(ps2smap_path, "%s%s", elfPath, "PS2SMAP.IRX");
     sprintf(ps2link_path, "%s%s", elfPath, "PS2LINK.IRX");
@@ -385,7 +384,6 @@ wipeUserMemLoadHigh(void)
             :: "r" (i) );
     }
 }
-
 
 ////////////////////////////////////////////////////////////////////////
 int
@@ -482,6 +480,7 @@ main(int argc, char *argv[])
     sbv_patch_enable_lmb();
     sbv_patch_disable_prefix_check();
 
+//	SifLoadFileReset();
     dbgscr_printf("loading modules\n");
     loadModules();
 
@@ -491,7 +490,7 @@ main(int argc, char *argv[])
     scr_printf("Ready\n");
 //    printf("Main done\n");
 
-    //    SleepThread();
+//    SleepThread();
     ExitDeleteThread();
     return 0;
 }
