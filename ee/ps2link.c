@@ -132,32 +132,71 @@ static int pkoLoadModule(const char *path, int arglen, void *args)
     return ret;
 }
 
-////////////////////////////////////////////////////////////////////////
-// Wrapper to load module from disc/rom/mc
-// Max irx size hardcoded to 300kb atm..
+/* Check that a file exists and return it's file descriptor and size.  */
+static int get_file_info(const char *path, int *filesize)
+{
+	int fd, size;
+
+	if ((fd = fioOpen(path, O_RDONLY)) < 0) {
+		S_PRINTF(S_SCREEN, "Unable to open '%s' for reading.\n", path);
+		return fd;
+	}
+
+	if ((size = fioLseek(fd, 0, SEEK_END)) < 0) {
+		S_PRINTF(S_SCREEN, "Unable to determine size from '%s'.\n", path);
+		fioClose(fd);
+		return size;
+	}
+
+	fioLseek(fd, 0, SEEK_SET);
+
+	if (!size) {
+		S_PRINTF(S_SCREEN, "File '%s' has zero size, unable to load.\n", path);
+		fioClose(fd);
+		return -1;
+	}
+
+	if (filesize)
+		*filesize = size;
+
+	return fd;
+}
+
+/* Load a module from memory card directly into IOP RAM.  */
 static int pkoLoadMcModule(char *path, int arglen, void *args)
 {
 	void *iopmem;
-	int res = -1;
-	
-	if (!(iopmem = SifAllocIopHeap(1024*300))) {
-		S_PRINTF(S_SCREEN, "Unable to reserve memory on the IOP (LMM).");
+	int fd, size, res = -1;
+
+	if ((fd = get_file_info(path, &size)) < 0)
 		return res;
+
+	if (!(iopmem = SifAllocIopHeap(size))) {
+		S_PRINTF(S_SCREEN,
+			"Unable to reserve %d bytes of memory on the IOP (LMM).", size);
+		goto out;
 	}
 
 	if ((res = SifLoadIopHeap(path, iopmem)) < 0) {
 		S_PRINTF(S_SCREEN, "Unable to load module '%s' into IOP RAM (%d).\n",
 				path, res);
 		SifFreeIopHeap(iopmem);
-		return res;
+		goto out;
 	}
+	D_PRINTF("SifLoadIopHeap('%s', %p) returned %d\n", path, iopmem, res);
 
         res = SifLoadModuleBuffer(iopmem, arglen, args);
+	D_PRINTF("SifLoadModuleBuffer(%p, ...) returned %d\n", iopmem, res);
 
 	SifFreeIopHeap(iopmem);
+
+out:
+	fioClose(fd);
+
 	return res;
 }
 
+/* Load a module from EE RAM onto the IOP.  */
 static int pkoLoadHostModule(void *module, u32 size, int arglen, void *args)
 {
 	SifDmaTransfer_t dmat;
@@ -183,6 +222,7 @@ static int pkoLoadHostModule(void *module, u32 size, int arglen, void *args)
 	return res;
 }
 
+/* Allocate heap (core) space.  */
 static void *morecore(u32 size)
 {
 	extern void *_end;
@@ -200,40 +240,33 @@ static void *morecore(u32 size)
 }
 
 /* Load a module into RAM.  */
-void * modbuf_load(const char *filename, int *filesize)
+void * modbuf_load(const char *path, int *filesize)
 {
-	void *res = NULL;
-	int fd = -1, size, ret;
+	void *buf = NULL;
+	int fd, size, res = -1;
 
-	if ((fd = fioOpen(filename, O_RDONLY)) < 0)
+	if ((fd = get_file_info(path, &size)) < 0)
+		return buf;
+
+	if ((buf = morecore(size)) == NULL)
 		goto out;
 
-	if ((size = fioLseek(fd, 0, SEEK_END)) < 0)
-		goto out;
-
-	fioLseek(fd, 0, SEEK_SET);
-	if (!size) {
-		S_PRINTF(S_SCREEN, "Module '%s' has zero size, unable to preload.\n", filename);
-		goto out;
-	}
-
-	if ((res = morecore(size)) == NULL)
-		goto out;
-
-	if ((ret = fioRead(fd, res, size)) < 0) {
-		res = NULL;
+	if ((res = fioRead(fd, buf, size)) < 0) {
+		S_PRINTF(S_SCREEN, "Error while reading from '%s': %d.\n", path, res);
+		buf = NULL;
 	}
 
 	if (filesize)
 		*filesize = size;
 
 out:
-	if (fd >= 0)
-		fioClose(fd);
+	fioClose(fd);
 
-	return res;
+	return buf;
 }
 
+/* Load all "host:" modules into RAM.  This must be done before we reboot the
+   IOP as the modules we've loaded would be wiped on IOP reset.  */
 static int preload_host_modules()
 {
     if (!(ps2ip_mod = modbuf_load(ps2ip_path, &ps2ip_size)))
@@ -395,11 +428,12 @@ int full_reset()
 		strcpy(imgcmd, updateloader);
 		strcat(imgcmd, eeloadcnf);
 	}
-
-	D_PRINTF("Shutting down subsystems.\n");
+	D_PRINTF("rebooting with imgcmd '%s'\n", *imgcmd ? imgcmd : "(null)");
 
 	if (pko_cdvd_init(CDVD_EXIT) < 0)
 		return -1;
+
+	D_PRINTF("Shutting down subsystems.\n");
 
 	cdvdExit();
 	fioExit();
@@ -416,6 +450,43 @@ int full_reset()
 	return 0;
 }
 
+/* Detect whether or not we were run under the reload1 program.  */
+static char * find_reload1()
+{
+	const char *rtepath = "mc0:/BWLINUX/";
+	char *res = NULL;
+	u32 addr;
+
+	/* reload1 is loaded at 0x80030000, and the embedded ELF will have
+	   the "\x7fELF" signature sometime after that (64k should be more
+	   than enough room to search).  The only caveat is that 0x30000 is
+	   designated kernel RAM, so we will throw an exception if we don't
+	   switch to kernel mode first.  */
+	asm volatile (""			\
+	"	.set	noreorder\n\t"		\
+	"mfc0	$9, $12\n\t"			\
+	"li	$8, 0xffffffe7\n\t"		\
+	"and	$9, $8\n\t"			\
+	"mtc0	$9, $12\n\t"			\
+	"sync.p\n\t" ::: "$8", "$9");
+
+	for (addr = 0xa0030000; addr < 0xa0040000; addr += 4) {
+		if (_lw(addr) == 0x464c457f) {	/* '\x7f' + "ELF" */
+			res = (char *)rtepath;
+			break;
+		}
+	}
+
+	asm volatile (""			\
+	"	.set	noreorder\n\t"		\
+	"mfc0	$9, $12\n\t"			\
+	"ori	$9, 0x10\n\t"			\
+	"mtc0	$9, $12\n\t"			\
+	"sync.p\n\t" ::: "$9");
+
+	return res;
+}
+
 ////////////////////////////////////////////////////////////////////////
 int
 main(int argc, char *argv[])
@@ -427,16 +498,14 @@ main(int argc, char *argv[])
     installExceptionHandlers();
     S_PRINTF(S_SCREEN, "Welcome to ps2link v1.1\n");
 
-    // argc == 0 usually means naplink..
-    if (argc == 0) {
-        bootPath = "host:";
-    }
-    // reload1 usually gives an argc > 60000 (yea, this is kinda a hack..)
-    else if (argc != 1) {
-        bootPath = "mc0:/BWLINUX/";
-    }
-    else {
-        bootPath = argv[0];
+    /* First look for reload1.  Next, if we have any program arguments, assume
+       they were passed to us.  If not, assume we have none and have been
+       executed from the host.  */
+    if (!(bootPath = find_reload1())) {
+	    if (argc && argv[0] != NULL)
+		    bootPath = argv[0];
+	    else
+		    bootPath = "host:";
     }
 
     SifInitRpc(0);
@@ -488,18 +557,22 @@ main(int argc, char *argv[])
     S_PRINTF(S_SCREEN, "ps2link initializing... ");
 
     /* If loading from host:, we might be loaded high, so don't wipe ourselves!  */
+    D_PRINTF("wiping user RAM\n");
     if (cur_boot_info->boot != BOOT_HOST)
         wipeUserMem();
 
     /* Prepare to load our drivers by resetting the IOP.  */
+    D_PRINTF("calling full_reset()\n");
     if (full_reset() < 0) {
 	    S_PRINTF(S_SCREEN, "Unable to reboot the IOP, exiting.\n");
 	    goto out;
     }
 
+    D_PRINTF("reinitializing the disc drive\n");
     if (pko_cdvd_init(CDVD_INIT_NOWAIT) < 0)
 	    S_PRINTF(S_SCREEN, "Warning: disc drive initialization failed.\n");
 
+    D_PRINTF("loading all modules\n");
     if (load_modules() < 0) {
 	    S_PRINTF(S_SCREEN, "Unable to load required boot modules, exiting.\n");
 	    goto out;
