@@ -435,10 +435,10 @@ loadModules(void)
         pkoLoadModule(ps2ip_path, 0, NULL);
 		dbgscr_printf("Exec ps2smap module. ");
         pkoLoadModule(ps2smap_path, if_conf_len, &if_conf[0]);
-		dbgscr_printf("Exec ps2link module. ");
-        pkoLoadModule(ps2link_path, 0, NULL);
 		dbgscr_printf("Exec ioptrap module. ");
         pkoLoadModule(ioptrap_path, 0, NULL);
+		dbgscr_printf("Exec ps2link module. ");
+        pkoLoadModule(ps2link_path, 0, NULL);
 		dbgscr_printf("All modules loaded on IOP. ");
     }
 #endif
