@@ -394,11 +394,11 @@ loadModules(void)
 	    dbgscr_printf("Exec ps2smap module. (%x,%d) ", ps2smap_irx, size_ps2smap_irx);
     SifExecModuleBuffer(ps2smap_irx, size_ps2smap_irx, if_conf_len, &if_conf[0],&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ps2link module. (%x,%d) ", ps2link_irx, size_ps2link_irx);
-    SifExecModuleBuffer(ps2link_irx, size_ps2link_irx, 0, NULL,&ret);
-	    dbgscr_printf("[%d] returned\n", ret);
-		dbgscr_printf("Exec ioptrap module. (%x,%d) ", ioptrap_irx, size_ioptrap_irx);
+	    dbgscr_printf("Exec ioptrap module. (%x,%d) ", ioptrap_irx, size_ioptrap_irx);
     SifExecModuleBuffer(ioptrap_irx, size_ioptrap_irx, 0, NULL,&ret);
+	    dbgscr_printf("[%d] returned\n", ret);
+		dbgscr_printf("Exec ps2link module. (%x,%d) ", ps2link_irx, size_ps2link_irx);
+    SifExecModuleBuffer(ps2link_irx, size_ps2link_irx, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
 	    dbgscr_printf("All modules loaded on IOP.\n");
 #else
