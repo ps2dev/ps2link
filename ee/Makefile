@@ -47,7 +47,7 @@ clean:
 	-rm -f $(EE_OBJS) $(EE_BIN)
 
 check: $(EE_BIN)
-	@ee-readelf -l $(EE_BIN) | awk ' /LOAD/ { if ((spare = (-($$4 + $$5) + ("'$(STACKADDR)'" - "0x8000"))) <= 0) { print "PS2Link is too big."; exit -1; } else { printf("PS2Link has %i (0x%x) spare bytes\n", spare, spare) } } '
+	@ee-readelf -l $(EE_BIN) | awk ' /LOAD/ { if ((spare = (-($$4 + $$6) + ("'$(STACKADDR)'" - "0x8000"))) <= 0) { print "PS2Link is too big."; exit -1; } else { printf("PS2Link has %i (0x%x) spare bytes\n", spare, spare) } } '
 
 include $(PS2SDK)/Defs.make
 include Rules.make
