@@ -1,5 +1,7 @@
 /*********************************************************************
  * Copyright (C) 2003 Tord Lindstrom (pukko@home.se)
+ * Copyright (c) 2003 Marcus R. Brown <mrbrown@0xd6.org>
+ *
  * This file is subject to the terms and conditions of the PS2Link License.
  * See the file LICENSE in the main directory of this distribution for more
  * details.
@@ -81,7 +83,7 @@ getIpConfig(void)
         i += strlen(gw) + 1;
         
         if_conf_len = i;
-        dbgscr_printf("conf len %d\n", if_conf_len);
+        D_PRINTF("conf len %d\n", if_conf_len);
         return;
     }
 
@@ -92,11 +94,11 @@ getIpConfig(void)
     fioClose(fd);
 
     if (len < 0) {
-        dbgprintf("Error reading ipconfig.dat\n");
+        D_PRINTF("Error reading ipconfig.dat\n");
         return;
     }
 
-    dbgscr_printf("ipconfig: Read %d bytes\n", len);
+    D_PRINTF("ipconfig: Read %d bytes\n", len);
 
     i = 0;
     // Clear out spaces (and potential ending CR/LF)
@@ -112,7 +114,7 @@ getIpConfig(void)
         scr_printf("%s  ", &if_conf[i]);
         i += strlen(&if_conf[i]) + 1;
     }
-    scr_printf("\n");
+    scr_printf(" \n");
 
     if_conf_len = i;
 }
@@ -334,7 +336,7 @@ setPathInfo(char *path)
     sprintf(ps2smap_path, "%s%s", elfPath, "PS2SMAP.IRX");
     sprintf(ps2link_path, "%s%s", elfPath, "PS2LINK.IRX");
 
-    dbgscr_printf("path is %s\n", elfPath);
+    D_PRINTF("path is %s\n", elfPath);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -360,7 +362,7 @@ main(int argc, char *argv[])
 {
     //    int ret;
     char *bootPath;
-    int i;
+    int i, fd;
 
     init_scr();
     installExceptionHandlers();
@@ -380,7 +382,7 @@ main(int argc, char *argv[])
 
     SifInitRpc(0);
     cdvdInit(CDVD_INIT_NOWAIT);
-    dbgscr_printf("Checking argv\n");
+    D_PRINTF("Checking argv\n");
 
     setPathInfo(bootPath);
 
@@ -400,9 +402,16 @@ main(int argc, char *argv[])
 
     /* System initialization: if we're booting from the memory card, we'll need the
        appropiate modules in place to read the IPCONFIG.DAT file.  */
-    if (cur_boot_info->boot == BOOT_MEM && preload_mc_modules() != 0) {
-	S_PRINTF(S_SCREEN, "Unable to load required MC modules, exiting.\n");
-	goto out;
+    if (cur_boot_info->boot == BOOT_MEM) {
+	fd = fioOpen("mc:bar", O_RDONLY);
+	/* If the filesystem doesn't exist, try to load the MC modules.  */
+	if (fd == -19 && preload_mc_modules() != 0) {
+		S_PRINTF(S_SCREEN, "Unable to load required MC modules, exiting.\n");
+		goto out;
+	}
+
+	if (fd >= 0)
+		fioClose(fd);
     }
 
     getIpConfig();
@@ -417,7 +426,7 @@ main(int argc, char *argv[])
     /* TODO: Check that eeloadcnf exists in ROM.  */
     imgcmd = (char *)eeloadimg;
 
-    dbgscr_printf("Shutting down subsystems.\n");
+    D_PRINTF("Shutting down subsystems.\n");
     cdvdInit(CDVD_EXIT);
     cdvdExit();
     fioExit();
@@ -425,7 +434,7 @@ main(int argc, char *argv[])
     SifLoadFileExit();
     SifExitRpc();
 
-    dbgscr_printf("reset iop\n");
+    D_PRINTF("reset iop\n");
     SifIopReset(imgcmd, 0);
     while (!SifIopSync()) ;
 
@@ -433,18 +442,18 @@ main(int argc, char *argv[])
     if (cur_boot_info->boot != BOOT_HOST)
         wipeUserMem();
 
-    dbgscr_printf("rpc init\n");
+    D_PRINTF("rpc init\n");
     SifInitRpc(0);
     cdvdInit(CDVD_INIT_NOWAIT);
 
     S_PRINTF(S_SCREEN, "ps2link initializing... ");
-    dbgscr_printf("loading modules\n");
+    D_PRINTF("loading modules\n");
     if (load_modules() < 0) {
 	    S_PRINTF(S_SCREEN, "Unable to load required boot modules, exiting.\n");
 	    goto out;
     }
 
-    dbgscr_printf("init cmdrpc\n");
+    D_PRINTF("init cmdrpc\n");
     initCmdRpc();
 
     S_PRINTF(S_SCREEN|S_HOST, "Ready.\n\n");

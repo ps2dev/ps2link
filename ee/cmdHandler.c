@@ -69,14 +69,14 @@ makeArgs(int cmdargc, char *cmdargv, struct argData *arg_data)
 
     memcpy(argvStrings, cmdargv, PKO_MAX_PATH);
 
-    dbgprintf("cmd->argc %d, argv[0]: %s\n", cmdargc, cmdargv);
+    D_PRINTF("cmd->argc %d, argv[0]: %s\n", cmdargc, cmdargv);
 
     i = 0;
     t = 0;
     do {
         arg_data->argv[i] = &argvStrings[t];
-        dbgprintf("arg_data[%d]=%s\n", i, arg_data->argv[i]);
-        dbgprintf("argvStrings[%d]=%s\n", t, &argvStrings[t]);
+        D_PRINTF("arg_data[%d]=%s\n", i, arg_data->argv[i]);
+        D_PRINTF("argvStrings[%d]=%s\n", t, &argvStrings[t]);
         t += strlen(&argvStrings[t]);
         t++;
         i++;
@@ -103,13 +103,13 @@ pkoLoadElf(char *path)
     FlushCache(0);
     FlushCache(2);
 
-    dbgprintf("EE: LoadElf returned %d\n", ret);
+    D_PRINTF("EE: LoadElf returned %d\n", ret);
 
-    dbgprintf("EE: Creating user thread (ent: %x, gp: %x, st: %x)\n", 
+    D_PRINTF("EE: Creating user thread (ent: %x, gp: %x, st: %x)\n", 
               elfdata.epc, elfdata.gp, elfdata.sp);
 
     if (elfdata.epc == 0) {
-        dbgprintf("EE: Could not load file\n");
+        D_PRINTF("EE: Could not load file\n");
         return -1;
     }
 
@@ -125,7 +125,7 @@ pkoLoadElf(char *path)
         return -1;
     }
 
-    dbgprintf("EE: Created user thread: %d\n", pid);
+    D_PRINTF("EE: Created user thread: %d\n", pid);
 
     return pid;
 }
@@ -144,7 +144,7 @@ pkoExecEE(pko_pkt_execee_req *cmd)
         return -1;
     }
 
-    dbgprintf("EE: Executing file %s...\n", cmd->argv);
+    D_PRINTF("EE: Executing file %s...\n", cmd->argv);
     memcpy(path, cmd->argv, PKO_MAX_PATH);
 
     scr_printf("Executing file %s...\n", path);
@@ -182,7 +182,6 @@ pkoReset(void)
     char *argv[1];
     // Check if user thread is running, if so kill it
 
-    S_PRINTF(S_SCREEN, "Host: Reset ps2link.\n");
 #if 1
     if (userThreadID) {
         TerminateThread(userThreadID);
@@ -197,14 +196,17 @@ pkoReset(void)
     SifInitRpc(0);
     cdvdInit(CDVD_INIT_NOWAIT);
     cdvdInit(CDVD_EXIT);
-    SifIopReset(NULL, 0);
-    SifExitRpc();
-    while(SifIopSync());
-#if 1
-    SifInitRpc(0);
     cdvdExit();
+    fioExit();
+    SifExitIopHeap();
+    SifLoadFileExit();
     SifExitRpc();
-#endif
+
+    SifIopReset("rom0:UDNL rom0:EELOADCNF", 0);
+    while (!SifIopSync());
+
+    SifInitRpc(0);
+    SifExitRpc();
 
     FlushCache(0);
     FlushCache(2);
@@ -249,7 +251,7 @@ cmdThread()
     unsigned int cmd;
     int ret;
     int done;
-    dbgprintf("EE: Cmd thread\n");
+    D_PRINTF("EE: Cmd thread\n");
 
     done = 0;
     while(!done) {
@@ -266,7 +268,7 @@ cmdThread()
             break;
         
         case PKO_EXECEE_CMD: 
-            dbgprintf("EE: Rpc EXECEE called\n");
+            D_PRINTF("EE: Rpc EXECEE called\n");
             ret = pkoExecEE(pkt);
             break;
         default: 
