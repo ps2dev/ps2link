@@ -23,7 +23,7 @@ dist:
 		cp $$file bin/$$new; \
 	done;
 	@cd bin; \
-	tar -jcf ps2link.tar.bz2 *.IRX *.ELF
+	tar -jcf ps2link.tar.bz2 *.IRX *.ELF system.cnf IPCONFIG.DAT
 
 docs:
 	doxygen doxy.conf
