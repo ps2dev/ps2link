@@ -5,19 +5,7 @@
  * details.
  */
 
-#include <stdlib.h>
-#include <loadcore.h>
-#include <intrman.h>
-#include <tamtypes.h>
-#include <sifrpc.h>
-#include <cdvd.h>
-
-
-// Entry points
-extern int fsysMount(void);
-extern int cmdHandlerInit(void);
-extern int ttyMount(void);
-extern int naplinkRpcInit(void);
+#include "ps2link.h"
 
 ////////////////////////////////////////////////////////////////////////
 // main

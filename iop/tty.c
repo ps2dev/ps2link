@@ -5,18 +5,10 @@
  * details.
  */
 
-#include <tamtypes.h>
-#include <kernel.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <fileio.h>
-#include <intrman.h>
-#include <loadcore.h>
 
-#include "ps2ip.h"
+#include "ps2link.h"
+
 #include "net_fio.h"
-#include "hostlink.h"
-
 
 struct filedesc_info
 {

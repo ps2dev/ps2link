@@ -5,32 +5,12 @@
  * details.
  */
 
-#include <tamtypes.h>
-#include <kernel.h>
-#include <sifrpc.h>
-#include <iopheap.h>
-#include <loadfile.h>
-#include <iopcontrol.h>
-#include <fileio.h>
-
-#include "cd.h"
-#include "hostlink.h"
-#include "excepHandler.h"
-
-extern int initCmdRpc(void);
-
-#define DEBUG
-#ifdef DEBUG
-#define dbgprintf(args...) printf(args)
-#define dbgscr_printf(args...) scr_printf(args)
-#else
-#define dbgprintf(args...) do { } while(0)
-#define dbgscr_printf(args...) do { } while(0)
-#endif
+#include "ps2link.h"
 
 ////////////////////////////////////////////////////////////////////////
 // Globals
-extern int userThreadID;
+
+enum _boot boot;
 
 // Argv name+path & just path
 char elfName[256] __attribute__((aligned(16)));
@@ -52,7 +32,7 @@ char *imgcmd;
 #define B_HOST 3
 #define B_DMS3 4
 #define B_UNKN 5
-int boot;
+
 
 ////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -189,25 +169,73 @@ pkoLoadMcModule(char *path, int argc, char *argv)
     SifFreeIopHeap(iop_mem);
 }
 
+static void pkoLoadHostModule(void *module, u32 size, int arglen, void *args)
+{
+	SifDmaTransfer_t dmat;
+	void *iopmem;
+	int res;
+
+	if (!(iopmem = SifAllocIopHeap(size))) {
+		scr_printf("allocIopHeap failed\n");
+		SleepThread();
+	}
+
+	dmat.src = module;
+	dmat.dest = iopmem;
+	dmat.size = size;
+	dmat.attr = 0;
+
+	while (!SifSetDma(&dmat, 1))
+		nopdelay();
+
+	if ((res = SifLoadModuleBuffer(iopmem, arglen, args)) < 0) {
+		SifFreeIopHeap(iopmem);
+		SleepThread();
+	}
+
+	SifFreeIopHeap(iopmem);
+}
+
+static void *morecore(u32 size)
+{
+	extern void *_end;
+	static void *coreptr = &_end;
+	static void *res;
+
+	/* Align the current core pointer.  */
+	coreptr = (void *)ALIGN((u32)coreptr, 16);
+	res = coreptr;
+
+	/* Allocate this buffer.  */
+	coreptr += size;
+
+	return res;
+}
+
 /* Load a module into RAM.  */
 void * modbuf_load(const char *filename, int *filesize)
 {
 	void *res = NULL;
-	int fd = -1, size;
+	int fd = -1, size, ret;
 
-	if ((fd = fioOpen(filename, O_RDWR)) < 0)
+	if ((fd = fioOpen(filename, O_RDONLY)) < 0)
 		goto out;
 
 	if ((size = fioLseek(fd, 0, SEEK_END)) < 0)
 		goto out;
 
 	fioLseek(fd, 0, SEEK_SET);
+	if (!size) {
+		S_PRINTF(S_SCREEN, "Module '%s' has zero size, unable to preload.\n", filename);
+		goto out;
+	}
 
-	if ((res = memalign(16, size)) == NULL)
+	if ((res = morecore(size)) == NULL)
 		goto out;
 
-	if (fioRead(fd, res, size) != size)
+	if ((ret = fioRead(fd, res, size)) < 0) {
 		res = NULL;
+	}
 
 	if (filesize)
 		*filesize = size;
@@ -245,39 +273,20 @@ loadModules(void)
         pkoLoadModule("rom0:MCSERV", 0, NULL); 
     }
 
-    getIpConfig();
-
     if (boot == B_MC) {
         pkoLoadMcModule(ps2ip_path, 0, NULL);
         pkoLoadMcModule(ps2smap_path, if_conf_len, &if_conf[0]);
         pkoLoadMcModule(ps2link_path, 0, NULL);
         //    pkoLoadMcModule(FSYS "PS2LINK.IRX" FSVER, strlen("-notty") + 1, "-notty");
+    } else if (boot == B_HOST) {
+        pkoLoadHostModule(ps2ip_mod, ps2ip_size, 0, NULL);
+	pkoLoadHostModule(ps2smap_mod, ps2smap_size, if_conf_len, &if_conf[0]);
+	pkoLoadHostModule(ps2link_mod, ps2link_size, 0, NULL);
     } else {
         pkoLoadModule(ps2ip_path, 0, NULL);
         pkoLoadModule(ps2smap_path, if_conf_len, &if_conf[0]);
         pkoLoadModule(ps2link_path, 0, NULL);
     }
-}
-
-////////////////////////////////////////////////////////////////////////
-// C standard strrchr func..
-char *strrchr(const char *s, int i)
-{
-    const char *last = NULL;
-    char c = i;
-
-    while (*s) {
-        if (*s == c) {
-            last = s;
-        }
-        s++;
-    }
-
-    if (*s == c) {
-        last = s;
-    }
-
-    return (char *) last;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -340,7 +349,6 @@ wipeUserMem(void)
     }
 }
 
-
 ////////////////////////////////////////////////////////////////////////
 int
 main(int argc, char *argv[])
@@ -388,7 +396,7 @@ main(int argc, char *argv[])
     }
     else if(!strncmp(bootPath, "mc", strlen("mc"))) {
         // DMS3 boot?
-        scr_printf("DMS3 boot mode (%s)\n", bootPath);
+        scr_printf("Independence boot mode (%s)\n", bootPath);
         boot = B_DMS3;
     }
     else if(!strncmp(bootPath, "host", strlen("host"))) {
@@ -402,6 +410,8 @@ main(int argc, char *argv[])
         boot = B_UNKN;
     }
 
+    getIpConfig();
+
     // System initalisation
     if (boot == B_HOST) {
         if (loadHostModBuffers() < 0) {
@@ -409,9 +419,9 @@ main(int argc, char *argv[])
             SleepThread();
 	}
     }
-	
-    if (boot == B_MC)
-        imgcmd = (char *)eeloadimg;
+
+    /* TODO: Check that eeloadcnf exists in ROM.  */
+    imgcmd = (char *)eeloadimg;
 
     cdvdInit(CDVD_EXIT);
     cdvdExit();
@@ -422,7 +432,7 @@ main(int argc, char *argv[])
 
     dbgscr_printf("reset iop\n");
     SifIopReset(imgcmd, 0);
-    while (SifIopSync()) ;
+    while (!SifIopSync()) ;
 
     /* If loading from host:, we might be loaded high, so don't wipe ourselves!  */
     if (boot != B_HOST)
@@ -439,8 +449,7 @@ main(int argc, char *argv[])
     dbgscr_printf("init cmdrpc\n");
     initCmdRpc();
 
-    scr_printf("Ready\n");
-    printf("Main done\n");
+    S_PRINTF(S_SCREEN|S_HOST, "ps2link ready.\n");
 
     //    SleepThread();
     ExitDeleteThread();

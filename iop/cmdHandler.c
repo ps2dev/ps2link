@@ -5,32 +5,12 @@
  * details.
  */
 
-#include <tamtypes.h>
-#include <fileio.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <kernel.h>
-#include <sifdma.h>
-#include <sifrpc.h>
-#include <modload.h>
+#include "ps2link.h"
 
 #include "ps2ip.h"
-#include "hostlink.h"
 
 #define ntohl(x) htonl(x)
 #define ntohs(x) htons(x)
-
-//#define DEBUG
-#ifdef DEBUG
-#define dbgprintf(args...) printf(args)
-#else
-#define dbgprintf(args...) do { } while(0)
-#endif
-
-
-//////////////////////////////////////////////////////////////////////////
-// How about a header file?..
-extern int fsysUnmount(void);
 
 //////////////////////////////////////////////////////////////////////////
 

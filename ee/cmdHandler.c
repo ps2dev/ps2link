@@ -200,6 +200,7 @@ pkoReset(void)
 {
     char *argv[1];
     // Check if user thread is running, if so kill it
+
 #if 1
     if (userThreadID) {
         TerminateThread(userThreadID);
@@ -222,9 +223,11 @@ pkoReset(void)
     cdvdExit();
     SifExitRpc();
 #endif
-    FlushCache(0);
 
-    if ((boot == B_MC) || (boot == B_HOST) || (boot == B_UNKN)) {
+    FlushCache(0);
+    FlushCache(2);
+
+    if ((boot == B_MC) || (boot == B_HOST) || (boot == B_UNKN) /*mrb*/ || (boot == B_DMS3)) {
         argv[0] = elfName;
         ExecPS2(&_start, 0, 1, argv);
     }

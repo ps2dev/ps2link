@@ -5,6 +5,9 @@
  * details.
  */
 
+#ifndef PKO_HOSTLINK_H
+#define PKO_HOSTLINK_H
+
 #define PKO_PORT        0x4711
 #define PKO_PRINTF_PORT 0x4712
 
@@ -128,3 +131,5 @@ typedef struct
 
 #define PKO_MAX_WRITE_SEGMENT (1460 - sizeof(pko_pkt_write_req))
 #define PKO_MAX_READ_SEGMENT  (1460 - sizeof(pko_pkt_read_rly))
+
+#endif /* PKO_HOSTLINK_H */

@@ -5,13 +5,7 @@
  * details.
  */
 
-#include <tamtypes.h>
-#include <kernel.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <fileio.h>
-#include <intrman.h>
-#include <loadcore.h>
+#include "ps2link.h"
 
 ////////////////////////////////////////////////////////////////////////
 #define NPM_PUTS     0x01

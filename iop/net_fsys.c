@@ -5,24 +5,9 @@
  * details.
  */
 
-#include <tamtypes.h>
-#include <kernel.h>
-#include <fileio.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <intrman.h>
-#include <loadcore.h>
-#include <thsemap.h>
+#include "ps2link.h"
 
 #include "net_fio.h"
-
-//#define DEBUG
-#ifdef DEBUG
-#define dbgprintf(args...) printf(args)
-#else
-#define dbgprintf(args...) do { } while(0)
-#endif
-
 
 static char fsname[] = "host";
 
