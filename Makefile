@@ -7,3 +7,6 @@ all:
 clean:
 	$(MAKE) -C ee clean
 	$(MAKE) -C iop clean
+
+docs:
+	doxygen doxy.conf
