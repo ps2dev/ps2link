@@ -1,0 +1,7 @@
+PS2Link (C) 2003 Tord Lindstrom (pukko@home.se)
+------------------------------------------------------------------------
+
+Please read the file LICENSE regarding PS2Link licensing.
+
+PS2Link is a 'bootloader' which, used together with an Ethernet driver and
+a TCP/IP stack, enables you to download and execute software on your PS2.
