@@ -7,7 +7,7 @@ DEBUG = 0
 LOADHIGH = 0
 
 # Set this to 1 to build ps2link with all the needed IRX builtins
-BUILTIN_IRXS = 1
+BUILTIN_IRXS = 0
 
 # Set this to 1 to enable zero-copy on fileio writes.
 ZEROCOPY = 0
@@ -79,7 +79,7 @@ release:
 	dd if=/dev/zero of=bin/dummy bs=1024 count=28672; \
 	ps2mkisofs -o ps2link_$$VERSION.iso bin/; \
 	rm bin/dummy; \
-	tar -zcf ps2link_$$VERSION.tgz $(RELEASE_FILES) ps2link_$$VERSION.iso
+	tar -jcf ps2link_$$VERSION.tbz $(RELEASE_FILES) ps2link_$$VERSION.iso
 
 docs:
 	doxygen doxy.conf
