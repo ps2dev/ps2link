@@ -12,6 +12,7 @@
 #include <loadfile.h>
 #include <iopcontrol.h>
 #include <fileio.h>
+#include <string.h>
 
 #include "cd.h"
 #include "byteorder.h"
@@ -249,7 +250,7 @@ pkoDumpMem(pko_pkt_dump_mem *cmd) {
 	unsigned int offset;
 	unsigned int size;
     char path[PKO_MAX_PATH];
-    int ret;
+    int ret = 0;
    	size = ntohl(cmd->size);
     offset = ntohl(cmd->offset);
 	scr_printf("dump mem from 0x%x, size %d\n", 
@@ -258,7 +259,7 @@ pkoDumpMem(pko_pkt_dump_mem *cmd) {
     memcpy(path, cmd->argv, PKO_MAX_PATH);
 	fd = fioOpen(path, O_WRONLY|O_CREAT);
 	if ( fd > 0 ) {
-		if ((ret = fioWrite(fd, offset, size)) > 0) {
+		if ((ret = fioWrite(fd, (void *)offset, size)) > 0) {
 		} else {
 			printf("EE: pkoDumpMem() fioWrite failed\n");
 			return fd;
@@ -272,7 +273,7 @@ pkoDumpMem(pko_pkt_dump_mem *cmd) {
 // command to dump various registers ( gs|vif|intc etc )
 static int
 pkoDumpReg(pko_pkt_dump_regs *cmd) {
-	int fd, ret;
+	int fd, ret = 0;
     char path[PKO_MAX_PATH];
 	unsigned int i, j, size;
 	unsigned int dmaregs[52] = {
@@ -779,7 +780,7 @@ initCmdRpc(void)
     th_attr.stack = cmdThreadStack;
     th_attr.stack_size = sizeof(cmdThreadStack);
     th_attr.gp_reg = &_gp;
-    th_attr.initial_priority = 0x2;
+    th_attr.initial_priority = 0;
 
     ret = CreateThread(&th_attr);
     if (ret < 0) {
