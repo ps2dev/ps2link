@@ -10,7 +10,7 @@ EE_LIBS += -lpatches -ldebug
 
 # Normal low loading version
 ifeq ($(BUILTIN_IRXS),1)
-LOADADDR  = 0xb0000
+LOADADDR  = 0xa8000
 else
 LOADADDR  = 0xc0000
 endif
@@ -19,7 +19,7 @@ STACKADDR = 0x100000
 # This is to build a highloading version
 ifeq ($(LOADHIGH),1)
 ifeq ($(BUILTIN_IRXS),1)
-LOADADDR  = 0x1ef0000
+LOADADDR  = 0x1ee8000
 else
 LOADADDR  = 0x1f00000
 endif
@@ -53,7 +53,7 @@ clean:
 	-rm -f $(EE_OBJS) $(EE_BIN)
 
 check: $(EE_BIN)
-	@ee-readelf -l $(EE_BIN) | awk ' /LOAD/ { if ((spare = (-($$4 + $$6) + ("'$(STACKADDR)'" - "0x8000"))) <= 0) { print "PS2Link is too big."; exit -1; } else { printf("PS2Link has %i (0x%x) spare bytes\n", spare, spare) } } '
+	@ee-readelf -l $(EE_BIN) | awk ' /LOAD/ { if ((spare = (-($$4 + $$6) + ("'$(STACKADDR)'" - "0x8000"))) <= 0) { printf("PS2Link is too big, %i (0x%x) bytes missing\n", -spare, -spare); exit -1; } else { printf("PS2Link has %i (0x%x) spare bytes\n", spare, spare) } } '
 
 include $(PS2SDK)/Defs.make
 include Rules.make
