@@ -1,5 +1,9 @@
 PS2Link (C) 2003 Tord Lindstrom (pukko@home.se)
+        (C) 2003 adresd (adresd_ps2dev@yahoo.com)
 ------------------------------------------------------------------------
+
+2003-12-15 Version 1.1
+	- Made compatible with ps2drv, for eth and HDD access together.
 
 2003-05-12 Version 1.0
 	- First release

@@ -1,5 +1,6 @@
 /*********************************************************************
  * Copyright (C) 2003 Tord Lindstrom (pukko@home.se)
+ * Copyright (C) 2003 adresd (adresd_ps2dev@yahoo.com)
  * This file is subject to the terms and conditions of the PS2Link License.
  * See the file LICENSE in the main directory of this distribution for more
  * details.
@@ -27,6 +28,13 @@
 #define dbgprintf(args...) do { } while(0)
 #endif
 
+/* 
+ * This is to fix the dev9 shutdown on reset
+ */
+#ifdef PS2DEV9_COMPAT
+extern void dev9Shutdown(void);
+extern void dev9IntrDisable(int mask);
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 // How about a header file?..
@@ -155,6 +163,11 @@ pkoScrDump(char *buf, int len)
 static void
 pkoPowerOff()
 {
+#ifdef PS2DEV9_COMPAT
+    // This is to do the dev9 shutdown on reset
+    dev9IntrDisable(-1);
+    dev9Shutdown();
+#endif
     *((unsigned char *)0xBF402017) = 0;
     *((unsigned char *)0xBF402016) = 0xF;
 }
@@ -177,6 +190,11 @@ pkoReset(char *buf, int len)
     fsysUnmount();
     printf("unmounted\n");
     FILEIO_del("tty");
+#ifdef PS2DEV9_COMPAT
+    // This is to do the dev9 shutdown on reset
+    dev9IntrDisable(-1);
+    dev9Shutdown();
+#endif
     ret = pkoSendSifCmd(PKO_RPC_RESET, buf, len);
 };
 

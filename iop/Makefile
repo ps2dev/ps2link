@@ -9,11 +9,14 @@
 PS2IP := $(PS2DEV)/ps2ip
 
 IOP_BIN  = ps2link.irx
-IOP_OBJS = net_fsys.o net_fio.o ps2link.o cmdHandler.o tty.o nprintf.o
+IOP_OBJS = net_fsys.o net_fio.o ps2link.o cmdHandler.o tty.o nprintf.o iop_ps2dev9.o
 
 IOP_INCS += -I../include -I$(PS2IP)/include -I$(PS2IP)/iop/ps2ip/include
 IOP_LIBS += -liop_ps2ip
 IOP_LDFLAGS += -L$(PS2IP)/iop/lib
+# This is to enable the ps2dev9 shutdown
+IOP_CFLAGS += -DPS2DEV9_COMPAT
+
 
 all: $(IOP_BIN)
 

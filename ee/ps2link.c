@@ -1,5 +1,6 @@
 /*********************************************************************
  * Copyright (C) 2003 Tord Lindstrom (pukko@home.se)
+ * Copyright (C) 2003 adresd (adresd_ps2dev@yahoo.com)
  * This file is subject to the terms and conditions of the PS2Link License.
  * See the file LICENSE in the main directory of this distribution for more
  * details.
@@ -36,12 +37,14 @@ extern int userThreadID;
 char elfName[256] __attribute__((aligned(16)));
 char elfPath[256];
 
+char iomanX_path[PKO_MAX_PATH];
+char ps2dev9_path[PKO_MAX_PATH];
 char ps2ip_path[PKO_MAX_PATH];
 char ps2smap_path[PKO_MAX_PATH];
 char ps2link_path[PKO_MAX_PATH];
 
-void *ps2ip_mod, *ps2smap_mod, *ps2link_mod;
-int ps2ip_size, ps2smap_size, ps2link_size;
+void *iomanX_mod, *ps2dev9_mod, *ps2ip_mod, *ps2smap_mod, *ps2link_mod;
+int iomanX_size, ps2dev9_size, ps2ip_size, ps2smap_size, ps2link_size;
 
 const char *eeloadimg = "rom0:UDNL rom0:EELOADCNF";
 char *imgcmd;
@@ -221,6 +224,12 @@ out:
 
 static int loadHostModBuffers()
 {
+    if (!(iomanX_mod = modbuf_load(iomanX_path, &iomanX_size)))
+        {return -1;}
+
+    if (!(ps2dev9_mod = modbuf_load(ps2dev9_path, &ps2dev9_size)))
+        {return -1;}
+
     if (!(ps2ip_mod = modbuf_load(ps2ip_path, &ps2ip_size)))
         return -1;
 
@@ -248,11 +257,15 @@ loadModules(void)
     getIpConfig();
 
     if (boot == B_MC) {
+        pkoLoadMcModule(iomanX_path, 0, NULL);
+        pkoLoadMcModule(ps2dev9_path, 0, NULL);
         pkoLoadMcModule(ps2ip_path, 0, NULL);
         pkoLoadMcModule(ps2smap_path, if_conf_len, &if_conf[0]);
         pkoLoadMcModule(ps2link_path, 0, NULL);
         //    pkoLoadMcModule(FSYS "PS2LINK.IRX" FSVER, strlen("-notty") + 1, "-notty");
     } else {
+        pkoLoadModule(iomanX_path, 0, NULL);
+        pkoLoadModule(ps2dev9_path, 0, NULL);
         pkoLoadModule(ps2ip_path, 0, NULL);
         pkoLoadModule(ps2smap_path, if_conf_len, &if_conf[0]);
         pkoLoadModule(ps2link_path, 0, NULL);
@@ -311,10 +324,14 @@ setPathInfo(char *path)
     *ptr = '\0';
 
     /* Paths to modules.  */
+    sprintf(iomanX_path, "%s%s", elfPath, "IOMANX.IRX");
+    sprintf(ps2dev9_path, "%s%s", elfPath, "PS2DEV9.IRX");
     sprintf(ps2ip_path, "%s%s", elfPath, "PS2IP.IRX");
     sprintf(ps2smap_path, "%s%s", elfPath, "PS2SMAP.IRX");
     sprintf(ps2link_path, "%s%s", elfPath, "PS2LINK.IRX");
     if (boot == B_CD) {
+	    strcat(iomanX_path, ";1");
+	    strcat(ps2dev9_path, ";1");
 	    strcat(ps2ip_path, ";1");
 	    strcat(ps2smap_path, ";1");
 	    strcat(ps2link_path, ";1");
@@ -377,6 +394,11 @@ main(int argc, char *argv[])
         boot = B_CD;
     }
     else if(!strncmp(bootPath, "mc0:/PUKK", strlen("mc0:/PUKK"))) {
+        // Booting from my mc
+        scr_printf("Booting from mc dir (%s)\n", bootPath);
+        boot = B_MC;
+    }
+    else if(!strncmp(bootPath, "mc0:/PS2LINK", strlen("mc0:/PS2LINK"))) {
         // Booting from my mc
         scr_printf("Booting from mc dir (%s)\n", bootPath);
         boot = B_MC;
