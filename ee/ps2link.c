@@ -24,7 +24,7 @@
 
 extern int initCmdRpc(void);
 
-#define DEBUG
+//#define DEBUG
 #ifdef DEBUG
 #define dbgprintf(args...) printf(args)
 #define dbgscr_printf(args...) scr_printf(args)
