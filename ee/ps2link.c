@@ -33,7 +33,7 @@ extern int initCmdRpc(void);
 extern int userThreadID;
 
 // Argv name+path & just path
-char elfName[256];
+char elfName[256] __attribute__((aligned(16)));
 char elfPath[256];
 
 // Flags for which type of boot

@@ -199,7 +199,7 @@ pkoExecEE(pko_pkt_execee_req *cmd)
 static void
 pkoReset(void)
 {
-    char *argv;
+    char *argv[1];
     // Check if user thread is running, if so kill it
 #if 1
     if (userThreadID) {
@@ -225,11 +225,11 @@ pkoReset(void)
 #endif
     // XXX: there's something wrong with elfName..
     if ((boot == B_MC) || (boot == B_UNKN)) {
-        argv = &elfName;
-        ExecPS2(&_start, 0, 1, &argv);
+        argv[0] = elfName;
+        ExecPS2(&_start, 0, 1, argv);
     }
     else {
-        LoadExecPS2(&elfName, 0, NULL);
+        LoadExecPS2(elfName, 0, NULL);
     }
 }
 
