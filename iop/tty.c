@@ -69,7 +69,6 @@ static int ttyInit(struct fileio_driver *driver)
     memset(&saddr, 0, sizeof(saddr));
     saddr.sin_family = AF_INET;
     saddr.sin_addr.s_addr = htonl(INADDR_ANY);
-//	saddr.sin_addr.s_addr = remote_pc_addr;
     saddr.sin_port = htons(PKO_PRINTF_PORT);
     n = bind(sock, (struct sockaddr *)&saddr, sizeof(saddr));
 
@@ -104,7 +103,6 @@ static int ttyWrite( int fd, char *buf, int size)
 
     memset(&dstaddr, 0, sizeof(dstaddr));
     dstaddr.sin_family = AF_INET;
-//    dstaddr.sin_addr.s_addr = htonl(INADDR_BROADCAST);
 	dstaddr.sin_addr.s_addr = remote_pc_addr;
     dstaddr.sin_port = htons(PKO_PRINTF_PORT);
 
