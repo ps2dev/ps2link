@@ -87,7 +87,35 @@ pkoExecIop(char *buf, int len)
     }
 
     id = LoadStartModule(cmd->argv, arglen, args, &retval);
-    printf("loadmodule: id %d, ret %d\n", id, retval);
+    
+    if (retval < 0) {
+        printf("Error loading module: ");
+	switch (-retval) {
+	case E_IOP_INTR_CONTEXT:
+	    printf("IOP is in exception context.\n");
+	    break;
+	case E_IOP_DEPENDANCY:
+	    printf("Inter IRX dependancy error.\n");
+	    break;
+	case E_LF_NOT_IRX:
+	    printf("Invalid IRX module.\n");
+	    break;
+	case E_LF_FILE_NOT_FOUND:
+	    printf("Unable to open executable file.\n");
+	    break;
+	case E_LF_FILE_IO_ERROR:
+	    printf("Error while accessing file.\n");
+	    break;
+	case E_IOP_NO_MEMORY:
+	    printf("IOP is out of memory.\n");
+	    break;
+	default:
+	    printf("Unknow error code: %d\n", -retval);
+	    break;
+	}					
+    } else {
+	printf("loadmodule: id %d, ret %d\n", id, retval);
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////
