@@ -15,6 +15,7 @@
 #include <sifman.h>
 #include <sifrpc.h>
 #include <modload.h>
+#include <ps2lib_err.h>
 
 #include "ps2ip.h"
 #include "hostlink.h"
