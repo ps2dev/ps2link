@@ -13,6 +13,8 @@
 #include <loadfile.h>
 #include <iopcontrol.h>
 #include <fileio.h>
+#include <malloc.h>
+#include <string.h>
 
 #include "cd.h"
 #include "hostlink.h"
