@@ -321,7 +321,7 @@ pkoDumpReg(pko_pkt_dump_regs *cmd) {
 	   	0x10003d00, 0x10003d10, 0x10003d20, 0x10003d30, 0x10003d40,
 	   	0x10003d50, 0x10003d60, 0x10003d70
 	};
-	unsigned int fiforegs[5] = {
+	unsigned int fiforegs[2] = {
 		0x10005000, 0x10007000
 	};
 	unsigned int ipuregs[4] = {
