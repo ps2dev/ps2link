@@ -398,7 +398,8 @@ pkoDumpReg(pko_pkt_dump_regs *cmd) {
 			size = sizeof(ipuregs);
 			break;
 		case REGVU1:
-			asm(
+			asm __volatile__(
+                ".set noat;"
 				// stop VU0 and VU1
 				"ori	$8, $0, 0x101;"
 				"ctc2	$8, $28;"
@@ -407,50 +408,50 @@ pkoDumpReg(pko_pkt_dump_regs *cmd) {
 
 				// Save VU1 floats
 				"move	$8, %0;"			// save away dst
-				"ori	$9, $0, 1024;"		// start of vu1 mapped floats
-				"ctc2   $9, $vi01;"			// ctc2 t0, vi1
-				"ori	$9, $0, 31;"
+				"ori	$1, $0, 1024;"		// start of vu1 mapped floats
+				"ctc2   $1, $vi01;"			// ctc2 t0, vi1
+				"ori	$1, $0, 31;"
 				"vu1_float_loop:"
 				"vlqi	$vf01, ($vi01++);"
 				"sqc2   $vf01, 0($8);"
-				"addiu	$9, -1;"
+				"addiu	$1, -1;"
 				"addiu	$8, 16;"
-				"bnez	$9, vu1_float_loop;"
+				"bnez	$1, vu1_float_loop;"
 				"nop;"
 
 				// Save VU1 Integers
-				"ori	$9, $0, 1056;"
-				"ctc2   $9, $vi01;"			// ctc2 t0, vi1
-				"ori	$9, $0, 15;"
+				"ori	$1, $0, 1056;"
+				"ctc2   $1, $vi01;"			// ctc2 t0, vi1
+				"ori	$1, $0, 15;"
 				"vu1_int_loop:"
 				"vlqi	$vf01, ($vi01++);"
 				"sqc2   $vf01, 0($8);"
-				"addiu	$9, -1;"
+				"addiu	$1, -1;"
 				"addiu	$8, 16;"
-				"bnez	$9, vu1_int_loop;"
+				"bnez	$1, vu1_int_loop;"
 				"nop;"
 
 				// Stop GIF
 				// Save VU1 Control registers
-				"ori	$9, $0, 1072;"
-				"ctc2	$9, $vi01;"
-				"vlqi	$vf01, ($vi0++);"
+				"ori	$1, $0, 1072;"
+				"ctc2	$1, $vi01;"
+				"vlqi	$vf01, ($vi01++);"
 				"sqc2   $vf01, 0($8);"
-				"vlqi	$vf01, ($vi0++);"
+				"vlqi	$vf01, ($vi01++);"
 				"sqc2   $vf01, 16($8);"
-				"vlqi	$vf01, ($vi0++);"
+				"vlqi	$vf01, ($vi01++);"
 				"sqc2   $vf01, 32($8);"
 				"viaddi	$vi01, $vi01, 1;"
-				"vlqi	$vf01, ($vi0++);"
+				"vlqi	$vf01, ($vi01++);"
 				"sqc2   $vf01, 48($8);"
-				"vlqi	$vf01, ($vi0++);"
+				"vlqi	$vf01, ($vi01++);"
 				"sqc2   $vf01, 64($8);"
-				"vlqi	$vf01, ($vi0++);"
+				"vlqi	$vf01, ($vi01++);"
 				"sqc2   $vf01, 80($8);"
-				"vlqi	$vf01, ($vi0++);"
+				"vlqi	$vf01, ($vi01++);"
 				"sqc2   $vf01, 96($8);"
 				"viaddi	$vi01, $vi01, 2;"
-				"vlqi	$vf01, ($vi0++);"
+				"vlqi	$vf01, ($vi01++);"
 				"sqc2   $vf01, 112($8);"
 
 				// FIXME remember to save/restore vi1 and vf1
@@ -463,7 +464,7 @@ pkoDumpReg(pko_pkt_dump_regs *cmd) {
 			size = 896;
 			break;
 		case REGVU0:
-			asm(
+			asm __volatile__(
 				// stop VU0
 				"ori	$8, $0, 0x1;"
 				"ctc2	$8, $28;"

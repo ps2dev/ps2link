@@ -10,7 +10,7 @@ EE_LDFLAGS += -L$(SBVLITE)/lib
 EE_LIBS += -lsbv_patches
 
 # Set this to 1 to build a highloading version, 0 for normal low version
-LOADHIGH = 0
+LOADHIGH = 1
 
 # Normal low loading version
 LOADADDR  = 0xc0000
