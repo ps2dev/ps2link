@@ -275,7 +275,7 @@ pkoDumpReg(pko_pkt_dump_regs *cmd) {
 	int fd, ret;
     char path[PKO_MAX_PATH];
 	unsigned int i, j, size;
-	unsigned int dmaregs[51] = {
+	unsigned int dmaregs[52] = {
 		0x1000e000, 0x1000e010, 0x1000e020, 0x1000e030,
 		0x1000e040, 0x1000e050, 0x1000e060, 0x1000f520,				// Dma common registers
 		0x10008000, 0x10008010, 0x10008020, 0x10008030, 0x10008040, 0x10008050, // DMA0
@@ -284,7 +284,7 @@ pkoDumpReg(pko_pkt_dump_regs *cmd) {
 		0x1000b000, 0x1000b010, 0x1000b020,							// DMA3
 		0x1000b400, 0x1000b410, 0x1000b420, 0x1000b430,				// DMA4
 		0x1000c000, 0x1000c010, 0x1000c020,							// DMA5
-		0x1000c400, 0x1000c410, 0x1000c420,							// DMA6
+		0x1000c400, 0x1000c410, 0x1000c420, 0x1000c430				// DMA6
 		0x1000c800, 0x1000c810, 0x1000c820,							// DMA7
 		0x1000d000, 0x1000d010, 0x1000d020, 0x1000d080,				// DMA8
 		0x1000d400, 0x1000d410, 0x1000d420, 0x1000d430, 0x1000d480	// DMA9
