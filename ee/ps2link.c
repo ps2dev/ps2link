@@ -264,8 +264,9 @@ getExtraConfig()
 
     size = fioLseek(fd, 0, SEEK_END);
     fioLseek(fd, 0, SEEK_SET);
-    buf = malloc(size);
+    buf = malloc(size + 1);
     ret = fioRead(fd, buf, size);
+    buf[size] = 0;
     fioClose(fd);
     ptr = buf;
     ptr2 = buf;
