@@ -48,7 +48,7 @@
 			scr_printf(format , ## args);	\
 		if ((flags) & S_HOST)			\
 			printf(format, ## args);	\
-	} while (0);
+	} while (0)
 
 enum _boot { BOOT_UNKNOWN, BOOT_FULL, BOOT_MEM, BOOT_HOST };
 
@@ -58,6 +58,9 @@ typedef struct {
 } boot_info_t;
 
 extern boot_info_t *cur_boot_info;
+
+/* From ps2link.c  */
+int full_reset(void);
 
 /* From cmdHandler.c  */
 int initCmdRpc(void);
