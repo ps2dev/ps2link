@@ -64,6 +64,7 @@ release:
 	cd RELEASE; \
 	cvs co -r $$VERSION ps2link; \
 	cd ps2link; \
+	gmake; \
 	mkdir -p bin; \
 	for file in $(IRXFILES); do \
 		new=`echo $${file/*\//}|tr "[:lower:]" "[:upper:]"`; \
