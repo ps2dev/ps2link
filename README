@@ -23,6 +23,8 @@ For buildint against ps2sdk make sure PS2SDK is set to your ps2sdk release
 dir. If you do not have ps2sdk built, check it out from cvs and set PS2SDK and
 PS2SDKSRC = checked out ps2sdk dir, do 'make' and 'make release'.
 
+To build ps2link you require PS2SDK, PS2ETH and SBV-LITE.
+
 Credit for the icon logo goes to Revolt from #ps2dev.
 
 NOTES + WARNINGS:
