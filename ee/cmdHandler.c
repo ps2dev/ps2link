@@ -42,8 +42,7 @@ static int pkoLoadElf(char *path);
 extern u32 _start;
 extern int _gp;
 extern int boot;
-// XXX: Wicked thing going on here! FIX THIS!
-extern char *elfName;
+extern char elfName[];
 
 int userThreadID = 0;
 static int cmdThreadID = 0;
@@ -224,7 +223,7 @@ pkoReset(void)
     SifExitRpc();
 #endif
     FlushCache(0);
-    // XXX: there's something wrong with elfName..
+
     if ((boot == B_MC) || (boot == B_HOST) || (boot == B_UNKN)) {
         argv[0] = elfName;
         ExecPS2(&_start, 0, 1, argv);
