@@ -494,17 +494,6 @@ main(int argc, char *argv[])
     SifIopReset(imgcmd, 0);
     while (SifIopSync()) ;
 
-    /* whipe user memory */
-    dbgscr_printf("clear mem\n");
-#ifdef _LOADHIGHVER
-    wipeUserMemLoadHigh();
-#else
-    if (boot == B_HOST)
-        wipeUserMemLoadHigh();
-    else
-        wipeUserMem();
-#endif
-
     dbgscr_printf("rpc init\n");
     SifInitRpc(0);
     cdvdInit(CDVD_INIT_NOWAIT);

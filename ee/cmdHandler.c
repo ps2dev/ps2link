@@ -36,7 +36,7 @@ static int pkoStopVU(pko_pkt_stop_vu *);
 static int pkoStartVU(pko_pkt_start_vu *);
 static int pkoDumpMem(pko_pkt_mem_io *);
 static int pkoDumpReg(pko_pkt_dump_regs *);
-static void pkoReset(void);
+static void pkoReset(pko_pkt_header *);
 static int pkoLoadElf(char *path);
 static int pkoGSExec(pko_pkt_gsexec_req *);
 static int pkoWriteMem(pko_pkt_mem_io *);
@@ -700,7 +700,7 @@ pkoStartVU(pko_pkt_start_vu *cmd) {
 
 ////////////////////////////////////////////////////////////////////////
 static void
-pkoReset(void)
+pkoReset(pko_pkt_header *cmd)
 {
     char *argv[1];
     // Check if user thread is running, if so kill it
@@ -782,7 +782,7 @@ cmdThread()
 
         switch(cmd) {
         case PKO_RESET_CMD:
-            pkoReset();
+            pkoReset(pkt);
             ret = 0;
             done = 1;
             break;
