@@ -41,7 +41,6 @@ static int dummy0()
 static int ttyInit(iop_device_t *driver)
 {
     iop_sema_t sema_info;
-    struct sockaddr_in saddr;
 
     sema_info.attr       = 0;
     sema_info.initial = 1;	/* Unlocked.  */
@@ -50,16 +49,9 @@ static int ttyInit(iop_device_t *driver)
 	    return -1;
 
     // Create/open udp socket
-#if 0
     if ((tty_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
 	    return -1;
 
-    saddr.sin_family      = AF_INET;
-    saddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    saddr.sin_port        = htons(PKO_PRINTF_PORT);
-
-    return bind(tty_socket, (struct sockaddr *)&saddr, sizeof(saddr));
-#endif
 	return 1;
 }
 
