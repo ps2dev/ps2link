@@ -14,6 +14,7 @@
 #include <loadcore.h>
 
 #include "ps2ip.h"
+#include "net_fio.h"
 #include "hostlink.h"
 
 
@@ -24,7 +25,6 @@ struct filedesc_info
     int device_id;   // the X in hostX
     int own_fd;
 };
-
 
 ////////////////////////////////////////////////////////////////////////
 static void *tty_functarray[16];
@@ -69,6 +69,7 @@ static int ttyInit(struct fileio_driver *driver)
     memset(&saddr, 0, sizeof(saddr));
     saddr.sin_family = AF_INET;
     saddr.sin_addr.s_addr = htonl(INADDR_ANY);
+//	saddr.sin_addr.s_addr = remote_pc_addr;
     saddr.sin_port = htons(PKO_PRINTF_PORT);
     n = bind(sock, (struct sockaddr *)&saddr, sizeof(saddr));
 
@@ -103,7 +104,8 @@ static int ttyWrite( int fd, char *buf, int size)
 
     memset(&dstaddr, 0, sizeof(dstaddr));
     dstaddr.sin_family = AF_INET;
-    dstaddr.sin_addr.s_addr = htonl(INADDR_BROADCAST);
+//    dstaddr.sin_addr.s_addr = htonl(INADDR_BROADCAST);
+	dstaddr.sin_addr.s_addr = remote_pc_addr;
     dstaddr.sin_port = htons(PKO_PRINTF_PORT);
 
     n = sendto(tty_socket, buf, size, 0, (struct sockaddr *)&dstaddr, 

@@ -20,6 +20,7 @@
 #define ntohl(x) htonl(x)
 #define ntohs(x) htons(x)
 
+unsigned int remote_pc_addr = 0xffffffff;
 
 #define PACKET_MAXSIZE 4096
 
@@ -492,7 +493,9 @@ pko_file_serv(void *argv)
 
         dbgprintf("Client connected from %x\n", 
                client_addr.sin_addr.s_addr);
-        
+
+		remote_pc_addr = client_addr.sin_addr.s_addr;
+
         if (pko_fileio_sock > 0) {
             dbgprintf("Client reconnected\n");
             ret = disconnect(pko_fileio_sock);
