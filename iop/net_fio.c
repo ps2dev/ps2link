@@ -1,5 +1,6 @@
 /*********************************************************************
  * Copyright (C) 2003 Tord Lindstrom (pukko@home.se)
+ * Copyright (C) 2004 adresd (adresd_ps2dev@yahoo.com)
  * This file is subject to the terms and conditions of the PS2Link License.
  * See the file LICENSE in the main directory of this distribution for more
  * details.
@@ -12,6 +13,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <kernel.h>
+
+#include <io_common.h>
 
 #include "ps2ip.h"
 #include "net_fio.h"
@@ -415,6 +418,130 @@ int pko_read_file(int fd, char *buf, int length)
 }
 
 
+//----------------------------------------------------------------------
+//
+int pko_open_dir(char *path)
+{
+    pko_pkt_open_req *openreq;
+    pko_pkt_file_rly *openrly;
+
+    if (pko_fileio_sock < 0) {
+        return -1;
+    }
+
+    dbgprintf("pko_file: dir open req (%s)\n", path);
+
+    openreq = (pko_pkt_open_req *)&send_packet[0];
+
+    // Build packet
+    openreq->cmd = htonl(PKO_OPENDIR_CMD);
+    openreq->len = htons((unsigned short)sizeof(pko_pkt_open_req));
+    openreq->flags = htonl(0);
+    strncpy(openreq->path, path, PKO_MAX_PATH);
+    openreq->path[PKO_MAX_PATH - 1] = 0; // Make sure it's null-terminated
+
+    if (pko_lwip_send(pko_fileio_sock, openreq, sizeof(pko_pkt_open_req), 0) < 0) {
+        return -1;
+    }
+
+    if (!pko_accept_pkt(pko_fileio_sock, recv_packet, 
+                        sizeof(pko_pkt_file_rly), PKO_OPENDIR_RLY)) {
+        dbgprintf("pko_file: pko_open_file: did not receive OPENDIR_RLY\n");
+        return -1;
+    }
+
+    openrly = (pko_pkt_file_rly *)recv_packet;
+    
+    dbgprintf("pko_file: dir open reply received (ret %d)\n", ntohl(openrly->retval));
+
+    return ntohl(openrly->retval);
+}
+
+//----------------------------------------------------------------------
+//
+int pko_read_dir(int fd, void *buf)
+{
+    pko_pkt_dread_req *dirreq;
+    pko_pkt_dread_rly *dirrly;
+    fio_dirent_t *dirent;
+
+    if (pko_fileio_sock < 0) {
+        return -1;
+    }
+
+    dbgprintf("pko_file: dir read req (%x)\n", fd);
+
+    dirreq = (pko_pkt_dread_req *)&send_packet[0];
+
+    // Build packet
+    dirreq->cmd = htonl(PKO_READDIR_CMD);
+    dirreq->len = htons((unsigned short)sizeof(pko_pkt_dread_req));
+    dirreq->fd = htonl(fd);
+
+    if (pko_lwip_send(pko_fileio_sock, dirreq, sizeof(pko_pkt_dread_req), 0) < 0) {
+        return -1;
+    }
+
+    if (!pko_accept_pkt(pko_fileio_sock, recv_packet, 
+                        sizeof(pko_pkt_dread_rly), PKO_READDIR_RLY)) {
+        dbgprintf("pko_file: pko_open_file: did not receive OPENDIR_RLY\n");
+        return -1;
+    }
+
+    dirrly = (pko_pkt_dread_rly *)recv_packet;
+    
+    dbgprintf("pko_file: dir read reply received (ret %d)\n", ntohl(dirrly->retval));
+
+    dirent = (fio_dirent_t *) buf;
+    // now handle the return buffer translation, to build reply bit
+    dirent->stat.mode    = ntohl(dirrly->mode);
+    dirent->stat.attr    = ntohl(dirrly->attr);
+    dirent->stat.size    = ntohl(dirrly->size);
+    dirent->stat.hisize  = ntohl(dirrly->hisize);
+    strncpy(dirent->stat.ctime,dirrly->ctime,8*3);
+    strncpy(dirent->name,dirrly->name,256);
+    dirent->unknown = 0;
+
+    return ntohl(dirrly->retval);
+}
+
+
+//----------------------------------------------------------------------
+//
+int pko_close_dir(int fd)
+{
+    pko_pkt_close_req *closereq;
+    pko_pkt_file_rly *closerly;
+
+
+    if (pko_fileio_sock < 0) {
+        return -1;
+    }
+
+    dbgprintf("pko_file: dir close req (fd: %d)\n", fd);
+
+    closereq = (pko_pkt_close_req *)&send_packet[0];
+    closerly = (pko_pkt_file_rly *)&recv_packet[0];
+
+    closereq->cmd = htonl(PKO_CLOSEDIR_CMD);
+    closereq->len = htons((unsigned short)sizeof(pko_pkt_close_req));
+    closereq->fd = htonl(fd);
+
+    if (pko_lwip_send(pko_fileio_sock, closereq, sizeof(pko_pkt_close_req), 0) < 0) {
+        return -1;
+    }
+
+    if(!pko_accept_pkt(pko_fileio_sock, (char *)closerly, 
+                       sizeof(pko_pkt_file_rly), PKO_CLOSEDIR_RLY)) {
+        dbgprintf("pko_file: pko_close_dir: did not receive PKO_CLOSEDIR_RLY\n");
+        return -1;
+    }
+
+    dbgprintf("pko_file: dir close reply received (ret %d)\n", 
+              ntohl(closerly->retval));
+
+    return ntohl(closerly->retval);
+}
 
 //----------------------------------------------------------------------
 // Thread that waits for a PC to connect/disconnect/reconnect blah..

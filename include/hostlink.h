@@ -18,6 +18,12 @@
 #define PKO_WRITE_RLY   0xbabe0142
 #define PKO_LSEEK_CMD   0xbabe0151
 #define PKO_LSEEK_RLY   0xbabe0152
+#define PKO_OPENDIR_CMD  0xbabe0161
+#define PKO_OPENDIR_RLY  0xbabe0162
+#define PKO_CLOSEDIR_CMD 0xbabe0171
+#define PKO_CLOSEDIR_RLY 0xbabe0172
+#define PKO_READDIR_CMD  0xbabe0181
+#define PKO_READDIR_RLY  0xbabe0182
 
 #define PKO_RESET_CMD   0xbabe0201
 #define PKO_EXECIOP_CMD 0xbabe0202
@@ -95,6 +101,28 @@ typedef struct
     int whence;
 } __attribute__((packed)) pko_pkt_lseek_req;
 
+typedef struct
+{
+    unsigned int cmd;
+    unsigned short len;
+    int fd;
+} __attribute__((packed)) pko_pkt_dread_req;
+
+typedef struct
+{
+    unsigned int cmd;
+    unsigned short len;
+    int retval;
+/* from io_common.h (fio_dirent_t) in ps2lib */
+    unsigned int mode;
+    unsigned int attr;
+    unsigned int size;
+    unsigned char ctime[8];
+    unsigned char atime[8];
+    unsigned char mtime[8];
+    unsigned int hisize;
+    char name[256];
+} __attribute__((packed)) pko_pkt_dread_rly;
 
 ////
 

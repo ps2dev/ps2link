@@ -2,6 +2,9 @@ PS2Link (C) 2003 Tord Lindstrom (pukko@home.se)
         (C) 2003,2004 adresd (adresd_ps2dev@yahoo.com)
 ------------------------------------------------------------------------
 
+2004-02-06 Version 1.22
+      - HOST: getdir support (so ps2 can get filelist from host:, using ioman calls)
+
 2004-01-29 Version 1.21
 	- Fixed Host loading (both IRX and ipconfig) - prob with reset (CLEARSPU), but runs fine.
 	- Added sbv for prefix checking, to remove LMB for mc load.

@@ -1,5 +1,6 @@
 /*********************************************************************
  * Copyright (C) 2003 Tord Lindstrom (pukko@home.se)
+ * Copyright (C) 2004 adresd (adresd_ps2dev@yahoo.com)
  * This file is subject to the terms and conditions of the PS2Link License.
  * See the file LICENSE in the main directory of this distribution for more
  * details.
@@ -201,6 +202,63 @@ static int fsysLseek( int fd, unsigned int offset, int whence)
 }
 
 ////////////////////////////////////////////////////////////////////////
+static int fsysDopen(int fd, char *name)
+{
+    struct filedesc_info *fd_info;
+    int fsys_fd;
+    
+    dbgprintf("fsysDopen..\n");
+    dbgprintf("  fd: %x, name: %s\n\n", fd, name);
+
+    fd_info = (struct filedesc_info *)fd;
+
+    WaitSema(fsys_sema);
+    fsys_fd = pko_open_dir(name);
+    SignalSema(fsys_sema);
+    fd_info->own_fd = fsys_fd;
+
+    return fsys_fd;
+}
+
+////////////////////////////////////////////////////////////////////////
+static int fsysDread(int fd, void *buf)
+{
+    struct filedesc_info *fd_info;
+    int ret;
+
+    fd_info = (struct filedesc_info *)fd;
+
+    dbgprintf("fsysDread..."
+           "  fd: %x\n"
+           "  bf: %x\n"
+           "  ow: %d\n\n", fd, (int)buf, fd_info->own_fd);
+
+    WaitSema(fsys_sema);
+    ret = pko_read_dir(fd_info->own_fd, buf);
+    SignalSema(fsys_sema);
+
+    return ret;
+
+}
+
+////////////////////////////////////////////////////////////////////////
+static int fsysDclose(int fd)
+{
+    struct filedesc_info *fd_info;
+    int ret;
+    
+    dbgprintf("fsys_dclose..\n"
+           "  fd: %x\n\n", fd);
+    
+    fd_info = (struct filedesc_info *)fd;
+    WaitSema(fsys_sema);
+    ret = pko_close_dir(fd_info->own_fd);    
+    SignalSema(fsys_sema);
+
+    return ret;
+}
+
+////////////////////////////////////////////////////////////////////////
 // Entry point for mounting the file system
 int fsysMount(void)
 {
@@ -221,6 +279,10 @@ int fsysMount(void)
     fsys_functarray[5] = fsysRead;
     fsys_functarray[6] = fsysWrite;
     fsys_functarray[7] = fsysLseek;
+
+    fsys_functarray[12] = fsysDopen;
+    fsys_functarray[13] = fsysDclose;
+    fsys_functarray[14] = fsysDread;
 
     sema_info.attr = 1;
     sema_info.option = 0;
