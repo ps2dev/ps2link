@@ -17,6 +17,7 @@
 #include "dev9.h"
 #include "intrman.h"
 #include "ioman.h"
+#include "ioptrap.h"
 #include "loadcore.h"
 #include "modload.h"
 #include "ps2ip.h"

@@ -1,6 +1,12 @@
 PS2Link (C) 2003 Tord Lindstrom (pukko@home.se)
         (C) 2003,2004 adresd (adresd_ps2dev@yahoo.com)
+	(C) 2004 Lukasz Bruun (mail@lukasz.dk)
 ------------------------------------------------------------------------
+
+2004-09-25 Version 1.30
+        - Added IOP exception handling
+	- Change IPCONFIG.DAT & EXTRA.CNF a little and added better
+	  parsing code.
 
 2004-05-24 Version 1.24
 	- Made changes for compiling with ps2sdk, introduction of imports.lst/.h

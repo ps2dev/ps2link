@@ -39,18 +39,20 @@
 #define PKO_DUMP_REG 		0xbabe020a
 #define PKO_GSEXEC_CMD		0xbabe020b
 #define PKO_WRITE_MEM       0xbabe020c
+#define PKO_IOPEXCEP_CMD    0xbabe020d
 
-#define PKO_RPC_RESET   1
-#define PKO_RPC_EXECEE  2
-#define PKO_RPC_DUMMY   3
-#define PKO_RPC_SCRDUMP 4
-#define PKO_RPC_NETDUMP 5
-#define PKO_RPC_STARTVU 6
-#define PKO_RPC_STOPVU  7
-#define PKO_RPC_DUMPMEM 8
-#define PKO_RPC_DUMPREG 9
-#define PKO_RPC_GSEXEC  10
-#define PKO_RPC_WRITEMEM 11
+#define PKO_RPC_RESET		1
+#define PKO_RPC_EXECEE		2
+#define PKO_RPC_DUMMY		3
+#define PKO_RPC_SCRDUMP		4
+#define PKO_RPC_NETDUMP		5
+#define PKO_RPC_STARTVU		6
+#define PKO_RPC_STOPVU		7
+#define PKO_RPC_DUMPMEM		8
+#define PKO_RPC_DUMPREG		9
+#define PKO_RPC_GSEXEC		10
+#define PKO_RPC_WRITEMEM	11
+#define PKO_RPC_IOPEXCEP	12
 
 #define PKO_MAX_PATH   256
 

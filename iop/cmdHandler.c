@@ -44,6 +44,8 @@ extern int fsysUnmount(void);
 static char recvbuf[BUF_SIZE] __attribute__((aligned(16)));
 static unsigned int rpc_data[1024/4]__attribute__((aligned(16)));
 
+int excepscrdump = 1;
+
 #define PKO_DMA_DEST ((void *)0x200ff800)
 //unsigned int *dma_ptr =(unsigned int*)(0x20100000-2048);
 
@@ -275,9 +277,11 @@ cmdListener(int sock)
             pkoReset(recvbuf, len);
             break;
         case PKO_SCRDUMP_CMD:
+			excepscrdump = 1;
             pkoScrDump(recvbuf, len);
             break;
         case PKO_NETDUMP_CMD:
+			excepscrdump = 0;
             pkoNetDump(recvbuf, len);
             break;
 		case PKO_START_VU:

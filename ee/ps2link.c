@@ -19,10 +19,13 @@
 #include "cd.h"
 #include "hostlink.h"
 #include "excepHandler.h"
+#include "stdio.h"
 
 #include <sbv_patches.h>
 
 extern int initCmdRpc(void);
+
+#define WELCOME_STRING "Welcome to ps2link v1.30\n"
 
 #ifdef DEBUG
 #define dbgprintf(args...) printf(args)
@@ -47,14 +50,15 @@ char elfName[256] __attribute__((aligned(16)));
 char elfPath[256];
 
 #ifndef BUILTIN_IRXS
+char ioptrap_path[PKO_MAX_PATH];
 char iomanX_path[PKO_MAX_PATH];
 char ps2dev9_path[PKO_MAX_PATH];
 char ps2ip_path[PKO_MAX_PATH];
 char ps2smap_path[PKO_MAX_PATH];
 char ps2link_path[PKO_MAX_PATH];
 
-void *iomanX_mod = NULL, *ps2dev9_mod = NULL, *ps2ip_mod = NULL, *ps2smap_mod = NULL, *ps2link_mod = NULL;
-int iomanX_size = 0, ps2dev9_size = 0, ps2ip_size = 0, ps2smap_size = 0, ps2link_size = 0;
+void *ioptrap_mod = NULL, *iomanX_mod = NULL, *ps2dev9_mod = NULL, *ps2ip_mod = NULL, *ps2smap_mod = NULL, *ps2link_mod = NULL;
+int ioptrap_size = 0, iomanX_size = 0, ps2dev9_size = 0, ps2ip_size = 0, ps2smap_size = 0, ps2link_size = 0;
 #endif
 
 #ifdef BUILTIN_IRXS
@@ -80,10 +84,11 @@ static void pkoLoadModule(char *path, int argc, char *argv);
 static void getIpConfig(void);
 
 ////////////////////////////////////////////////////////////////////////
-#define IPCONF_MAX_LEN (3*16)
+#define IPCONF_MAX_LEN 1024
 
 char if_conf[IPCONF_MAX_LEN] = "";
 char fExtraConfig[256];
+int load_extra_conf = 0;
 int if_conf_len = 0;
 
 char ip[16] __attribute__((aligned(16))) = "192.168.0.10";
@@ -93,6 +98,73 @@ char gw[16] __attribute__((aligned(16))) = "192.168.0.1";
 ////////////////////////////////////////////////////////////////////////
 // Parse network configuration from IPCONFIG.DAT
 // Note: parsing really should be made more robust...
+
+static int getBufferValue(char* result, char* buffer, u32 buffer_size, char* field)
+{
+	u32 len = strlen(field);
+	u32 i = 0;
+	s32 j = 0;
+	char* start = 0;
+	char* end = 0;
+
+	while(strncmp(&buffer[i], field, len) != 0)
+	{
+		i++;
+		if(i == buffer_size) return -1;
+	}
+
+	// Look for # comment
+	j = i;
+
+	while((j > 0) && (buffer[j] != '\n') && (buffer[j] !='\r'))
+	{
+		j--;
+
+		if(buffer[j] == '#')
+			return -2;
+	}
+
+
+	while(buffer[i] != '=')
+	{
+		i++;
+		if(i == buffer_size) return -3;
+	}
+	i++;
+
+	while(buffer[i] == ' ')
+	{
+		i++;
+		if(i == buffer_size) return -4;
+	}
+	i++;
+
+	if((buffer[i] != '\r') && (buffer[i] != '\n') && (buffer[i] != ';'))
+	{
+		start = &buffer[i];
+	}
+	else
+	{
+		return -5;
+	}
+
+	while(buffer[i] != ';')
+	{	
+		i++;
+		if(i == buffer_size) return -5;
+	}
+		
+	end = &buffer[i];
+		
+	len = end - start;
+	
+	if(len > 256) return -6;
+
+	strncpy(result, start, len);
+	
+	return 0;
+}
+
 static void
 getIpConfig(void)
 {
@@ -162,20 +234,34 @@ getIpConfig(void)
     }
     scr_printf("\n");
     // get extra config filename
-    strncpy(fExtraConfig, &buf[i+1], 256);
-    scr_printf("extra conf: %s\n", fExtraConfig);
-    if_conf_len = i;
+    
+	if(getBufferValue(fExtraConfig, buf, len, "EXTRACNF") == 0)
+	{
+		scr_printf("extra conf: %s\n", fExtraConfig);
+		
+		load_extra_conf = 1;
+	}
+	else
+	{
+			load_extra_conf = 0;
+	}
+
+	if_conf_len = i;
 }
 
 void
-getExtraConfig() {
+getExtraConfig() 
+{
     int fd, size, ret;
     char *buf, *ptr, *ptr2;
     fd = fioOpen(fExtraConfig, O_RDONLY);
-    if ( fd < 0 ) {
+    
+	if ( fd < 0 ) 
+	{
         scr_printf("failed to open extra conf file\n");
         return;
     }
+
     size = fioLseek(fd, 0, SEEK_END);
     fioLseek(fd, 0, SEEK_SET);
     buf = malloc(size);
@@ -184,7 +270,7 @@ getExtraConfig() {
     ptr = buf;
     ptr2 = buf;
     while(ptr < buf+size) {
-        ptr2 = strstr(ptr, "\n");
+        ptr2 = strstr(ptr, ";");
         if ( ptr2 == 0 ) {
             break;
         }
@@ -252,6 +338,9 @@ static int loadHostModBuffers()
     irx_buffer_addr = IRX_BUFFER_BASE;
 
     getIpConfig();
+	
+	if (!(ioptrap_mod = modbuf_load(ioptrap_path, &ioptrap_size)))
+        {return -1;}
 
     if (!(iomanX_mod = modbuf_load(iomanX_path, &iomanX_size)))
         {return -1;}
@@ -308,24 +397,33 @@ loadModules(void)
 	    dbgscr_printf("Exec ps2link module. (%x,%d) ", ps2link_irx, size_ps2link_irx);
     SifExecModuleBuffer(ps2link_irx, size_ps2link_irx, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
+		dbgscr_printf("Exec ioptrap module. (%x,%d) ", ioptrap_irx, size_ioptrap_irx);
+    SifExecModuleBuffer(ioptrap_irxx, size_ioptrap_irx, 0, NULL,&ret);
+	    dbgscr_printf("[%d] returned\n", ret);
 	    dbgscr_printf("All modules loaded on IOP.\n");
 #else
     if (boot == B_HOST) {
-		dbgscr_printf("Exec iomanX module. (%x,%d) ", iomanX_mod, iomanX_size);
+		
+		dbgscr_printf("Exec iomanX module. (%x,%d) ", (u32)iomanX_mod, iomanX_size);
         SifExecModuleBuffer(iomanX_mod, iomanX_size, 0, NULL,&ret);
 		dbgscr_printf("[%d] returned\n", ret);
-		dbgscr_printf("Exec ps2dev9 module. (%x,%d) ", ps2dev9_mod, ps2dev9_size);
+		dbgscr_printf("Exec ps2dev9 module. (%x,%d) ", (u32)ps2dev9_mod, ps2dev9_size);
         SifExecModuleBuffer(ps2dev9_mod, ps2dev9_size, 0, NULL,&ret);
 		dbgscr_printf("[%d] returned\n", ret);
-		dbgscr_printf("Exec ps2ip module. (%x,%d) ", ps2ip_mod, ps2ip_size);
+		dbgscr_printf("Exec ps2ip module. (%x,%d) ", (u32)ps2ip_mod, ps2ip_size);
         SifExecModuleBuffer(ps2ip_mod, ps2ip_size, 0, NULL,&ret);
 		dbgscr_printf("[%d] returned\n", ret);
-		dbgscr_printf("Exec ps2smap module. (%x,%d) ", ps2smap_mod, ps2smap_size);
+		dbgscr_printf("Exec ps2smap module. (%x,%d) ", (u32)ps2smap_mod, ps2smap_size);
         SifExecModuleBuffer(ps2smap_mod, ps2smap_size, if_conf_len, &if_conf[0],&ret);
 		dbgscr_printf("[%d] returned\n", ret);
-		dbgscr_printf("Exec ps2link module. (%x,%d) ", ps2link_mod, ps2link_size);
+		dbgscr_printf("Exec ioptrap module. (%x,%d) ", (u32)ioptrap_mod, ioptrap_size);
+		SifExecModuleBuffer(ioptrap_mod, ioptrap_size, 0, NULL,&ret);
+        dbgscr_printf("[%d] returned\n", ret);
+		dbgscr_printf("Exec ps2link module. (%x,%d) ", (u32)ps2link_mod, ps2link_size);
         SifExecModuleBuffer(ps2link_mod, ps2link_size, 0, NULL,&ret);
 		dbgscr_printf("[%d] returned\n", ret);
+		
+		
 		dbgscr_printf("All modules loaded on IOP.\n");
     } else {
         getIpConfig();
@@ -339,6 +437,8 @@ loadModules(void)
         pkoLoadModule(ps2smap_path, if_conf_len, &if_conf[0]);
 		dbgscr_printf("Exec ps2link module. ");
         pkoLoadModule(ps2link_path, 0, NULL);
+		dbgscr_printf("Exec ioptrap module. ");
+        pkoLoadModule(ioptrap_path, 0, NULL);
 		dbgscr_printf("All modules loaded on IOP. ");
     }
 #endif
@@ -397,13 +497,17 @@ setPathInfo(char *path)
 
 #ifndef BUILTIN_IRXS
     /* Paths to modules.  */
-    sprintf(iomanX_path, "%s%s", elfPath, "IOMANX.IRX");
+	
+	sprintf(iomanX_path, "%s%s", elfPath, "IOMANX.IRX");
     sprintf(ps2dev9_path, "%s%s", elfPath, "PS2DEV9.IRX");
     sprintf(ps2ip_path, "%s%s", elfPath, "PS2IP.IRX");
     sprintf(ps2smap_path, "%s%s", elfPath, "PS2SMAP.IRX");
     sprintf(ps2link_path, "%s%s", elfPath, "PS2LINK.IRX");
-    if (boot == B_CD) {
-	    strcat(iomanX_path, ";1");
+    sprintf(ioptrap_path, "%s%s", elfPath, "IOPTRAP.IRX");
+
+	if (boot == B_CD) {
+	    strcat(ioptrap_path, ";1");
+		strcat(iomanX_path, ";1");
 	    strcat(ps2dev9_path, ";1");
 	    strcat(ps2ip_path, ";1");
 	    strcat(ps2smap_path, ";1");
@@ -457,7 +561,7 @@ main(int argc, char *argv[])
 
     init_scr();
     installExceptionHandlers();
-    scr_printf("Welcome to ps2link v1.24\n");
+    scr_printf(WELCOME_STRING);
 #ifdef _LOADHIGHVER
     scr_printf("Highload version\n");
 #endif
@@ -542,7 +646,8 @@ main(int argc, char *argv[])
     initCmdRpc();
 
     // get extra config
-    getExtraConfig();
+	if(load_extra_conf)
+	   getExtraConfig();
 
     scr_printf("Ready\n");
 //    printf("Main done\n");

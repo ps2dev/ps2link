@@ -39,7 +39,7 @@ EE_CFLAGS += -DDEBUG
 endif
 
 LDPARAMS := -Wl,--defsym -Wl,_stack_size=0x8000 -Wl,--defsym -Wl,_stack=$(STACKADDR)
-EE_LDFLAGS += -Wl,-Ttext -Wl,$(LOADADDR) $(LDPARAMS) -s
+EE_LDFLAGS += -Wl,-Ttext -Wl,$(LOADADDR) $(LDPARAMS)
 
 all: $(EE_BIN)
 

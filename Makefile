@@ -12,7 +12,6 @@ BUILTIN_IRXS = 0
 # Set this to 1 to enable zero-copy on fileio writes.
 ZEROCOPY = 0
 
-
 include $(PS2SDK)/Defs.make
 
 SHELL=/bin/bash
@@ -22,6 +21,7 @@ RM=rm -f
 IRXFILES=iop/ps2link.irx $(PS2SDK)/iop/irx/ps2ip.irx \
 	$(PS2DEV)/ps2eth/smap/ps2smap.irx \
 	$(PS2SDK)/iop/irx/iomanX.irx \
+	$(PS2SDK)/iop/irx/ioptrap.irx \
 	$(PS2SDK)/iop/irx/ps2dev9.irx
 VARIABLES=DEBUG=$(DEBUG) LOADHIGH=$(LOADHIGH) BUILTIN_IRXS=$(BUILTIN_IRXS) ZEROCOPY=$(ZEROCOPY)
 

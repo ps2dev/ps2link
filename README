@@ -35,4 +35,10 @@ IPCONFIG.DAT uses the following format:
 PS2IPADDRESS NETMASK GATEWAYIP
 seperated by a single space.
 
+You can load addition IRX's by specifying EXTRACNF file in IPCONFIG.DAT. It
+will load the EXTRACNF file and and load all irx's terminated with ';' in the order
+they are listed in the EXTRACNF file. By default the EXTRACNF setting is
+disabled (commented) with '#' in IPCONFIG.DAT, remove the '#' the load the 
+EXTRACNF file.
+
 If you have any questions or bugreports about ps2link go to forums.ps2dev.org.

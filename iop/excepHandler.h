@@ -9,6 +9,5 @@
 #define _EXCEPTION_H_
 
 void installExceptionHandlers(void);
-void iopException(int cause, int badvaddr, int status, int epc, u32 *regs, int repc, char* name);
 
 #endif

@@ -50,7 +50,7 @@ char _exceptionStack[8*1024] __attribute__((aligned(16)));
 eeReg _savedRegs[32+4] __attribute__((aligned(16)));
 
 ////////////////////////////////////////////////////////////////////////
-// The 'exception handler', only dumps registers to console or screen atm
+// The 'ee exception handler', only dumps registers to console or screen atm
 void
 pkoDebug(int cause, int badvaddr, int status, int epc, eeReg *regs)
 {
@@ -76,9 +76,9 @@ pkoDebug(int cause, int badvaddr, int status, int epc, eeReg *regs)
         init_scr();
         excpPrintf = scr_printf;
     }
-    else excpPrintf = printf;
+	else excpPrintf = (void*)printf;
 
-    excpPrintf("\n\n             Exception handler: %s exception\n\n", 
+    excpPrintf("\n\n           EE Exception handler: %s exception\n\n", 
                codeTxt[code>>2]);
 
     excpPrintf("      Cause %08x  BadVAddr %08x  Status %08x  EPC %08x\n\n",
@@ -93,15 +93,69 @@ pkoDebug(int cause, int badvaddr, int status, int epc, eeReg *regs)
     SleepThread();
 }
 
+////////////////////////////////////////////////////////////////////////
+// The 'iop exception handler', only dumps registers to console or screen atm
+
+void iopException(int cause, int badvaddr, int status, int epc, u32 *regs, int repc, char* name)
+{
+    int i;
+    int code;
+    //    extern void printf(char *, ...);
+    static void (* excpPrintf)(const char *, ...);
+
+    FlushCache(0);
+    FlushCache(2);
+
+#if 1
+    if (userThreadID) {
+        TerminateThread(userThreadID);
+        DeleteThread(userThreadID);
+    }
+#endif
+
+    code = cause & 0x7c;
+
+    if(excepscrdump)
+    {
+        init_scr();
+        excpPrintf = scr_printf;
+    }
+	else excpPrintf = (void*)printf;
+   
+	excpPrintf("\n\n         IOP Exception handler: %s exception\n\n", 
+               codeTxt[code>>2]);
+		
+	excpPrintf("               Module Name \"%s\" Relative EPC %08x\n\n",
+               name, repc);
+
+
+	excpPrintf("      Cause %08x  BadVAddr %08x  Status %08x  EPC %08x\n\n",
+               cause, badvaddr, status, epc);
+
+	for(i = 0; i < 32/4; i++) 
+	{
+		excpPrintf("       %4s: %08lX %4s: %08lX %4s: %08lX %4s: %08lX\n", 
+					regName[i],  regs[i], regName[i+8], regs[i+8],
+					regName[i+16],  regs[i+16], regName[i+24], regs[i+24]); 
+	}
+	
+	excpPrintf("\n");
+	
+
+	
+	SleepThread();
+}
+
 
 ////////////////////////////////////////////////////////////////////////
-// Installs exception handlers for the 'usual' exceptions..
+// Installs ee exception handlers for the 'usual' exceptions and iop
+// exception callback
 void
 installExceptionHandlers(void)
 {
     int i;
 
-    // Skip exception #8 (syscall) & 9 (breakpoint)
+	// Skip exception #8 (syscall) & 9 (breakpoint)
     for (i = 1; i < 4; i++) {
         SetVTLBRefillHandler(i, pkoExceptionHandler);
     }
@@ -111,4 +165,6 @@ installExceptionHandlers(void)
     for (i = 10; i < 14; i++) {
         SetVCommonHandler(i, pkoExceptionHandler);
     }
+
 }
+

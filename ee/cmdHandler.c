@@ -15,6 +15,7 @@
 #include <fileio.h>
 #include <string.h>
 #include "debug.h"
+#include "excepHandler.h"
 
 #include "cd.h"
 #include "byteorder.h"
@@ -475,6 +476,7 @@ pkoDumpReg(pko_pkt_dump_regs *cmd) {
 				"sqc2   $vf01, 0($8);"
 				"addiu	$1, -1;"
 				"addiu	$8, 16;"
+				"nop;"
 				"bnez	$1, vu1_float_loop;"
 				"nop;"
 
@@ -487,6 +489,7 @@ pkoDumpReg(pko_pkt_dump_regs *cmd) {
 				"sqc2   $vf01, 0($8);"
 				"addiu	$1, -1;"
 				"addiu	$8, 16;"
+				"nop;"
 				"bnez	$1, vu1_int_loop;"
 				"nop;"
 
@@ -739,9 +742,11 @@ pkoReset(void)
     }
 }
 
+
 ////////////////////////////////////////////////////////////////////////
 // Sif dma interrupt handler, wakes up the cmd handler thread if 
 // data was sent to our dma area
+
 int
 pkoCmdIntrHandler()
 {
@@ -750,14 +755,16 @@ pkoCmdIntrHandler()
     flag = *sifDmaDataPtr;
 
     iSifSetDChain();
-
-    if (flag) {
-        // Clear new packet flag
-        *sifDmaDataPtr = 0;
-
-        iWakeupThread(cmdThreadID);
-    }
-    asm __volatile__("sync");
+	
+	if (flag) 
+	{
+		// Clear new packet flag
+		*sifDmaDataPtr = 0;
+		
+		iWakeupThread(cmdThreadID);
+	}
+	
+	asm __volatile__("sync");
     asm __volatile__("ei");
     return 0;
 }
@@ -771,11 +778,14 @@ cmdThread()
     unsigned int cmd;
     int ret;
     int done;
-    dbgprintf("EE: Cmd thread\n");
-    printf("EE: Cmd thread\n");
+    
+	//dbgprintf("EE: Cmd thread\n");
+    
+	printf("EE: Cmd thread\n");
 
     done = 0;
-    while(!done) {
+    while(!done) 
+	{
         SleepThread();
 
         cmd = ntohl(sifDmaDataPtr[1]);
@@ -821,8 +831,11 @@ cmdThread()
             dbgprintf("EE: Write Mem\n");
             ret = pkoWriteMem(pkt);
             break;
+		case PKO_IOPEXCEP_CMD:
+			iopException(sifDmaDataPtr[3], sifDmaDataPtr[4], sifDmaDataPtr[5], sifDmaDataPtr[2], &sifDmaDataPtr[6], sifDmaDataPtr[41], (char*)&sifDmaDataPtr[43]);
+			break;
         default: 
-            printf("EE: Unknown rpc cmd (%x)!\n", cmd);
+            printf("EE: Unknown rpc cmd (%x) !\n", cmd);
             ret = -1;
         }
     }
@@ -837,7 +850,15 @@ int
 initCmdRpc(void)
 {
     ee_thread_t th_attr;
-    int ret;
+	int ret;
+
+	th_attr.func = cmdThread;
+    th_attr.stack = cmdThreadStack;
+    th_attr.stack_size = sizeof(cmdThreadStack);
+    th_attr.gp_reg = &_gp;
+    th_attr.initial_priority = 0;
+
+
 
     th_attr.func = cmdThread;
     th_attr.stack = cmdThreadStack;

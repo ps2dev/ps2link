@@ -12,6 +12,7 @@
 #include <types.h>
 #include <sifrpc.h>
 #include <cdvdman.h>
+#include "excepHandler.h"
 
 // Entry points
 extern int fsysMount(void);
@@ -32,6 +33,8 @@ _start( int argc, char **argv)
 
     SifInitRpc(0);
 
+
+
     if ((argc < 2) || (strncmp(argv[1], "-notty", 6))) {
 		ttyMount();
         // Oh well.. There's a bug in either smapif or lwip's etharp
@@ -47,6 +50,9 @@ _start( int argc, char **argv)
 	printf("IOP cmd thread started\n");
     naplinkRpcInit();
 	printf("Naplink thread started\n");
+	
+	installExceptionHandlers();
+
     return 0;
 }
 
