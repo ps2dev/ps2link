@@ -2,6 +2,13 @@ PS2Link (C) 2003 Tord Lindstrom (pukko@home.se)
         (C) 2003,2004 adresd (adresd_ps2dev@yahoo.com)
 ------------------------------------------------------------------------
 
+2004-05-24 Version 1.24b
+	- Made changes for compiling with ps2sdk, introduction of imports.lst/.h
+		and many changes in IOP part to use ioman.h.
+	- Set default values for irx_mod pointers and sizes for cached modules
+		to ensure they were in .bss and not trashed on pko_reset.
+	- Set default values for ip parameters for the same reason as above.
+
 2004-02-08 Version 1.23
     - Some new commands stop/start vu, dump mem, dump reg, gsexec
 
