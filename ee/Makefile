@@ -9,12 +9,20 @@ EE_LDFLAGS += -L$(SBVLITE)/lib
 EE_LIBS += -lsbv_patches -ldebug
 
 # Normal low loading version
+ifeq ($(BUILTIN_IRXS),1)
+LOADADDR  = 0xb0000
+else
 LOADADDR  = 0xc0000
+endif
 STACKADDR = 0x100000
 
 # This is to build a highloading version
 ifeq ($(LOADHIGH),1)
+ifeq ($(BUILTIN_IRXS),1)
+LOADADDR  = 0x1ef0000
+else
 LOADADDR  = 0x1f00000
+endif
 STACKADDR = 0x1f40000
 EE_CFLAGS += -D_LOADHIGHVER
 endif

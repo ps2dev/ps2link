@@ -47,6 +47,7 @@ extern int userThreadID;
 char elfName[256] __attribute__((aligned(16)));
 char elfPath[256];
 
+#ifndef BUILTIN_IRXS
 char iomanX_path[PKO_MAX_PATH];
 char ps2dev9_path[PKO_MAX_PATH];
 char ps2ip_path[PKO_MAX_PATH];
@@ -55,6 +56,7 @@ char ps2link_path[PKO_MAX_PATH];
 
 void *iomanX_mod = NULL, *ps2dev9_mod = NULL, *ps2ip_mod = NULL, *ps2smap_mod = NULL, *ps2link_mod = NULL;
 int iomanX_size = 0, ps2dev9_size = 0, ps2ip_size = 0, ps2smap_size = 0, ps2link_size = 0;
+#endif
 
 #ifdef BUILTIN_IRXS
 extern unsigned char iomanX_irx[], ps2dev9_irx[], ps2ip_irx[], ps2smap_irx[], ps2link_irx[];
@@ -211,6 +213,7 @@ pkoLoadModule(char *path, int argc, char *argv)
 	dbgscr_printf("[%d] returned\n", ret);
 }
 
+#ifndef BUILTIN_IRXS
 /* Load a module into RAM.  */
 void * modbuf_load(const char *filename, int *filesize)
 {
@@ -272,6 +275,7 @@ static int loadHostModBuffers()
 	}
     return 0;
 }
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 // Load all the irx modules we need, according to 'boot mode'
@@ -392,6 +396,7 @@ setPathInfo(char *path)
     ptr++;
     *ptr = '\0';
 
+#ifndef BUILTIN_IRXS
     /* Paths to modules.  */
     sprintf(iomanX_path, "%s%s", elfPath, "IOMANX.IRX");
     sprintf(ps2dev9_path, "%s%s", elfPath, "PS2DEV9.IRX");
@@ -405,6 +410,7 @@ setPathInfo(char *path)
 	    strcat(ps2smap_path, ";1");
 	    strcat(ps2link_path, ";1");
     }
+#endif
 
     dbgscr_printf("path is %s\n", elfPath);
 }
