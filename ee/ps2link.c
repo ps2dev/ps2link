@@ -1,6 +1,6 @@
 /*********************************************************************
  * Copyright (C) 2003 Tord Lindstrom (pukko@home.se)
- * Copyright (C) 2003 adresd (adresd_ps2dev@yahoo.com)
+ * Copyright (C) 2003,2004 adresd (adresd_ps2dev@yahoo.com)
  * This file is subject to the terms and conditions of the PS2Link License.
  * See the file LICENSE in the main directory of this distribution for more
  * details.
@@ -20,9 +20,11 @@
 #include "hostlink.h"
 #include "excepHandler.h"
 
+#include <sbv_patches.h>
+
 extern int initCmdRpc(void);
 
-//#define DEBUG
+#define DEBUG
 #ifdef DEBUG
 #define dbgprintf(args...) printf(args)
 #define dbgscr_printf(args...) scr_printf(args)
@@ -30,6 +32,9 @@ extern int initCmdRpc(void);
 #define dbgprintf(args...) do { } while(0)
 #define dbgscr_printf(args...) do { } while(0)
 #endif
+
+#define IRX_BUFFER_BASE 0x1F80000
+int irx_buffer_addr = 0;
 
 ////////////////////////////////////////////////////////////////////////
 // Globals
@@ -164,52 +169,24 @@ pkoLoadModule(char *path, int argc, char *argv)
     }
 }
 
-////////////////////////////////////////////////////////////////////////
-// Wrapper to load module from disc/rom/mc
-// Max irx size hardcoded to 300kb atm..
-static void
-pkoLoadMcModule(char *path, int argc, char *argv)
-{
-    void *iop_mem;
-    int ret;
-
-    dbgscr_printf("LoadMcModule %s\n", path);
-    iop_mem = SifAllocIopHeap(1024*300);
-    if (iop_mem == NULL) {
-        scr_printf("allocIopHeap failed\n");
-        SleepThread();
-    }
-    ret = SifLoadIopHeap(path, iop_mem);
-    if (ret < 0) {
-        scr_printf("loadIopHeap %s ret %d\n", path, ret);
-        SleepThread();
-    }
-    else {
-        ret = SifLoadModuleBuffer(iop_mem, argc, argv);
-        if (ret < 0) {
-            scr_printf("loadModuleBuffer %s ret %d\n", path, ret);
-            SleepThread();
-        }
-    }
-    SifFreeIopHeap(iop_mem);
-}
-
 /* Load a module into RAM.  */
 void * modbuf_load(const char *filename, int *filesize)
 {
 	void *res = NULL;
 	int fd = -1, size;
 
-	if ((fd = fioOpen(filename, O_RDWR)) < 0)
+	if ((fd = fioOpen(filename, O_RDONLY)) < 0)
 		goto out;
 
 	if ((size = fioLseek(fd, 0, SEEK_END)) < 0)
 		goto out;
 
 	fioLseek(fd, 0, SEEK_SET);
+	fioLseek(fd, 0, SEEK_SET);
 
-	if ((res = memalign(16, size)) == NULL)
-		goto out;
+	res = (void *)irx_buffer_addr;
+	irx_buffer_addr += size + 32 - (size % 16);
+	dbgscr_printf(" modbuf_load : %s , %d (0x%X)\n",filename,size,(int)res);
 
 	if (fioRead(fd, res, size) != size)
 		res = NULL;
@@ -226,6 +203,12 @@ out:
 
 static int loadHostModBuffers()
 {
+    if (irx_buffer_addr == 0)
+    {
+    irx_buffer_addr = IRX_BUFFER_BASE;
+
+    getIpConfig();
+
     if (!(iomanX_mod = modbuf_load(iomanX_path, &iomanX_size)))
         {return -1;}
 
@@ -240,7 +223,8 @@ static int loadHostModBuffers()
 
     if (!(ps2link_mod = modbuf_load(ps2link_path, &ps2link_size)))
         return -1;
-
+    }
+    else dbgscr_printf("Using Cached Modules\n");
     return 0;
 }
 
@@ -249,23 +233,22 @@ static int loadHostModBuffers()
 static void
 loadModules(void)
 {
-    if ((boot == B_MC)  || (boot == B_DMS3))
+    printf(" loadModules \n");
+    if (boot == B_MC)
     {
         pkoLoadModule("rom0:SIO2MAN", 0, NULL);
         pkoLoadModule("rom0:MCMAN", 0, NULL);  	
         pkoLoadModule("rom0:MCSERV", 0, NULL); 
     }
 
-    getIpConfig();
-
-    if (boot == B_MC) {
-        pkoLoadMcModule(iomanX_path, 0, NULL);
-        pkoLoadMcModule(ps2dev9_path, 0, NULL);
-        pkoLoadMcModule(ps2ip_path, 0, NULL);
-        pkoLoadMcModule(ps2smap_path, if_conf_len, &if_conf[0]);
-        pkoLoadMcModule(ps2link_path, 0, NULL);
-        //    pkoLoadMcModule(FSYS "PS2LINK.IRX" FSVER, strlen("-notty") + 1, "-notty");
+    if (boot == B_HOST) {
+        SifExecModuleBuffer(iomanX_mod, iomanX_size, 0, NULL,NULL);
+        SifExecModuleBuffer(ps2dev9_mod, ps2dev9_size, 0, NULL,NULL);
+        SifExecModuleBuffer(ps2ip_mod, ps2ip_size, 0, NULL,NULL);
+        SifExecModuleBuffer(ps2smap_mod, ps2smap_size, if_conf_len, &if_conf[0],NULL);
+        SifExecModuleBuffer(ps2link_mod, ps2link_size, 0, NULL,NULL);
     } else {
+        getIpConfig();
         pkoLoadModule(iomanX_path, 0, NULL);
         pkoLoadModule(ps2dev9_path, 0, NULL);
         pkoLoadModule(ps2ip_path, 0, NULL);
@@ -359,6 +342,23 @@ wipeUserMem(void)
     }
 }
 
+////////////////////////////////////////////////////////////////////////
+// Clear user memory - Load High and Host version
+void
+wipeUserMemLoadHigh(void)
+{
+    int i;
+    // Whipe user mem, apart from last bit
+    for (i = 0x100000; i < 0x1F00000 ; i += 64) {
+        asm (
+            "\tsq $0, 0(%0) \n"
+            "\tsq $0, 16(%0) \n"
+            "\tsq $0, 32(%0) \n"
+            "\tsq $0, 48(%0) \n"
+            :: "r" (i) );
+    }
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 int
@@ -369,7 +369,10 @@ main(int argc, char *argv[])
 
     init_scr();
     installExceptionHandlers();
-    scr_printf("Welcome to ps2link v1.2\n");
+    scr_printf("Welcome to ps2link v1.21\n");
+#ifdef _LOADHIGHVER
+    scr_printf("Highload version\n");
+#endif
 
     // argc == 0 usually means naplink..
     if (argc == 0) {
@@ -395,25 +398,10 @@ main(int argc, char *argv[])
         scr_printf("Booting from cdrom (%s)\n", bootPath);
         boot = B_CD;
     }
-    else if(!strncmp(bootPath, "mc0:/PUKK", strlen("mc0:/PUKK"))) {
-        // Booting from my mc
-        scr_printf("Booting from mc dir (%s)\n", bootPath);
-        boot = B_MC;
-    }
-    else if(!strncmp(bootPath, "mc0:/PS2LINK", strlen("mc0:/PS2LINK"))) {
-        // Booting from my mc
-        scr_printf("Booting from mc dir (%s)\n", bootPath);
-        boot = B_MC;
-    }
-    else if(!strncmp(bootPath, "mc0:/BWLINUX", strlen("mc0:/BWLINUX"))) {
-        // Booting from linux mc
-        scr_printf("Booting from rte\n", bootPath);
-        boot = B_MC;
-    }
     else if(!strncmp(bootPath, "mc", strlen("mc"))) {
-        // DMS3 boot?
-        scr_printf("DMS3 boot mode (%s)\n", bootPath);
-        boot = B_DMS3;
+        // Booting from my mc
+        scr_printf("Booting from mc dir (%s)\n", bootPath);
+        boot = B_MC;
     }
     else if(!strncmp(bootPath, "host", strlen("host"))) {
         // Host
@@ -434,8 +422,8 @@ main(int argc, char *argv[])
 	}
     }
 	
-    if (boot == B_MC)
-        imgcmd = (char *)eeloadimg;
+//    if (boot == B_MC)
+//        imgcmd = (char *)eeloadimg;
 
     cdvdInit(CDVD_EXIT);
     cdvdExit();
@@ -448,15 +436,25 @@ main(int argc, char *argv[])
     SifIopReset(imgcmd, 0);
     while (SifIopSync()) ;
 
-    /* If loading from host:, we might be loaded high, so don't wipe ourselves!  */
-    if (boot != B_HOST)
+    /* whipe user memory */
+    dbgscr_printf("clear mem\n");
+#ifdef _LOADHIGHVER
+    wipeUserMemLoadHigh();
+#else
+    if (boot == B_HOST)
+        wipeUserMemLoadHigh();
+    else
         wipeUserMem();
+#endif
 
     dbgscr_printf("rpc init\n");
     SifInitRpc(0);
     cdvdInit(CDVD_INIT_NOWAIT);
 
     scr_printf("Initalizing...\n");
+    sbv_patch_enable_lmb();
+    sbv_patch_disable_prefix_check();
+
     dbgscr_printf("loading modules\n");
     loadModules();
 

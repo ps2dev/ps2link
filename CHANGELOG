@@ -1,6 +1,18 @@
 PS2Link (C) 2003 Tord Lindstrom (pukko@home.se)
-        (C) 2003 adresd (adresd_ps2dev@yahoo.com)
+        (C) 2003,2004 adresd (adresd_ps2dev@yahoo.com)
 ------------------------------------------------------------------------
+
+2004-01-29 Version 1.21
+	- Fixed Host loading (both IRX and ipconfig) - prob with reset (CLEARSPU), but runs fine.
+	- Added sbv for prefix checking, to remove LMB for mc load.
+	- Added screen/console exception dump selection.
+	- Consistent IOP reset for both HOST and other FS load methods.
+	- Removed DMS specific loading, module loading made more general.
+	- Handles being run from ANY mc dir now.
+	- Cleaned up highloading version.
+
+2003-12-31 Version 1.2
+	- Binary Release Version
 
 2003-12-15 Version 1.1
 	- Made compatible with ps2drv, for eth and HDD access together.

@@ -1,5 +1,6 @@
 /*********************************************************************
  * Copyright (C) 2003 Tord Lindstrom (pukko@home.se)
+ * Copyright (C) 2004 adresd (adresd_ps2dev@yahoo.com)
  * This file is subject to the terms and conditions of the PS2Link License.
  * See the file LICENSE in the main directory of this distribution for more
  * details.
@@ -11,6 +12,7 @@
 
 extern int _gp;
 extern int userThreadID;
+extern int excepscrdump;
 
 ////////////////////////////////////////////////////////////////////////
 typedef union 
@@ -67,8 +69,12 @@ pkoDebug(int cause, int badvaddr, int status, int epc, eeReg *regs)
 
     code = cause & 0x7c;
 
-    init_scr();
-    excpPrintf = scr_printf;
+    if (excepscrdump)
+    {
+        init_scr();
+        excpPrintf = scr_printf;
+    }
+    else excpPrintf = printf;
 
     excpPrintf("\n\n             Exception handler: %s exception\n\n", 
                codeTxt[code>>2]);

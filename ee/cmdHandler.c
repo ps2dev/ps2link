@@ -1,5 +1,6 @@
 /*********************************************************************
  * Copyright (C) 2003 Tord Lindstrom (pukko@home.se)
+ * Copyright (C) 2004 adresd (adresd_ps2dev@yahoo.com)
  * This file is subject to the terms and conditions of the PS2Link License.
  * See the file LICENSE in the main directory of this distribution for more
  * details.
@@ -69,6 +70,7 @@ int sifCmdSema;
 int sif0HandlerId = 0;
 // XXX: Hardcoded address atm.. Should be configurable!!
 unsigned int *sifDmaDataPtr =(unsigned int*)(0x20100000-2048);
+int excepscrdump = 1;
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -280,7 +282,12 @@ cmdThread()
             ret = 0;
             done = 1;
             break;
-        
+        case PKO_NETDUMP_CMD:
+            excepscrdump = 0;
+            break;        
+        case PKO_SCRDUMP_CMD:
+            excepscrdump = 1;
+            break;        
         case PKO_EXECEE_CMD: 
             dbgprintf("EE: Rpc EXECEE called\n");
             ret = pkoExecEE(pkt);
