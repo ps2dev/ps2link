@@ -369,7 +369,7 @@ main(int argc, char *argv[])
 
     init_scr();
     installExceptionHandlers();
-    scr_printf("Welcome to ps2link v1.21\n");
+    scr_printf("Welcome to ps2link v1.22\n");
 #ifdef _LOADHIGHVER
     scr_printf("Highload version\n");
 #endif
