@@ -1,7 +1,7 @@
 SHELL=/bin/bash
 EEFILES=ee/ps2link.elf
 IRXFILES=iop/ps2link.irx $(PS2SDK)/iop/irx/ps2ip.irx \
-	$(PS2SDK)/iop/irx/ps2smap.irx \
+	$(PS2DEV)/ps2eth/smap/ps2smap.irx \
 	$(PS2SDK)/iop/irx/iomanX.irx \
 	$(PS2SDK)/iop/irx/ps2dev9.irx
 
