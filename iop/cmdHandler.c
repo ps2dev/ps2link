@@ -89,9 +89,9 @@ pkoExecIop(char *buf, int len)
 
     id = LoadStartModule(cmd->argv, arglen, args, &retval);
     
-    if (retval < 0) {
+    if (id < 0) {
         printf("Error loading module: ");
-	switch (-retval) {
+	switch (-id) {
 	case E_IOP_INTR_CONTEXT:
 	    printf("IOP is in exception context.\n");
 	    break;
