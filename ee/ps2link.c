@@ -369,7 +369,7 @@ main(int argc, char *argv[])
 
     init_scr();
     installExceptionHandlers();
-    scr_printf("Welcome to ps2link v1.1\n");
+    scr_printf("Welcome to ps2link v1.2\n");
 
     // argc == 0 usually means naplink..
     if (argc == 0) {
