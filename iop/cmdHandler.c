@@ -196,10 +196,6 @@ pkoReset(char *buf, int len)
     printf("unmounted\n");
     DelDrv("tty");
 
-    // This is to do the dev9 shutdown on reset
-    dev9IntrDisable(-1);
-    dev9Shutdown();
-
     ret = pkoSendSifCmd(PKO_RPC_RESET, buf, len);
 };
 
