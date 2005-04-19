@@ -75,7 +75,7 @@ char *imgcmd;
 #define B_CD 1
 #define B_MC 2
 #define B_HOST 3
-#define B_DMS3 4
+#define B_CC 4
 #define B_UNKN 5
 int boot;
 
@@ -180,6 +180,9 @@ getIpConfig(void)
 
     if (boot == B_CD) {
         sprintf(path, "%s%s;1", elfPath, "IPCONFIG.DAT");
+    }
+    else if (boot == B_CC) {
+	strcpy(path, "mc0:/BOOT/IPCONFIG.DAT");
     }
     else {
         sprintf(path, "%s%s", elfPath, "IPCONFIG.DAT");
@@ -376,7 +379,7 @@ loadModules(void)
 	int ret;
 
     dbgscr_printf("loadModules \n");
-    if (boot == B_MC)
+    if ((boot == B_MC) || (boot == B_CC))
     {
         pkoLoadModule("rom0:SIO2MAN", 0, NULL);
         pkoLoadModule("rom0:MCMAN", 0, NULL);  	
@@ -610,6 +613,11 @@ main(int argc, char *argv[])
         scr_printf("Booting from host (%s)\n", bootPath);
         boot = B_HOST;
     }
+    else if(!strncmp(bootPath, "rom0:OSDSYS", strlen("rom0:OSDSYS"))) {
+        // From CC's firmware
+	scr_printf("Booting as CC firmware\n");
+	boot = B_CC;
+    }
     else {
         // Unknown
         scr_printf("Booting from unrecognized place %s\n", bootPath);
@@ -646,7 +654,8 @@ main(int argc, char *argv[])
     SifInitRpc(0);
     cdvdInit(CDVD_INIT_NOWAIT);
 
-    scr_printf("Initalizing...\n");
+    scr_printf("Initializing...\n");
+    sio_printf("Initializing...\n");
     sbv_patch_enable_lmb();
     sbv_patch_disable_prefix_check();
 
@@ -662,6 +671,7 @@ main(int argc, char *argv[])
 	   getExtraConfig();
 
     scr_printf("Ready\n");
+    sio_printf("Ready\n");
 //    printf("Main done\n");
 
 //    SleepThread();
