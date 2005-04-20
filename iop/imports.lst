@@ -53,6 +53,7 @@ I_sceSifInitRpc
 I_sceSifSetRpcQueue
 I_sceSifRegisterRpc
 I_sceSifRpcLoop
+I_sceSifAddCmdHandler
 sifcmd_IMPORTS_end
 
 sifman_IMPORTS_start
@@ -91,3 +92,7 @@ dev9_IMPORTS_end
 ioptrap_IMPORTS_start
 I_set_exception_handler
 ioptrap_IMPORTS_end
+
+poweroff_IMPORTS_start
+I_AddPowerOffHandler
+poweroff_IMPORTS_end

@@ -27,5 +27,6 @@
 #include "sysclib.h"
 #include "thbase.h"
 #include "thsemap.h"
+#include "poweroff.h"
 
 #endif /* IOP_IRX_IMPORTS_H */

@@ -16,6 +16,8 @@
 #include <sifrpc.h>
 #include <modload.h>
 #include <ps2lib_err.h>
+#include <poweroff.h>
+#include <sifcmd.h>
 
 #include "ps2ip.h"
 #include "hostlink.h"
@@ -339,6 +341,12 @@ cmdListener(int sock)
     }
 }
 
+static void
+cmdPowerOff(void *arg)
+{
+	pkoPowerOff();
+}
+
 //////////////////////////////////////////////////////////////////////////
 static void 
 cmdThread(void *arg)
@@ -387,6 +395,9 @@ int cmdHandlerInit(void)
     dbgprintf("IOP cmd: Starting thread\n");
 
     SifInitRpc(0);
+	AddPowerOffHandler(cmdPowerOff, NULL);
+
+	/* Add a power off handler */
 
     thread.attr = 0x02000000;
     thread.option = 0;

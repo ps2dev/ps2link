@@ -50,6 +50,7 @@ char elfName[256] __attribute__((aligned(16)));
 char elfPath[256];
 
 #ifndef BUILTIN_IRXS
+char poweroff_path[PKO_MAX_PATH];
 char ioptrap_path[PKO_MAX_PATH];
 char iomanX_path[PKO_MAX_PATH];
 char ps2dev9_path[PKO_MAX_PATH];
@@ -57,15 +58,20 @@ char ps2ip_path[PKO_MAX_PATH];
 char ps2smap_path[PKO_MAX_PATH];
 char ps2link_path[PKO_MAX_PATH];
 
-void *ioptrap_mod = NULL, *iomanX_mod = NULL, *ps2dev9_mod = NULL, *ps2ip_mod = NULL, *ps2smap_mod = NULL, *ps2link_mod = NULL;
-int ioptrap_size = 0, iomanX_size = 0, ps2dev9_size = 0, ps2ip_size = 0, ps2smap_size = 0, ps2link_size = 0;
+void *ioptrap_mod = NULL, *iomanX_mod = NULL, *ps2dev9_mod = NULL, 
+	 *ps2ip_mod = NULL, *ps2smap_mod = NULL, *poweroff_mod = NULL, *ps2link_mod = NULL;
+int ioptrap_size = 0, iomanX_size = 0, ps2dev9_size = 0, ps2ip_size = 0, 
+	poweroff_size = 0, ps2smap_size = 0, ps2link_size = 0;
 #else
 extern unsigned char _binary_ioptrap_irx_start[], _binary_iomanX_irx_start[], _binary_ps2dev9_irx_start[], \
-                     _binary_ps2ip_irx_start[], _binary_ps2smap_irx_start[], _binary_ps2link_irx_start[];
+                     _binary_ps2ip_irx_start[], _binary_ps2smap_irx_start[], _binary_poweroff_irx_start[], \
+					 _binary_ps2link_irx_start[];
 extern unsigned char _binary_ioptrap_irx_end[], _binary_iomanX_irx_end[], _binary_ps2dev9_irx_end[], \
-                     _binary_ps2ip_irx_end[], _binary_ps2smap_irx_end[], _binary_ps2link_irx_end[];
+                     _binary_ps2ip_irx_end[], _binary_ps2smap_irx_end[], _binary_poweroff_irx_end[], \
+					 _binary_ps2link_irx_end[];
 static unsigned int _binary_ioptrap_irx_size, _binary_iomanX_irx_size, _binary_ps2dev9_irx_size, \
-                    _binary_ps2ip_irx_size, _binary_ps2smap_irx_size, _binary_ps2link_irx_size;
+                    _binary_ps2ip_irx_size, _binary_ps2smap_irx_size, _binary_poweroff_irx_size, \
+					_binary_ps2link_irx_size;
 #endif
 
 const char *eeloadimg = "rom0:UDNL rom0:EELOADCNF";
@@ -360,9 +366,13 @@ static int loadHostModBuffers()
     if (!(ps2smap_mod = modbuf_load(ps2smap_path, &ps2smap_size)))
         return -1;
 
+	if (!(poweroff_mod = modbuf_load(poweroff_path, &poweroff_size)))
+		return -1;
+
     if (!(ps2link_mod = modbuf_load(ps2link_path, &ps2link_size)))
         return -1;
     }
+
     else
 	{
 		dbgscr_printf("Using Cached Modules\n");
@@ -410,6 +420,9 @@ loadModules(void)
 	    dbgscr_printf("Exec ioptrap module. (%x,%d) ", _binary_ioptrap_irx_start, _binary_ioptrap_irx_size);
     SifExecModuleBuffer(_binary_ioptrap_irx_start, _binary_ioptrap_irx_size, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
+	    dbgscr_printf("Exec poweroff module. (%x,%d) ", _binary_poweroff_irx_start, _binary_poweroff_irx_size);
+    SifExecModuleBuffer(_binary_poweroff_irx_start, _binary_poweroff_irx_size, 0, NULL,&ret);
+	    dbgscr_printf("[%d] returned\n", ret);
 		dbgscr_printf("Exec ps2link module. (%x,%d) ", _binary_ps2link_irx_start, _binary_ps2link_irx_size);
     SifExecModuleBuffer(_binary_ps2link_irx_start, _binary_ps2link_irx_size, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
@@ -432,6 +445,9 @@ loadModules(void)
 		dbgscr_printf("Exec ioptrap module. (%x,%d) ", (u32)ioptrap_mod, ioptrap_size);
 		SifExecModuleBuffer(ioptrap_mod, ioptrap_size, 0, NULL,&ret);
         dbgscr_printf("[%d] returned\n", ret);
+		dbgscr_printf("Exec poweroff module. (%x,%d) ", (u32)poweroff_mod, poweroff_size);
+		SifExecModuleBuffer(poweroff_mod, poweroff_size, 0, NULL,&ret);
+        dbgscr_printf("[%d] returned\n", ret);
 		dbgscr_printf("Exec ps2link module. (%x,%d) ", (u32)ps2link_mod, ps2link_size);
         SifExecModuleBuffer(ps2link_mod, ps2link_size, 0, NULL,&ret);
 		dbgscr_printf("[%d] returned\n", ret);
@@ -450,6 +466,8 @@ loadModules(void)
         pkoLoadModule(ps2smap_path, if_conf_len, &if_conf[0]);
 		dbgscr_printf("Exec ioptrap module. ");
         pkoLoadModule(ioptrap_path, 0, NULL);
+		dbgscr_printf("Exec poweroff module. ");
+		pkoLoadModule(poweroff_path, 0, NULL);
 		dbgscr_printf("Exec ps2link module. ");
         pkoLoadModule(ps2link_path, 0, NULL);
 		dbgscr_printf("All modules loaded on IOP. ");
@@ -517,6 +535,7 @@ setPathInfo(char *path)
     sprintf(ps2smap_path, "%s%s", elfPath, "PS2SMAP.IRX");
     sprintf(ps2link_path, "%s%s", elfPath, "PS2LINK.IRX");
     sprintf(ioptrap_path, "%s%s", elfPath, "IOPTRAP.IRX");
+	sprintf(poweroff_path, "%s%s", elfPath, "POWEROFF.IRX");
 
 	if (boot == B_CD) {
 	    strcat(ioptrap_path, ";1");
@@ -525,6 +544,7 @@ setPathInfo(char *path)
 	    strcat(ps2ip_path, ";1");
 	    strcat(ps2smap_path, ";1");
 	    strcat(ps2link_path, ";1");
+		strcat(poweroff_path, ";1");
     }
 #endif
 
