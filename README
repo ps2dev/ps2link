@@ -18,6 +18,7 @@ PS2LINK.IRX               from: ps2link
 IOMANX.IRX                      ps2sdk
 PS2DEV9.IRX                     ps2sdk
 PS2IP.IRX                       ps2sdk
+IOPTRAP.IRX                     ps2sdk
 PS2SMAP.IRX                     ps2eth
 
 Building ps2link requires two projects PS2SDK and PS2ETH.
