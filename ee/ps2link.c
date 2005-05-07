@@ -402,6 +402,7 @@ loadModules(void)
     _binary_ps2dev9_irx_size = _binary_ps2dev9_irx_end - _binary_ps2dev9_irx_start;
     _binary_ps2ip_irx_size = _binary_ps2ip_irx_end - _binary_ps2ip_irx_start;
     _binary_ps2smap_irx_size = _binary_ps2smap_irx_end - _binary_ps2smap_irx_start;
+    _binary_poweroff_irx_size = _binary_poweroff_irx_end - _binary_poweroff_irx_start;
     _binary_ps2link_irx_size = _binary_ps2link_irx_end - _binary_ps2link_irx_start;
 
     getIpConfig();
