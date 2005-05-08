@@ -344,7 +344,16 @@ cmdListener(int sock)
 static void
 cmdPowerOff(void *arg)
 {
+#ifdef PWOFFONRESET
 	pkoPowerOff();
+#else
+	pko_pkt_reset_req reset;
+
+	reset.cmd = htonl(PKO_RESET_CMD);
+	reset.len = 0;
+
+	pkoReset((unsigned char *) &reset, sizeof(reset));
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////

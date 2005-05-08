@@ -24,6 +24,10 @@ ifeq ($(DEBUG),1)
 IOP_CFLAGS += -DDEBUG
 endif
 
+ifeq ($(PWOFFONRESET),1)
+IOP_CFLAGS += -DPWOFFONRESET
+endif
+
 
 all: $(IOP_BIN)
 
