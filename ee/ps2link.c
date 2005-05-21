@@ -74,8 +74,7 @@ static unsigned int _binary_ioptrap_irx_size, _binary_iomanX_irx_size, _binary_p
 					_binary_ps2link_irx_size;
 #endif
 
-const char *eeloadimg = "rom0:UDNL rom0:EELOADCNF";
-char *imgcmd;
+char *imgcmd = "rom0:UDNL rom0:EELOADCNF";
 
 // Flags for which type of boot
 #define B_CD 1
@@ -654,9 +653,6 @@ main(int argc, char *argv[])
 	}
     }
 #endif
-
-//    if (boot == B_MC)
-//        imgcmd = (char *)eeloadimg;
 
     if (boot == B_CD) {
         cdvdInit(CDVD_EXIT);
