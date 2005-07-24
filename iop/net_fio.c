@@ -416,6 +416,123 @@ int pko_read_file(int fd, char *buf, int length)
     return readbytes;
 }
 
+//----------------------------------------------------------------------
+//
+int pko_remove(char *name)
+{
+    pko_pkt_remove_req *removereq;
+    pko_pkt_file_rly *removerly;
+
+    if (pko_fileio_sock < 0) {
+        return -1;
+    }
+
+printf("pko_remove name buff:\n");
+int i, j;
+for(j=0; j<4*16; j+=16)
+{
+	for(i=0; i<16; i++)
+	{
+		printf("%02X ", name[j+i]);
+	}
+	printf("\n");
+}
+    dbgprintf("pko_file: file remove req (%s)\n", name);
+
+    removereq = (pko_pkt_remove_req *)&send_packet[0];
+
+    // Build packet
+    removereq->cmd = htonl(PKO_REMOVE_CMD);
+    removereq->len = htons((unsigned short)sizeof(pko_pkt_remove_req));
+    strncpy(removereq->name, name, PKO_MAX_PATH);
+    removereq->name[PKO_MAX_PATH - 1] = 0; // Make sure it's null-terminated
+
+    if (pko_lwip_send(pko_fileio_sock, removereq, sizeof(pko_pkt_remove_req), 0) < 0) {
+        return -1;
+    }
+
+    if (!pko_accept_pkt(pko_fileio_sock, recv_packet, 
+                        sizeof(pko_pkt_file_rly), PKO_REMOVE_RLY)) {
+        dbgprintf("pko_file: pko_remove: did not receive REMOVE_RLY\n");
+        return -1;
+    }
+
+    removerly = (pko_pkt_file_rly *)recv_packet;
+    dbgprintf("pko_file: file remove reply received (ret %d)\n", ntohl(removerly->retval));
+    return ntohl(removerly->retval);
+}
+
+//----------------------------------------------------------------------
+//
+int pko_mkdir(char *name)
+{
+    pko_pkt_mkdir_req *mkdirreq;
+    pko_pkt_file_rly *mkdirrly;
+
+    if (pko_fileio_sock < 0) {
+        return -1;
+    }
+
+    dbgprintf("pko_file: make dir req (%s)\n", name);
+
+    mkdirreq = (pko_pkt_mkdir_req *)&send_packet[0];
+
+    // Build packet
+    mkdirreq->cmd = htonl(PKO_MKDIR_CMD);
+    mkdirreq->len = htons((unsigned short)sizeof(pko_pkt_mkdir_req));
+    strncpy(mkdirreq->name, name, PKO_MAX_PATH);
+    mkdirreq->name[PKO_MAX_PATH - 1] = 0; // Make sure it's null-terminated
+
+    if (pko_lwip_send(pko_fileio_sock, mkdirreq, sizeof(pko_pkt_mkdir_req), 0) < 0) {
+        return -1;
+    }
+
+    if (!pko_accept_pkt(pko_fileio_sock, recv_packet, 
+                        sizeof(pko_pkt_file_rly), PKO_MKDIR_RLY)) {
+        dbgprintf("pko_file: pko_mkdir: did not receive MKDIR_RLY\n");
+        return -1;
+    }
+
+    mkdirrly = (pko_pkt_file_rly *)recv_packet;
+    dbgprintf("pko_file: make dir reply received (ret %d)\n", ntohl(mkdirrly->retval));
+    return ntohl(mkdirrly->retval);
+}
+
+//----------------------------------------------------------------------
+//
+int pko_rmdir(char *name)
+{
+    pko_pkt_rmdir_req *rmdirreq;
+    pko_pkt_file_rly *rmdirrly;
+
+    if (pko_fileio_sock < 0) {
+        return -1;
+    }
+
+    dbgprintf("pko_file: remove dir req (%s)\n", name);
+
+    rmdirreq = (pko_pkt_rmdir_req *)&send_packet[0];
+
+    // Build packet
+    rmdirreq->cmd = htonl(PKO_RMDIR_CMD);
+    rmdirreq->len = htons((unsigned short)sizeof(pko_pkt_rmdir_req));
+    strncpy(rmdirreq->name, name, PKO_MAX_PATH);
+    rmdirreq->name[PKO_MAX_PATH - 1] = 0; // Make sure it's null-terminated
+
+    if (pko_lwip_send(pko_fileio_sock, rmdirreq, sizeof(pko_pkt_rmdir_req), 0) < 0) {
+        return -1;
+    }
+
+    if (!pko_accept_pkt(pko_fileio_sock, recv_packet, 
+                        sizeof(pko_pkt_file_rly), PKO_RMDIR_RLY)) {
+        dbgprintf("pko_file: pko_rmdir: did not receive RMDIR_RLY\n");
+        return -1;
+    }
+
+    rmdirrly = (pko_pkt_file_rly *)recv_packet;
+    dbgprintf("pko_file: remove dir reply received (ret %d)\n", ntohl(rmdirrly->retval));
+    return ntohl(rmdirrly->retval);
+}
 
 //----------------------------------------------------------------------
 //
@@ -445,7 +562,7 @@ int pko_open_dir(char *path)
 
     if (!pko_accept_pkt(pko_fileio_sock, recv_packet, 
                         sizeof(pko_pkt_file_rly), PKO_OPENDIR_RLY)) {
-        dbgprintf("pko_file: pko_open_file: did not receive OPENDIR_RLY\n");
+        dbgprintf("pko_file: pko_open_dir: did not receive OPENDIR_RLY\n");
         return -1;
     }
 
@@ -483,7 +600,7 @@ int pko_read_dir(int fd, void *buf)
 
     if (!pko_accept_pkt(pko_fileio_sock, recv_packet, 
                         sizeof(pko_pkt_dread_rly), PKO_READDIR_RLY)) {
-        dbgprintf("pko_file: pko_open_file: did not receive OPENDIR_RLY\n");
+        dbgprintf("pko_file: pko_read_dir: did not receive OPENDIR_RLY\n");
         return -1;
     }
 

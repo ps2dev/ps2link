@@ -9,22 +9,28 @@
 #define PKO_CMD_PORT	0x4712
 #define PKO_PRINTF_PORT	0x4712
 
-#define PKO_OPEN_CMD    0xbabe0111
-#define PKO_OPEN_RLY    0xbabe0112
-#define PKO_CLOSE_CMD   0xbabe0121
-#define PKO_CLOSE_RLY   0xbabe0122
-#define PKO_READ_CMD    0xbabe0131
-#define PKO_READ_RLY    0xbabe0132
-#define PKO_WRITE_CMD   0xbabe0141
-#define PKO_WRITE_RLY   0xbabe0142
-#define PKO_LSEEK_CMD   0xbabe0151
-#define PKO_LSEEK_RLY   0xbabe0152
+#define PKO_OPEN_CMD     0xbabe0111
+#define PKO_OPEN_RLY     0xbabe0112
+#define PKO_CLOSE_CMD    0xbabe0121
+#define PKO_CLOSE_RLY    0xbabe0122
+#define PKO_READ_CMD     0xbabe0131
+#define PKO_READ_RLY     0xbabe0132
+#define PKO_WRITE_CMD    0xbabe0141
+#define PKO_WRITE_RLY    0xbabe0142
+#define PKO_LSEEK_CMD    0xbabe0151
+#define PKO_LSEEK_RLY    0xbabe0152
 #define PKO_OPENDIR_CMD  0xbabe0161
 #define PKO_OPENDIR_RLY  0xbabe0162
 #define PKO_CLOSEDIR_CMD 0xbabe0171
 #define PKO_CLOSEDIR_RLY 0xbabe0172
 #define PKO_READDIR_CMD  0xbabe0181
 #define PKO_READDIR_RLY  0xbabe0182
+#define PKO_REMOVE_CMD   0xbabe0191
+#define PKO_REMOVE_RLY   0xbabe0192
+#define PKO_MKDIR_CMD    0xbabe01a1
+#define PKO_MKDIR_RLY    0xbabe01a2
+#define PKO_RMDIR_CMD    0xbabe01b1
+#define PKO_RMDIR_RLY    0xbabe01b2
 
 #define PKO_RESET_CMD       0xbabe0201
 #define PKO_EXECIOP_CMD     0xbabe0202
@@ -130,6 +136,27 @@ typedef struct
     int offset;
     int whence;
 } __attribute__((packed)) pko_pkt_lseek_req;
+
+typedef struct
+{
+    unsigned int cmd;
+    unsigned short len;
+    char name[PKO_MAX_PATH];
+} __attribute__((packed)) pko_pkt_remove_req;
+
+typedef struct
+{
+    unsigned int cmd;
+    unsigned short len;
+    char name[PKO_MAX_PATH];
+} __attribute__((packed)) pko_pkt_mkdir_req;
+
+typedef struct
+{
+    unsigned int cmd;
+    unsigned short len;
+    char name[PKO_MAX_PATH];
+} __attribute__((packed)) pko_pkt_rmdir_req;
 
 typedef struct
 {

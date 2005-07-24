@@ -199,6 +199,49 @@ static int fsysLseek( int fd, unsigned int offset, int whence)
 }
 
 ////////////////////////////////////////////////////////////////////////
+static int fsysRemove(char *name)
+{
+    int ret;
+    dbgprintf("fsysRemove..\n");
+    dbgprintf("  name: %s\n\n", name);
+
+    WaitSema(fsys_sema);
+    ret = pko_remove(name);
+    SignalSema(fsys_sema);
+
+    return ret;
+}
+
+////////////////////////////////////////////////////////////////////////
+static int fsysMkdir(char *name)
+{
+    int ret;
+    dbgprintf("fsysMkdir..\n");
+    dbgprintf("  name: '%s'\n\n", name);
+
+    WaitSema(fsys_sema);
+    ret = pko_mkdir(name);
+    SignalSema(fsys_sema);
+
+    return ret;
+}
+
+////////////////////////////////////////////////////////////////////////
+static int fsysRmdir(char *name)
+{
+    int ret;
+    dbgprintf("fsysRmdir..\n");
+    dbgprintf("  name: %s\n\n", name);
+
+    WaitSema(fsys_sema);
+    ret = pko_rmdir(name);
+    SignalSema(fsys_sema);
+
+    return ret;
+}
+
+
+////////////////////////////////////////////////////////////////////////
 static int fsysDopen(int fd, char *name)
 {
     struct filedesc_info *fd_info;
@@ -258,7 +301,7 @@ static int fsysDclose(int fd)
 iop_device_ops_t fsys_functarray = { (void *)fsysInit, (void *)fsysDestroy, (void *)dummy5, 
 	(void *)fsysOpen, (void *)fsysClose, (void *)fsysRead, 
 	(void *)fsysWrite, (void *)fsysLseek, (void *)dummy5,
-	(void *)dummy5, (void *)dummy5, (void *)dummy5,
+	(void *)fsysRemove, (void *)fsysMkdir, (void *)fsysRmdir,
 	(void *)fsysDopen, (void *)fsysDclose, (void *)fsysDread,
 	(void *)dummy5,  (void *)dummy5 };
 
