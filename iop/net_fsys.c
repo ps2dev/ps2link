@@ -199,7 +199,7 @@ static int fsysLseek( int fd, unsigned int offset, int whence)
 }
 
 ////////////////////////////////////////////////////////////////////////
-static int fsysRemove(char *name)
+static int fsysRemove(iop_file_t* file, char *name)
 {
     int ret;
     dbgprintf("fsysRemove..\n");
@@ -213,21 +213,21 @@ static int fsysRemove(char *name)
 }
 
 ////////////////////////////////////////////////////////////////////////
-static int fsysMkdir(char *name)
+static int fsysMkdir(iop_file_t* file, char *name, int mode)
 {
     int ret;
     dbgprintf("fsysMkdir..\n");
     dbgprintf("  name: '%s'\n\n", name);
 
     WaitSema(fsys_sema);
-    ret = pko_mkdir(name);
+    ret = pko_mkdir(name, mode);
     SignalSema(fsys_sema);
 
     return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////
-static int fsysRmdir(char *name)
+static int fsysRmdir(iop_file_t* file, char *name)
 {
     int ret;
     dbgprintf("fsysRmdir..\n");

@@ -20,7 +20,7 @@ int pko_lseek_file(int fd, unsigned int offset, int whence);
 void pko_close_socket(void);
 void pko_close_fsys(void);
 int pko_remove(char *name);
-int pko_mkdir(char *name);
+int pko_mkdir(char *name, int mode);
 int pko_rmdir(char *name);
 int pko_open_dir(char *path);
 int pko_read_dir(int fd, void *buf);

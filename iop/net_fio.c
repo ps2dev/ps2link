@@ -427,16 +427,6 @@ int pko_remove(char *name)
         return -1;
     }
 
-printf("pko_remove name buff:\n");
-int i, j;
-for(j=0; j<4*16; j+=16)
-{
-	for(i=0; i<16; i++)
-	{
-		printf("%02X ", name[j+i]);
-	}
-	printf("\n");
-}
     dbgprintf("pko_file: file remove req (%s)\n", name);
 
     removereq = (pko_pkt_remove_req *)&send_packet[0];
@@ -464,7 +454,7 @@ for(j=0; j<4*16; j+=16)
 
 //----------------------------------------------------------------------
 //
-int pko_mkdir(char *name)
+int pko_mkdir(char *name, int mode)
 {
     pko_pkt_mkdir_req *mkdirreq;
     pko_pkt_file_rly *mkdirrly;
@@ -480,6 +470,7 @@ int pko_mkdir(char *name)
     // Build packet
     mkdirreq->cmd = htonl(PKO_MKDIR_CMD);
     mkdirreq->len = htons((unsigned short)sizeof(pko_pkt_mkdir_req));
+    mkdirreq->mode = mode;
     strncpy(mkdirreq->name, name, PKO_MAX_PATH);
     mkdirreq->name[PKO_MAX_PATH - 1] = 0; // Make sure it's null-terminated
 
