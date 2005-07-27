@@ -148,6 +148,7 @@ typedef struct
 {
     unsigned int cmd;
     unsigned short len;
+    int mode;
     char name[PKO_MAX_PATH];
 } __attribute__((packed)) pko_pkt_mkdir_req;
 
