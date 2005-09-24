@@ -38,12 +38,12 @@ static const unsigned char regName[32][5] =
     "s6", "s7", "k0", "k1", "gp", "sp", "fp", "ra"
 };
 
-static char codeTxt[13][24] = 
+static char codeTxt[14][24] = 
 {
     "Interrupt", "TLB modification", "TLB load/inst fetch", "TLB store",
     "Address load/inst fetch", "Address store", "Bus error (instr)", 
     "Bus error (data)", "Syscall", "Breakpoint", "Reserved instruction", 
-    "Coprocessor unusable", "Arithmetic overflow"
+    "Coprocessor unusable", "Arithmetic overflow", "Trap"
 };
 
 char _exceptionStack[8*1024] __attribute__((aligned(16)));
@@ -134,7 +134,7 @@ void iopException(int cause, int badvaddr, int status, int epc, u32 *regs, int r
 
 	for(i = 0; i < 32/4; i++) 
 	{
-		excpPrintf("       %4s: %08lX %4s: %08lX %4s: %08lX %4s: %08lX\n", 
+		excpPrintf("       %4s: %08X %4s: %08X %4s: %08X %4s: %08X\n", 
 					regName[i],  regs[i], regName[i+8], regs[i+8],
 					regName[i+16],  regs[i+16], regName[i+24], regs[i+24]); 
 	}

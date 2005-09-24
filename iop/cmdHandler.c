@@ -222,7 +222,6 @@ pkoReset(char *buf, int len)
         return;
     }
 
-    LoadStartModule("rom0:CLEARSPU", 0, NULL, &ret);
     printf("unmounting\n");
     fsysUnmount();
     printf("unmounted\n");

@@ -683,6 +683,12 @@ main(int argc, char *argv[])
     dbgscr_printf("init cmdrpc\n");
     initCmdRpc();
 
+    if (SifLoadModule("rom0:CLEARSPU", 0, NULL)<0)
+    {
+        scr_printf("rom0:CLEARSPU failed\n");
+        sio_printf("rom0:CLEARSPU failed\n");
+    }
+
     // get extra config
 	if(load_extra_conf)
 	   getExtraConfig();

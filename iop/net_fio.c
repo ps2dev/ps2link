@@ -393,7 +393,12 @@ int pko_read_file(int fd, char *buf, int length)
 
     readcmd->nbytes = htonl(length);
 
-    send(pko_fileio_sock, readcmd, sizeof(pko_pkt_read_req), 0);
+    i = send(pko_fileio_sock, readcmd, sizeof(pko_pkt_read_req), 0);
+    if (i<0)
+    {
+        dbgprintf("pko_file: pko_read_file: send failed (%d)\n", i);
+        return -1;
+    }
 
     if(!pko_accept_pkt(pko_fileio_sock, (char *)readrly, 
                        sizeof(pko_pkt_read_rly), PKO_READ_RLY)) {
