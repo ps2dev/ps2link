@@ -1,8 +1,17 @@
 PS2Link (C) 2003 Tord Lindstrom (pukko@home.se)
         (C) 2003,2004 adresd (adresd_ps2dev@yahoo.com)
 	(C) 2004 Lukasz Bruun (mail@lukasz.dk)
+	(C) 2006 Drakonite (makeshift_ps2dev@123mail.org)
 ------------------------------------------------------------------------
 
+2006-01-25 Version 1.32
+	- Cleaned up and repaired Makefiles
+	- Disabled 'check' dependency of make dist as it seems to 
+	  be broken, dist was broken anyways so it doesn't seem like 
+	  check is being used
+	- Builtin_irx made default out of svn
+	- Bumped version for tag
+	
 2004-09-25 Version 1.30
         - Added IOP exception handling
 	- Changed IPCONFIG.DAT & EXTRA.CNF a little and added better

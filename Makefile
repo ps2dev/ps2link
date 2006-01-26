@@ -1,33 +1,43 @@
 # Compilation variables
 
-# Set this to enable debug mode
+# Set this to 1 to enable debug mode
 DEBUG = 0
 
 # Set this to 1 to build a highloading version, 0 for normal low version
 LOADHIGH = 0
 
 # Set this to 1 to build ps2link with all the needed IRX builtins
-BUILTIN_IRXS = 0
+BUILTIN_IRXS = 1
 
 # Set this to 1 to enable zero-copy on fileio writes.
 ZEROCOPY = 0
 
 # Set this to 1 to power off the ps2 when the reset button is tapped
 # otherwise it will try and reset ps2link
-PWOFFONRESET = 1
+PWOFFONRESET = 0
+
+# Set to the path where ps2eth is located
+PS2ETH = $(PS2DEV)/ps2eth
+
+SHELL=/usr/bin/env bash
+BIN2O=$(PS2SDK)/bin/bin2o
+RM=rm -f
+
+#
+# You shouldn't need to modify anything below this point
+#
 
 include $(PS2SDK)/Defs.make
 
-SHELL=/usr/bin/env bash
 EEFILES=ee/ps2link.elf
-BIN2O=$(PS2SDK)/bin/bin2o
-RM=rm -f
+
 IRXFILES=iop/ps2link.irx $(PS2SDK)/iop/irx/ps2ip.irx \
-	$(PS2DEV)/ps2eth/smap/ps2smap.irx \
+	$(PS2ETH)/smap/ps2smap.irx \
 	$(PS2SDK)/iop/irx/iomanX.irx \
 	$(PS2SDK)/iop/irx/ioptrap.irx \
 	$(PS2SDK)/iop/irx/ps2dev9.irx \
 	$(PS2SDK)/iop/irx/poweroff.irx
+
 VARIABLES=DEBUG=$(DEBUG) LOADHIGH=$(LOADHIGH) BUILTIN_IRXS=$(BUILTIN_IRXS) ZEROCOPY=$(ZEROCOPY) PWOFFONRESET=$(PWOFFONRESET)
 
 ifeq ($(BUILTIN_IRXS),1)
@@ -37,6 +47,16 @@ TARGETS = ee iop
 endif
 
 all: $(TARGETS)
+ifneq ($(BUILTIN_IRXS),1)
+	@for file in $(IRXFILES); do \
+		new=`echo $${file/*\//}|tr "[:lower:]" "[:upper:]"`; \
+		cp $$file bin/$$new; \
+	done;
+endif
+	@for file in $(EEFILES); do \
+		new=`echo $${file/*\//}|tr "[:lower:]" "[:upper:]"`; \
+		cp $$file bin/$$new; \
+	done;
 
 ee:
 	$(VARIABLES) $(MAKE) -C ee
@@ -52,17 +72,21 @@ check:
 	$(VARIABLES) $(MAKE) -C ee check
 
 # Creates a zip from what you have
-dist: all check
+dist: all
+	@rm -rf dist
+	@mkdir -p dist/ps2link
+ifneq ($(BUILTIN_IRXS),1)
 	@for file in $(IRXFILES); do \
 		new=`echo $${file/*\//}|tr "[:lower:]" "[:upper:]"`; \
-		cp $$file bin/$$new; \
+		cp $$file dist/ps2link/$$new; \
 	done;
+endif
 	@for file in $(EEFILES); do \
 		new=`echo $${file/*\//}|tr "[:lower:]" "[:upper:]"`; \
-		cp $$file bin/$$new; \
+		cp $$file dist/ps2link/$$new; \
 	done;
-	@cd bin; \
-	tar -jcf ps2link.tar.bz2 *.IRX *.ELF system.cnf IPCONFIG.DAT extra.cnf
+	cd dist; \
+	tar -jcf ps2link.tar.bz2 ps2link/
 
 RELEASE_FILES=bin/*IRX bin/*DAT bin/*cnf bin/*ELF LICENSE README
 #

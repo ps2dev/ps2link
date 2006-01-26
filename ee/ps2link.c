@@ -25,7 +25,7 @@
 
 extern int initCmdRpc(void);
 
-#define WELCOME_STRING "Welcome to ps2link v1.31\n"
+#define WELCOME_STRING "Welcome to ps2link v1.32\n"
 
 #ifdef DEBUG
 #define dbgprintf(args...) printf(args)
