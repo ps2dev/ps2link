@@ -38,7 +38,7 @@ static int pkoStopVU(pko_pkt_stop_vu *);
 static int pkoStartVU(pko_pkt_start_vu *);
 static int pkoDumpMem(pko_pkt_mem_io *);
 static int pkoDumpReg(pko_pkt_dump_regs *);
-static void pkoReset(void);
+void pkoReset(void);
 static int pkoLoadElf(char *path);
 static int pkoGSExec(pko_pkt_gsexec_req *);
 static int pkoWriteMem(pko_pkt_mem_io *);
@@ -703,7 +703,7 @@ pkoStartVU(pko_pkt_start_vu *cmd) {
 }
 
 ////////////////////////////////////////////////////////////////////////
-static void
+void
 pkoReset(void)
 {
     char *argv[1];
@@ -732,13 +732,20 @@ pkoReset(void)
 #endif
     FlushCache(0);
 
+#ifdef USE_CACHED_CFG
+    argv[0] = elfName;
+	 SifLoadFileExit();
+    ExecPS2(&_start, 0, 1, argv);
+    return;
+#endif
+
     if ((boot == B_MC) || (boot == B_HOST) || (boot == B_UNKN) || (boot == B_CC)) {
-        argv[0] = elfName;
-		SifLoadFileExit();
-        ExecPS2(&_start, 0, 1, argv);
+       argv[0] = elfName;
+		 SifLoadFileExit();
+       ExecPS2(&_start, 0, 1, argv);
     }
     else {
-        LoadExecPS2(elfName, 0, NULL);
+       LoadExecPS2(elfName, 0, NULL);
     }
 }
 

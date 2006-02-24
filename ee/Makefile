@@ -33,6 +33,12 @@ EE_CFLAGS += -DBUILTIN_IRXS
 EE_LDFLAGS += ps2link_irx.o ps2ip_irx.o ps2smap_irx.o iomanX_irx.o ps2dev9_irx.o ioptrap_irx.o poweroff_irx.o
 endif
 
+ifeq ($(BUILTIN_IRXS),1)
+ifeq ($(CACHED_CFG),1)
+EE_CFLAGS += -DUSE_CACHED_CFG
+endif
+endif
+
 # This is to enable the debug mode into ps2link
 ifeq ($(DEBUG),1)
 EE_CFLAGS += -DDEBUG -g

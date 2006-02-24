@@ -4,6 +4,18 @@ PS2Link (C) 2003 Tord Lindstrom (pukko@home.se)
 	(C) 2006 Drakonite (makeshift_ps2dev@123mail.org)
 ------------------------------------------------------------------------
 
+2006-02-18 Version 1.46
+	- Added Cached Config support
+	- Extra config disabled, at least while cached config is enabled
+	- Some code cleanup and reordering
+	- More consistant environment (no longer has sio2man and mcman
+	  loaded when booting from MC, assuming cached_cfg enabled)
+	- Boots from essentially anywhere now
+	- Some code uglyfications
+	- Elf in bin/ is now packed using ps2-packer
+	- Lots of version bumping from beta test versions
+	- Other stuff
+
 2006-01-25 Version 1.32
 	- Cleaned up and repaired Makefiles
 	- Disabled 'check' dependency of make dist as it seems to 

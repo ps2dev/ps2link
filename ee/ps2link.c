@@ -24,8 +24,9 @@
 #include <sbv_patches.h>
 
 extern int initCmdRpc(void);
+extern void pkoReset(void);
 
-#define WELCOME_STRING "Welcome to ps2link v1.32\n"
+#define WELCOME_STRING "Welcome to ps2link v1.46\n"
 
 #ifdef DEBUG
 #define dbgprintf(args...) printf(args)
@@ -245,6 +246,7 @@ getIpConfig(void)
     scr_printf("\n");
     // get extra config filename
     
+#ifndef USE_CACHED_CFG
 	if(getBufferValue(fExtraConfig, buf, len, "EXTRACNF") == 0)
 	{
 		scr_printf("extra conf: %s\n", fExtraConfig);
@@ -255,6 +257,9 @@ getIpConfig(void)
 	{
 			load_extra_conf = 0;
 	}
+#else
+	load_extra_conf = 0;
+#endif
 
 	if_conf_len = i;
 }
@@ -386,14 +391,26 @@ static void
 loadModules(void)
 {
 	int ret;
+#ifdef USE_CACHED_CFG
+	int i,t;
+#endif
 
     dbgscr_printf("loadModules \n");
-    if ((boot == B_MC) || (boot == B_CC))
+
+#ifdef USE_CACHED_CFG
+  if(if_conf_len==0)
+  {
+#endif
+	 if ((boot == B_MC) || (boot == B_CC))
     {
         pkoLoadModule("rom0:SIO2MAN", 0, NULL);
         pkoLoadModule("rom0:MCMAN", 0, NULL);  	
         pkoLoadModule("rom0:MCSERV", 0, NULL); 
     }
+#ifdef USE_CACHED_CFG
+	 return;
+  }
+#endif
 
 #ifdef BUILTIN_IRXS
     _binary_ioptrap_irx_size = _binary_ioptrap_irx_end - _binary_ioptrap_irx_start;
@@ -404,26 +421,45 @@ loadModules(void)
     _binary_poweroff_irx_size = _binary_poweroff_irx_end - _binary_poweroff_irx_start;
     _binary_ps2link_irx_size = _binary_ps2link_irx_end - _binary_ps2link_irx_start;
 
+#ifdef USE_CACHED_CFG
+    if(if_conf_len==0)
+	 {
+	    getIpConfig();
+    }
+    else
+	 {
+	    i=0;
+	    scr_printf("Net config: ");
+       for (t = 0, i = 0; t < 3; t++) {
+          scr_printf("%s  ", &if_conf[i]);
+          i += strlen(&if_conf[i]) + 1;
+       }
+       scr_printf("\n");
+    }
+
+#else	 
     getIpConfig();
-	    dbgscr_printf("Exec iomanX module. (%x,%d) ", _binary_iomanX_irx_start, _binary_iomanX_irx_size);
+#endif
+
+	    dbgscr_printf("Exec iomanX module. (%x,%d) ", (unsigned int)_binary_iomanX_irx_start, _binary_iomanX_irx_size);
     SifExecModuleBuffer(_binary_iomanX_irx_start, _binary_iomanX_irx_size, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ps2dev9 module. (%x,%d) ", _binary_ps2dev9_irx_start, _binary_ps2dev9_irx_size);
+	    dbgscr_printf("Exec ps2dev9 module. (%x,%d) ", (unsigned int)_binary_ps2dev9_irx_start, _binary_ps2dev9_irx_size);
     SifExecModuleBuffer(_binary_ps2dev9_irx_start, _binary_ps2dev9_irx_size, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ps2ip module. (%x,%d) ", _binary_ps2ip_irx_start, _binary_ps2ip_irx_size);
+	    dbgscr_printf("Exec ps2ip module. (%x,%d) ", (unsigned int)_binary_ps2ip_irx_start, _binary_ps2ip_irx_size);
     SifExecModuleBuffer(_binary_ps2ip_irx_start, _binary_ps2ip_irx_size, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ps2smap module. (%x,%d) ", _binary_ps2smap_irx_start, _binary_ps2smap_irx_size);
+	    dbgscr_printf("Exec ps2smap module. (%x,%d) ", (unsigned int)_binary_ps2smap_irx_start, _binary_ps2smap_irx_size);
     SifExecModuleBuffer(_binary_ps2smap_irx_start, _binary_ps2smap_irx_size, if_conf_len, &if_conf[0],&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ioptrap module. (%x,%d) ", _binary_ioptrap_irx_start, _binary_ioptrap_irx_size);
+	    dbgscr_printf("Exec ioptrap module. (%x,%d) ", (unsigned int)_binary_ioptrap_irx_start, _binary_ioptrap_irx_size);
     SifExecModuleBuffer(_binary_ioptrap_irx_start, _binary_ioptrap_irx_size, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec poweroff module. (%x,%d) ", _binary_poweroff_irx_start, _binary_poweroff_irx_size);
+	    dbgscr_printf("Exec poweroff module. (%x,%d) ", (unsigned int)_binary_poweroff_irx_start, _binary_poweroff_irx_size);
     SifExecModuleBuffer(_binary_poweroff_irx_start, _binary_poweroff_irx_size, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-		dbgscr_printf("Exec ps2link module. (%x,%d) ", _binary_ps2link_irx_start, _binary_ps2link_irx_size);
+		dbgscr_printf("Exec ps2link module. (%x,%d) ", (unsigned int)_binary_ps2link_irx_start, _binary_ps2link_irx_size);
     SifExecModuleBuffer(_binary_ps2link_irx_start, _binary_ps2link_irx_size, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
 	    dbgscr_printf("All modules loaded on IOP.\n");
@@ -585,75 +621,10 @@ wipeUserMemLoadHigh(void)
     }
 }
 
-////////////////////////////////////////////////////////////////////////
-int
-main(int argc, char *argv[])
+
+void
+restartIOP()
 {
-    //    int ret;
-    char *bootPath;
-
-    init_scr();
-    installExceptionHandlers();
-    scr_printf(WELCOME_STRING);
-#ifdef _LOADHIGHVER
-    scr_printf("Highload version\n");
-#endif
-
-    // argc == 0 usually means naplink..
-    if (argc == 0) {
-        bootPath = "host:";
-    }
-    // reload1 usually gives an argc > 60000 (yea, this is kinda a hack..)
-    else if (argc != 1) {
-        bootPath = "mc0:/BWLINUX/";
-    }
-    else {
-        bootPath = argv[0];
-    }
-
-    SifInitRpc(0);
-    dbgscr_printf("Checking argv\n");
-    boot = 0;
-
-    setPathInfo(bootPath);
-
-    if (!strncmp(bootPath, "cdrom", strlen("cdrom"))) {
-        // Booting from cd
-        scr_printf("Booting from cdrom (%s)\n", bootPath);
-        boot = B_CD;
-	cdvdInit(CDVD_INIT_NOWAIT);
-    }
-    else if(!strncmp(bootPath, "mc", strlen("mc"))) {
-        // Booting from my mc
-        scr_printf("Booting from mc dir (%s)\n", bootPath);
-        boot = B_MC;
-    }
-    else if(!strncmp(bootPath, "host", strlen("host"))) {
-        // Host
-        scr_printf("Booting from host (%s)\n", bootPath);
-        boot = B_HOST;
-    }
-    else if(!strncmp(bootPath, "rom0:OSDSYS", strlen("rom0:OSDSYS"))) {
-        // From CC's firmware
-	scr_printf("Booting as CC firmware\n");
-	boot = B_CC;
-    }
-    else {
-        // Unknown
-        scr_printf("Booting from unrecognized place %s\n", bootPath);
-        boot = B_UNKN;
-    }
-
-    // System initalisation
-#ifndef BUILTIN_IRXS
-    if (boot == B_HOST) {
-        if (loadHostModBuffers() < 0) {
-            dbgscr_printf("Unable to load modules from host:!\n");
-            SleepThread();
-	}
-    }
-#endif
-
     if (boot == B_CD) {
         cdvdInit(CDVD_EXIT);
         cdvdExit();
@@ -679,6 +650,97 @@ main(int argc, char *argv[])
 //	SifLoadFileReset();
     dbgscr_printf("loading modules\n");
     loadModules();
+}
+
+
+////////////////////////////////////////////////////////////////////////
+int
+main(int argc, char *argv[])
+{
+    //    int ret;
+    char *bootPath;
+
+    init_scr();
+    scr_printf(WELCOME_STRING);
+#ifdef _LOADHIGHVER
+    scr_printf("Highload version\n");
+#endif
+
+    installExceptionHandlers();
+
+    // argc == 0 usually means naplink..
+    if (argc == 0) {
+        bootPath = "host:";
+    }
+    // reload1 usually gives an argc > 60000 (yea, this is kinda a hack..)
+    else if (argc != 1) {
+        bootPath = "mc0:/BWLINUX/";
+    }
+    else {
+        bootPath = argv[0];
+    }
+
+    SifInitRpc(0);
+    dbgscr_printf("Checking argv\n");
+    boot = 0;
+
+    setPathInfo(bootPath);
+
+    if (!strncmp(bootPath, "cdrom", strlen("cdrom"))) {
+        // Booting from cd
+        scr_printf("Booting from cdrom (%s)\n", bootPath);
+        boot = B_CD;
+        cdvdInit(CDVD_INIT_NOWAIT);
+    }
+    else if(!strncmp(bootPath, "mc", strlen("mc"))) {
+        // Booting from my mc
+        scr_printf("Booting from mc dir (%s)\n", bootPath);
+        boot = B_MC;
+    }
+    else if(!strncmp(bootPath, "host", strlen("host"))) {
+        // Host
+        scr_printf("Booting from host (%s)\n", bootPath);
+        boot = B_HOST;
+    }
+    else if(!strncmp(bootPath, "rom0:OSDSYS", strlen("rom0:OSDSYS"))) {
+        // From CC's firmware
+	scr_printf("Booting as CC firmware\n");
+	boot = B_CC;
+    }
+    else {
+        // Unknown
+        scr_printf("Booting from unrecognized place %s\n", bootPath);
+        boot = B_UNKN;
+    }
+
+#ifdef USE_CACHED_CFG
+    if(if_conf_len==0)
+    {
+       scr_printf("Initial boot, will load config then reset\n");
+		 if(boot == B_MC || boot == B_CC)
+			 restartIOP();
+
+       getIpConfig();
+			 
+		 pkoReset();
+ 	 }
+	 else
+	 {
+	 	 scr_printf("Using cached config\n");
+	 }
+#endif
+
+    // System initalisation
+#ifndef BUILTIN_IRXS
+    if (boot == B_HOST) {
+        if (loadHostModBuffers() < 0) {
+            dbgscr_printf("Unable to load modules from host:!\n");
+            SleepThread();
+	}
+    }
+#endif
+
+	restartIOP();
 
     dbgscr_printf("init cmdrpc\n");
     initCmdRpc();

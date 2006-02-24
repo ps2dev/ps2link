@@ -9,6 +9,9 @@ LOADHIGH = 0
 # Set this to 1 to build ps2link with all the needed IRX builtins
 BUILTIN_IRXS = 1
 
+# Set this to 1 to enable caching of config files
+CACHED_CFG = 1
+
 # Set this to 1 to enable zero-copy on fileio writes.
 ZEROCOPY = 0
 
@@ -38,7 +41,7 @@ IRXFILES=iop/ps2link.irx $(PS2SDK)/iop/irx/ps2ip.irx \
 	$(PS2SDK)/iop/irx/ps2dev9.irx \
 	$(PS2SDK)/iop/irx/poweroff.irx
 
-VARIABLES=DEBUG=$(DEBUG) LOADHIGH=$(LOADHIGH) BUILTIN_IRXS=$(BUILTIN_IRXS) ZEROCOPY=$(ZEROCOPY) PWOFFONRESET=$(PWOFFONRESET)
+VARIABLES=DEBUG=$(DEBUG) LOADHIGH=$(LOADHIGH) BUILTIN_IRXS=$(BUILTIN_IRXS) ZEROCOPY=$(ZEROCOPY) PWOFFONRESET=$(PWOFFONRESET) CACHED_CFG=$(CACHED_CFG)
 
 ifeq ($(BUILTIN_IRXS),1)
 TARGETS = iop builtins ee
@@ -55,7 +58,7 @@ ifneq ($(BUILTIN_IRXS),1)
 endif
 	@for file in $(EEFILES); do \
 		new=`echo $${file/*\//}|tr "[:lower:]" "[:upper:]"`; \
-		cp $$file bin/$$new; \
+		ps2-packer $$file bin/$$new; \
 	done;
 
 ee:
