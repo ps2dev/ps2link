@@ -81,7 +81,7 @@ pkoDebug(int cause, int badvaddr, int status, int epc, eeReg *regs)
     excpPrintf("\n\n           EE Exception handler: %s exception\n\n", 
                codeTxt[code>>2]);
 
-    excpPrintf("      Cause %08x  BadVAddr %08x  Status %08x  EPC %08x\n\n",
+    excpPrintf("      Cause %08X  BadVAddr %08X  Status %08X  EPC %08X\n\n",
                cause, badvaddr, status, epc);
 
     for(i = 0; i < 32/2; i++) {
@@ -125,11 +125,11 @@ void iopException(int cause, int badvaddr, int status, int epc, u32 *regs, int r
 	excpPrintf("\n\n         IOP Exception handler: %s exception\n\n", 
                codeTxt[code>>2]);
 		
-	excpPrintf("               Module Name \"%s\" Relative EPC %08x\n\n",
+	excpPrintf("               Module Name \"%s\" Relative EPC %08X\n\n",
                name, repc);
 
 
-	excpPrintf("      Cause %08x  BadVAddr %08x  Status %08x  EPC %08x\n\n",
+	excpPrintf("      Cause %08X  BadVAddr %08X  Status %08X  EPC %08X\n\n",
                cause, badvaddr, status, epc);
 
 	for(i = 0; i < 32/4; i++) 

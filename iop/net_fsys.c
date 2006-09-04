@@ -69,7 +69,7 @@ static void fsysInit(iop_device_t *driver)
     mythread.option = 0; // option
     mythread.thread = (void *)pko_file_serv; // entry
     mythread.stacksize = 0x800;
-    mythread.priority = 0x45; // We really should choose prio w more effort
+    mythread.priority = 9; // We really should choose prio w more effort
 
     pid = CreateThread(&mythread);
 

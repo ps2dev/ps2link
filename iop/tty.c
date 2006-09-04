@@ -72,7 +72,7 @@ static int ttyClose( int fd)
 static int ttyWrite(iop_file_t *file, char *buf, int size)
 {
     struct sockaddr_in dstaddr;
-    int res;    
+    int res;
 
     WaitSema(tty_sema);
 
@@ -80,7 +80,7 @@ static int ttyWrite(iop_file_t *file, char *buf, int size)
     dstaddr.sin_addr.s_addr = remote_pc_addr;
     dstaddr.sin_port        = htons(PKO_PRINTF_PORT);
 
-    res = sendto(tty_socket, buf, size, 0, (struct sockaddr *)&dstaddr, 
+    res = sendto(tty_socket, buf, size, 0, (struct sockaddr *)&dstaddr,
                     sizeof(dstaddr));
 
     SignalSema(tty_sema);
@@ -105,8 +105,8 @@ int ttyMount(void)
     close(1);
     DelDrv(ttyname);
     AddDrv(&tty_driver);
-    open("tty00:", 0x1003);
-    open("tty00:", 2);
+    if(open("tty00:", O_RDONLY) != 0) while(1);
+    if(open("tty00:", O_WRONLY) != 1) while(1);
 
     return 0;
 }

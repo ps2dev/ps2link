@@ -26,7 +26,7 @@
 extern int initCmdRpc(void);
 extern void pkoReset(void);
 
-#define WELCOME_STRING "Welcome to ps2link v1.46\n"
+#define WELCOME_STRING "Welcome to ps2link v1.51\n"
 
 #ifdef DEBUG
 #define dbgprintf(args...) printf(args)
@@ -59,9 +59,9 @@ char ps2ip_path[PKO_MAX_PATH];
 char ps2smap_path[PKO_MAX_PATH];
 char ps2link_path[PKO_MAX_PATH];
 
-void *ioptrap_mod = NULL, *iomanX_mod = NULL, *ps2dev9_mod = NULL, 
+void *ioptrap_mod = NULL, *iomanX_mod = NULL, *ps2dev9_mod = NULL,
 	 *ps2ip_mod = NULL, *ps2smap_mod = NULL, *poweroff_mod = NULL, *ps2link_mod = NULL;
-int ioptrap_size = 0, iomanX_size = 0, ps2dev9_size = 0, ps2ip_size = 0, 
+int ioptrap_size = 0, iomanX_size = 0, ps2dev9_size = 0, ps2ip_size = 0,
 	poweroff_size = 0, ps2smap_size = 0, ps2link_size = 0;
 #else
 extern unsigned char _binary_ioptrap_irx_start[], _binary_iomanX_irx_start[], _binary_ps2dev9_irx_start[], \
@@ -157,19 +157,19 @@ static int getBufferValue(char* result, char* buffer, u32 buffer_size, char* fie
 	}
 
 	while(buffer[i] != ';')
-	{	
+	{
 		i++;
 		if(i == buffer_size) return -5;
 	}
-		
+
 	end = &buffer[i];
-		
+
 	len = end - start;
-	
+
 	if(len > 256) return -6;
 
 	strncpy(result, start, len);
-	
+
 	return 0;
 }
 
@@ -195,7 +195,7 @@ getIpConfig(void)
     }
     fd = fioOpen(path, O_RDONLY);
 
-    if (fd < 0) 
+    if (fd < 0)
     {
         scr_printf("Could not find IPCONFIG.DAT, using defaults\n"
                    "Net config: %s  %s  %s\n", ip, netmask, gw);
@@ -204,13 +204,13 @@ getIpConfig(void)
         i = 0;
         strncpy(&if_conf[i], ip, 15);
         i += strlen(ip) + 1;
-        
+
         strncpy(&if_conf[i], netmask, 15);
         i += strlen(netmask) + 1;
-        
+
         strncpy(&if_conf[i], gw, 15);
         i += strlen(gw) + 1;
-        
+
         if_conf_len = i;
         dbgscr_printf("conf len %d\n", if_conf_len);
         return;
@@ -245,12 +245,12 @@ getIpConfig(void)
     }
     scr_printf("\n");
     // get extra config filename
-    
+
 #ifndef USE_CACHED_CFG
 	if(getBufferValue(fExtraConfig, buf, len, "EXTRACNF") == 0)
 	{
 		scr_printf("extra conf: %s\n", fExtraConfig);
-		
+
 		load_extra_conf = 1;
 	}
 	else
@@ -265,13 +265,13 @@ getIpConfig(void)
 }
 
 void
-getExtraConfig() 
+getExtraConfig()
 {
     int fd, size, ret;
     char *buf, *ptr, *ptr2;
     fd = fioOpen(fExtraConfig, O_RDONLY);
-    
-	if ( fd < 0 ) 
+
+	if ( fd < 0 )
 	{
         scr_printf("failed to open extra conf file\n");
         return;
@@ -354,7 +354,7 @@ static int loadHostModBuffers()
     irx_buffer_addr = IRX_BUFFER_BASE;
 
     getIpConfig();
-	
+
 	if (!(ioptrap_mod = modbuf_load(ioptrap_path, &ioptrap_size)))
         {return -1;}
 
@@ -404,8 +404,8 @@ loadModules(void)
 	 if ((boot == B_MC) || (boot == B_CC))
     {
         pkoLoadModule("rom0:SIO2MAN", 0, NULL);
-        pkoLoadModule("rom0:MCMAN", 0, NULL);  	
-        pkoLoadModule("rom0:MCSERV", 0, NULL); 
+        pkoLoadModule("rom0:MCMAN", 0, NULL);
+        pkoLoadModule("rom0:MCSERV", 0, NULL);
     }
 #ifdef USE_CACHED_CFG
 	 return;
@@ -437,7 +437,7 @@ loadModules(void)
        scr_printf("\n");
     }
 
-#else	 
+#else
     getIpConfig();
 #endif
 
@@ -465,7 +465,7 @@ loadModules(void)
 	    dbgscr_printf("All modules loaded on IOP.\n");
 #else
     if (boot == B_HOST) {
-		
+
 		dbgscr_printf("Exec iomanX module. (%x,%d) ", (u32)iomanX_mod, iomanX_size);
         SifExecModuleBuffer(iomanX_mod, iomanX_size, 0, NULL,&ret);
 		dbgscr_printf("[%d] returned\n", ret);
@@ -487,8 +487,8 @@ loadModules(void)
 		dbgscr_printf("Exec ps2link module. (%x,%d) ", (u32)ps2link_mod, ps2link_size);
         SifExecModuleBuffer(ps2link_mod, ps2link_size, 0, NULL,&ret);
 		dbgscr_printf("[%d] returned\n", ret);
-		
-		
+
+
 		dbgscr_printf("All modules loaded on IOP.\n");
     } else {
         getIpConfig();
@@ -543,7 +543,7 @@ setPathInfo(char *path)
 
     strncpy(elfName, path, 255);
     strncpy(elfPath, path, 255);
-    elfName[255] = '\0'; 
+    elfName[255] = '\0';
     elfPath[255] = '\0';
 
 
@@ -558,13 +558,13 @@ setPathInfo(char *path)
             }
         }
     }
-    
+
     ptr++;
     *ptr = '\0';
 
 #ifndef BUILTIN_IRXS
     /* Paths to modules.  */
-	
+
 	sprintf(iomanX_path, "%s%s", elfPath, "IOMANX.IRX");
     sprintf(ps2dev9_path, "%s%s", elfPath, "PS2DEV9.IRX");
     sprintf(ps2ip_path, "%s%s", elfPath, "PS2IP.IRX");
@@ -652,6 +652,112 @@ restartIOP()
     loadModules();
 }
 
+#if HOOK_THREADS
+
+// we can spare 1k to allow a generous number of threads..
+#define MAX_MONITORED_THREADS 256
+
+int _first_load = 1;
+
+int th_count;
+int active_threads[MAX_MONITORED_THREADS];
+
+void *addr_LoadExecPS2;
+void *addr_CreateThread;
+void *addr_DeleteThread;
+
+void InstallKernelHooks(void)
+{
+    // get the current address of each syscall we want to hook then replace the entry
+    // in the syscall table with that of our hook function.
+
+    addr_LoadExecPS2 = GetSyscall(6);
+    SetSyscall(6, &Hook_LoadExecPS2);
+
+    addr_CreateThread = GetSyscall(32);
+    SetSyscall(32, &Hook_CreateThread);
+
+    addr_DeleteThread = GetSyscall(33);
+    SetSyscall(33, &Hook_DeleteThread);
+}
+
+void RemoveKernelHooks(void)
+{
+    SetSyscall(6, addr_LoadExecPS2);
+    SetSyscall(32, addr_CreateThread);
+    SetSyscall(33, addr_DeleteThread);
+}
+
+int Hook_LoadExecPS2(char *fname, int argc, char *argv[])
+{
+    // kill any active threads
+    KillActiveThreads();
+
+    // remove our kernel hooks
+    RemoveKernelHooks();
+
+    // call the real LoadExecPS2 handler, this will never return
+    return(((int (*)(char *, int, char **)) (addr_LoadExecPS2))(fname, argc, argv));
+}
+
+int Hook_CreateThread(ee_thread_t *thread_p)
+{
+    int i;
+    for(i = 0; i < MAX_MONITORED_THREADS; i++)
+    {
+        if(active_threads[i] < 0) { break; }
+    }
+
+    if(i >= MAX_MONITORED_THREADS) { return(-1); }
+
+    // call the real CreateThread handler, saving the thread id in our list
+    return(active_threads[i] = ((int (*)(ee_thread_t *)) (addr_CreateThread))(thread_p));
+}
+
+int Hook_DeleteThread(int th_id)
+{
+    int i;
+
+    for(i = 0; i < MAX_MONITORED_THREADS; i++)
+    {
+        if(active_threads[i] == th_id)
+        {
+            // remove the entry from the active thread list.
+            active_threads[i] = -1;
+            break;
+        }
+    }
+
+    // call the real DeleteThread handler
+    return(((int (*)(int)) (addr_DeleteThread))(th_id));
+}
+
+// kill all threads created and not deleted since PS2LINK.ELF started except for the calling thread.
+void KillActiveThreads(void)
+{
+    int my_id = GetThreadId();
+    int i;
+
+    for(i = 0; i < MAX_MONITORED_THREADS; i++)
+    {
+        if((active_threads[i] >= 0) && (active_threads[i] != my_id))
+        {
+            TerminateThread(active_threads[i]);
+            DeleteThread(active_threads[i]);
+            active_threads[i] = -1;
+        }
+    }
+}
+
+void ResetActiveThreads(void)
+{
+    int i;
+    for(i = 0; i < MAX_MONITORED_THREADS; i++) { active_threads[i] = -1; }
+}
+#endif
+
+extern void _start(void);
+extern int _end;
 
 ////////////////////////////////////////////////////////////////////////
 int
@@ -666,7 +772,19 @@ main(int argc, char *argv[])
     scr_printf("Highload version\n");
 #endif
 
+    scr_printf("ps2link loaded at 0x%08X-0x%08X\n", ((u32) _start) - 8, (u32) &_end);
+
     installExceptionHandlers();
+
+#if HOOK_THREADS
+    if(_first_load)
+    {
+        _first_load = 0;
+        InstallKernelHooks();
+    }
+
+    ResetActiveThreads();
+#endif
 
     // argc == 0 usually means naplink..
     if (argc == 0) {
@@ -721,7 +839,7 @@ main(int argc, char *argv[])
 			 restartIOP();
 
        getIpConfig();
-			 
+
 		 pkoReset();
  	 }
 	 else
@@ -745,19 +863,26 @@ main(int argc, char *argv[])
     dbgscr_printf("init cmdrpc\n");
     initCmdRpc();
 
+// CLEARSPU seems to cause exceptions in the Multi_Thread_Manager module.
+// I suspect this is caused by the interrupt handlers or some such.
+/*
+    dbgscr_printf("clearing spu\n");
     if (SifLoadModule("rom0:CLEARSPU", 0, NULL)<0)
     {
         scr_printf("rom0:CLEARSPU failed\n");
         sio_printf("rom0:CLEARSPU failed\n");
     }
+*/
 
     // get extra config
 	if(load_extra_conf)
+    {
+        dbgscr_printf("getting extra config\n");
 	   getExtraConfig();
+	}
 
     scr_printf("Ready\n");
     sio_printf("Ready\n");
-//    printf("Main done\n");
 
 //    SleepThread();
     ExitDeleteThread();

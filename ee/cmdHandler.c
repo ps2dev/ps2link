@@ -30,6 +30,10 @@
 #define dbgprintf(args...) do { } while(0)
 #endif
 
+#if HOOK_THREADS
+extern void KillActiveThreads(void);
+#endif
+
 ////////////////////////////////////////////////////////////////////////
 // Prototypes
 static int cmdThread(void);
@@ -708,11 +712,17 @@ pkoReset(void)
 {
     char *argv[1];
     // Check if user thread is running, if so kill it
+
 #if 1
+
+#if HOOK_THREADS
+    KillActiveThreads();
+#else
     if (userThreadID) {
         TerminateThread(userThreadID);
         DeleteThread(userThreadID);
     }
+#endif
 #endif
     userThreadID = 0;
 
@@ -859,19 +869,11 @@ initCmdRpc(void)
     ee_thread_t th_attr;
 	int ret;
 
-	th_attr.func = cmdThread;
-    th_attr.stack = cmdThreadStack;
-    th_attr.stack_size = sizeof(cmdThreadStack);
-    th_attr.gp_reg = &_gp;
-    th_attr.initial_priority = 0;
-
-
-
     th_attr.func = cmdThread;
     th_attr.stack = cmdThreadStack;
     th_attr.stack_size = sizeof(cmdThreadStack);
     th_attr.gp_reg = &_gp;
-    th_attr.initial_priority = 0;
+    th_attr.initial_priority = 20;
 
     ret = CreateThread(&th_attr);
     if (ret < 0) {

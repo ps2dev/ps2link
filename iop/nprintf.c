@@ -64,7 +64,7 @@ naplinkRpcInit(void)
     th_attr.option = 0;
     th_attr.thread = napThread;
     th_attr.stacksize = 0x800;
-    th_attr.priority = 0x4f;
+    th_attr.priority = 79;
 
     pid = CreateThread(&th_attr);
     if (pid < 0) {
