@@ -14,7 +14,6 @@ sysclib_IMPORTS_end
 thsemap_IMPORTS_start
 I_CreateSema
 I_SignalSema
-I_iSignalSema
 I_WaitSema
 I_DeleteSema
 thsemap_IMPORTS_end
@@ -23,10 +22,8 @@ thbase_IMPORTS_start
 I_CreateThread
 I_DeleteThread
 I_StartThread 
-I_SleepThread 
 I_GetThreadId 
 I_ExitDeleteThread
-I_DelayThread 
 thbase_IMPORTS_end
 
 ioman_IMPORTS_start
@@ -53,7 +50,6 @@ I_sceSifInitRpc
 I_sceSifSetRpcQueue
 I_sceSifRegisterRpc
 I_sceSifRpcLoop
-I_sceSifAddCmdHandler
 sifcmd_IMPORTS_end
 
 sifman_IMPORTS_start
@@ -79,20 +75,12 @@ I_sceCdInit
 I_sceCdStop
 cdvdman_IMPORTS_end
 
-dev9_IMPORTS_start
-I_dev9RegisterIntrCb
-I_dev9DmaTransfer
-I_dev9Shutdown
-I_dev9IntrEnable
-I_dev9IntrDisable
-I_dev9GetEEPROM
-I_dev9LEDCtl
-dev9_IMPORTS_end
-
 ioptrap_IMPORTS_start
 I_set_exception_handler
 ioptrap_IMPORTS_end
 
 poweroff_IMPORTS_start
+I_SetPowerButtonHandler
 I_AddPowerOffHandler
+I_PoweroffShutdown
 poweroff_IMPORTS_end

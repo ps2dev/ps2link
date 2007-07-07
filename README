@@ -15,7 +15,6 @@ The IRX's and the IPCONFIG.DAT should be in the directory which PS2LINK is loade
 
 PS2Link requires the following IRX modules:
 PS2LINK.IRX               from: ps2link
-IOMANX.IRX                      ps2sdk
 PS2DEV9.IRX                     ps2sdk
 PS2IP.IRX                       ps2sdk
 IOPTRAP.IRX                     ps2sdk

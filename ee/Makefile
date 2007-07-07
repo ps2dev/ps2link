@@ -30,7 +30,7 @@ endif
 # This is to builtin the IRXs into ps2link
 ifeq ($(BUILTIN_IRXS),1)
 EE_CFLAGS += -DBUILTIN_IRXS
-EE_LDFLAGS += ps2link_irx.o ps2ip_irx.o ps2smap_irx.o iomanX_irx.o ps2dev9_irx.o ioptrap_irx.o poweroff_irx.o
+EE_LDFLAGS += ps2link_irx.o ps2ip_irx.o ps2smap_irx.o ps2dev9_irx.o ioptrap_irx.o poweroff_irx.o
 endif
 
 ifeq ($(BUILTIN_IRXS),1)

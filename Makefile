@@ -40,7 +40,6 @@ EEFILES=ee/ps2link.elf
 
 IRXFILES=iop/ps2link.irx $(PS2SDK)/iop/irx/ps2ip.irx \
 	$(PS2ETH)/smap/ps2smap.irx \
-	$(PS2SDK)/iop/irx/iomanX.irx \
 	$(PS2SDK)/iop/irx/ioptrap.irx \
 	$(PS2SDK)/iop/irx/ps2dev9.irx \
 	$(PS2SDK)/iop/irx/poweroff.irx

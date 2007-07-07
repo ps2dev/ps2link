@@ -31,12 +31,6 @@
 #define dbgprintf(args...) do { } while(0)
 #endif
 
-/* 
- * This is to fix the dev9 shutdown on reset
- */
-extern void dev9Shutdown(void);
-extern void dev9IntrDisable(int mask);
-extern int sceSifSetDma(SifDmaTransfer_t *dmat, int count);
 //////////////////////////////////////////////////////////////////////////
 // How about a header file?..
 extern int fsysUnmount(void);
@@ -201,12 +195,7 @@ pkoScrDump(char *buf, int len)
 static void
 pkoPowerOff()
 {
-    // This is to do the dev9 shutdown on reset
-    dev9IntrDisable(-1);
-    dev9Shutdown();
-
-    *((unsigned char *)0xBF402017) = 0;
-    *((unsigned char *)0xBF402016) = 0xF;
+    PoweroffShutdown();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -403,9 +392,7 @@ int cmdHandlerInit(void)
     dbgprintf("IOP cmd: Starting thread\n");
 
     SifInitRpc(0);
-	AddPowerOffHandler(cmdPowerOff, NULL);
-
-	/* Add a power off handler */
+    SetPowerButtonHandler(cmdPowerOff, NULL);
 
     thread.attr = 0x02000000;
     thread.option = 0;
