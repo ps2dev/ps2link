@@ -285,7 +285,8 @@ pkoDumpMem(pko_pkt_mem_io *cmd) {
             } else {
                 printf("EE: pkoDumpMem() fioWrite failed\n");
                 return fd;
-            }
+            }	
+            offset = offset + len;	
             total += len;
         }
     }
