@@ -23,6 +23,10 @@ PWOFFONRESET = 1
 # Note that this will cause problems when loading PS2LINK.ELF from PS2LINK...
 HOOK_THREADS = 0
 
+# Set this to 1 to enable screenshots.
+# Note that this adds a dependency with libgraph and libdma
+SCREENSHOTS = 1
+
 # Set to the path where ps2eth is located
 PS2ETH = $(PS2DEV)/ps2eth
 
@@ -44,7 +48,7 @@ IRXFILES=iop/ps2link.irx $(PS2SDK)/iop/irx/ps2ip.irx \
 	$(PS2SDK)/iop/irx/ps2dev9.irx \
 	$(PS2SDK)/iop/irx/poweroff.irx
 
-VARIABLES=DEBUG=$(DEBUG) LOADHIGH=$(LOADHIGH) BUILTIN_IRXS=$(BUILTIN_IRXS) ZEROCOPY=$(ZEROCOPY) PWOFFONRESET=$(PWOFFONRESET) CACHED_CFG=$(CACHED_CFG) HOOK_THREADS=$(HOOK_THREADS)
+VARIABLES=DEBUG=$(DEBUG) LOADHIGH=$(LOADHIGH) BUILTIN_IRXS=$(BUILTIN_IRXS) ZEROCOPY=$(ZEROCOPY) PWOFFONRESET=$(PWOFFONRESET) CACHED_CFG=$(CACHED_CFG) HOOK_THREADS=$(HOOK_THREADS) SCREENSHOTS=$(SCREENSHOTS)
 
 ifeq ($(BUILTIN_IRXS),1)
 TARGETS = iop builtins ee

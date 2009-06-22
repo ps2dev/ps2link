@@ -28,6 +28,11 @@ ifeq ($(PWOFFONRESET),1)
 IOP_CFLAGS += -DPWOFFONRESET
 endif
 
+# Enable screenshot functionality
+ifeq ($(SCREENSHOTS),1)
+IOP_CFLAGS += -DSCREENSHOTS
+endif
+
 
 all: $(IOP_BIN)
 

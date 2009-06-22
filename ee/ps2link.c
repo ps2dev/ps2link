@@ -26,7 +26,7 @@
 extern int initCmdRpc(void);
 extern void pkoReset(void);
 
-#define WELCOME_STRING "Welcome to ps2link v1.51\n"
+#define WELCOME_STRING "Welcome to ps2link v1.52\n"
 
 #ifdef DEBUG
 #define dbgprintf(args...) printf(args)
@@ -755,6 +755,10 @@ main(int argc, char *argv[])
     scr_printf(WELCOME_STRING);
 #ifdef _LOADHIGHVER
     scr_printf("Highload version\n");
+#endif
+
+#ifdef SCREENSHOTS
+    scr_printf("Screenshot capable\n");
 #endif
 
     scr_printf("ps2link loaded at 0x%08X-0x%08X\n", ((u32) _start) - 8, (u32) &_end);

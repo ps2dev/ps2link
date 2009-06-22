@@ -14,6 +14,11 @@
 #include <iopcontrol.h>
 #include <fileio.h>
 #include <string.h>
+#ifdef SCREENSHOTS
+#include <dma.h>
+#include <packet.h>
+#include <graph.h>
+#endif
 #include "debug.h"
 #include "excepHandler.h"
 
@@ -46,6 +51,9 @@ void pkoReset(void);
 static int pkoLoadElf(char *path);
 static int pkoGSExec(pko_pkt_gsexec_req *);
 static int pkoWriteMem(pko_pkt_mem_io *);
+#ifdef SCREENSHOTS
+static int pkoScreenshot(pko_pkt_screenshot *);
+#endif
 
 // Flags for which type of boot (oh crap, make a header file dammit)
 #define B_CD 1
@@ -69,6 +77,20 @@ static char dataBuffer[16384]           __attribute__((aligned(16)));
 
 // The 'global' argv string area
 static char argvStrings[PKO_MAX_PATH];
+
+#ifdef SCREENSHOTS
+// Screenshot header
+typedef struct
+{
+  unsigned short bpp;    // bits per pixel
+  unsigned short width;  // screenshot width
+  unsigned short height; // screenshot height
+} __attribute__((packed)) ps2_screenshot_header;
+
+// Packet for screenshot requests
+u8 screenshot_packet_data[1024] __attribute__((aligned(128)));
+PACKET screenshot_packet = {1024, 0, screenshot_packet_data};
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 // How about that header file again?
@@ -760,6 +782,129 @@ pkoReset(void)
     }
 }
 
+#ifdef SCREENSHOTS
+///////////////////////////////////////////////////////////////////////////////
+#define VIF1_REG_STAT *((vu32 *)(0x10003C00))
+///////////////////////////////////////////////////////////////////////////////
+// graph_vram_read_xy
+int
+graph_vram_read_xy(int address, int x, int y, int width, int height, int psm, void *data, int data_size)
+{
+  // Reset the packet.
+  if (packet_reset(&screenshot_packet) < 0) { return -1; }
+
+  // Build the packet.
+  packet_append_64(&screenshot_packet, GIF_SET_TAG(4, 1, 0, 0, GIF_TAG_PACKED, 1));
+  packet_append_64(&screenshot_packet, 0x000000000000000E);
+  packet_append_64(&screenshot_packet, GIF_SET_BITBLTBUF(address >> 8, width >> 6, psm, 0, 0, 0));
+  packet_append_64(&screenshot_packet, GIF_REG_BITBLTBUF);
+  packet_append_64(&screenshot_packet, GIF_SET_TRXPOS(x, y, 0, 0, 0));
+  packet_append_64(&screenshot_packet, GIF_REG_TRXPOS);
+  packet_append_64(&screenshot_packet, GIF_SET_TRXREG(width, height));
+  packet_append_64(&screenshot_packet, GIF_REG_TRXREG);
+  packet_append_64(&screenshot_packet, GIF_SET_TRXDIR(1));
+  packet_append_64(&screenshot_packet, GIF_REG_TRXDIR);
+
+  // Send the packet.
+  if (packet_send(&screenshot_packet, DMA_CHANNEL_GIF, DMA_FLAG_NORMAL) < 0) { return -1; }
+
+  // Wait for the packet transfer to complete.
+  if (dma_channel_wait(DMA_CHANNEL_GIF, -1, DMA_FLAG_NORMAL) < 0) { return -1; }
+
+  // Reverse the bus direction.
+  GS_REG_BUSDIR = GS_SET_BUSDIR(1); VIF1_REG_STAT = (1 << 23);
+
+  // Receive the data.
+  if (dma_channel_receive(DMA_CHANNEL_VIF1, data, data_size, DMA_FLAG_NORMAL) < 0) { return -1; }
+
+  // Wait for the data transfer to complete.
+  if (dma_channel_wait(DMA_CHANNEL_VIF1, -1, DMA_FLAG_NORMAL) < 0) { return -1; }
+
+  // Restore the bus direction.
+  GS_REG_BUSDIR = GS_SET_BUSDIR(0); VIF1_REG_STAT = (0 << 23);
+
+  // Flush the cache, just in case.
+  FlushCache(0);
+
+  // End function.
+  return 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// ps2_screenshot_file2
+int
+ps2_screenshot_file2(
+  const char * pFilename,
+  unsigned int VramAdress,
+  unsigned int Width,
+  unsigned int Height,
+  unsigned int Psm)
+{
+  u32 y;
+  u32 pixel_size;
+  s32 file_handle;
+  ps2_screenshot_header hdr;
+  static u32 buffer[1920];
+
+  // Check parameters
+  if(pFilename == NULL)
+    return -1;
+  if(VramAdress >= (4*1024*1024))
+    return -1;
+  if(Width > 1920)
+    return -1;
+  //if(Height > 1080)
+  //  return -1;
+  switch(Psm)
+  {
+    case GRAPH_PSM_16:
+    case GRAPH_PSM_16S: pixel_size = 2; break;
+    case GRAPH_PSM_24:  pixel_size = 3; break;
+    case GRAPH_PSM_32:  pixel_size = 4; break;
+    default:
+      return -1;
+  }
+
+  // Open file
+  file_handle = fioOpen(pFilename, O_CREAT|O_WRONLY);
+  if(file_handle < 0)
+    return -1;
+
+  // Send header
+  hdr.bpp    = htons(pixel_size * 8);
+  hdr.width  = htons(Width);
+  hdr.height = htons(Height);
+  fioWrite(file_handle, &hdr, sizeof(hdr));
+
+  // Capture and send screenshot, line-by-line
+  for(y = 0; y < Height; y++)
+  {
+    graph_vram_read_xy(VramAdress, 0, y, Width, 1, Psm, buffer, Width * pixel_size);
+    fioWrite(file_handle, buffer, Width*pixel_size);
+  }
+
+  // Close file
+  fioClose(file_handle);
+
+  return 0;
+}
+
+////////////////////////////////////////////////////////////////////////
+static int
+pkoScreenshot(pko_pkt_screenshot * cmd)
+{
+    cmd->base   = ntohl(cmd->base);
+    cmd->width  = ntohl(cmd->width);
+    cmd->height = ntohl(cmd->height);
+    cmd->psm    = ntohs(cmd->psm);
+    
+    printf("ps2_screenshot_file(?, 0x%x, %d, %d, %d)\n", cmd->base, cmd->width, cmd->height, cmd->psm);
+    
+    ps2_screenshot_file2("host:screenshot.ps2", cmd->base, cmd->width, cmd->height, cmd->psm);
+    
+    return 0;
+}
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 // Sif dma interrupt handler, wakes up the cmd handler thread if 
@@ -852,6 +997,12 @@ cmdThread()
 		case PKO_IOPEXCEP_CMD:
 			iopException(sifDmaDataPtr[3], sifDmaDataPtr[4], sifDmaDataPtr[5], sifDmaDataPtr[2], &sifDmaDataPtr[6], sifDmaDataPtr[41], (char*)&sifDmaDataPtr[43]);
 			break;
+#ifdef SCREENSHOTS
+		case PKO_SCRSHOT_CMD:
+			dbgprintf("EE: Screenshot\n");
+			ret = pkoScreenshot(pkt);
+			break;
+#endif
         default: 
             printf("EE: Unknown rpc cmd (%x) !\n", cmd);
             ret = -1;

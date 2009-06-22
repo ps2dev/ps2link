@@ -7,6 +7,9 @@ SBVLITE = $(PS2SDK)/sbv
 EE_INCS += -I$(SBVLITE)/include
 EE_LDFLAGS += -L$(SBVLITE)/lib
 EE_LIBS += -lpatches -ldebug
+ifeq ($(SCREENSHOTS),1)
+EE_LIBS += -lpacket -ldma
+endif
 
 # Normal low loading version
 ifeq ($(BUILTIN_IRXS),1)
@@ -42,6 +45,11 @@ endif
 # This is to enable the debug mode into ps2link
 ifeq ($(DEBUG),1)
 EE_CFLAGS += -DDEBUG -g
+endif
+
+# Enable screenshot functionality
+ifeq ($(SCREENSHOTS),1)
+EE_CFLAGS += -DSCREENSHOTS
 endif
 
 LDPARAMS := -Wl,--defsym -Wl,_stack_size=0x8000 -Wl,--defsym -Wl,_stack=$(STACKADDR)
