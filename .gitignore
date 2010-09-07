@@ -1,0 +1,7 @@
+*.a
+*.elf
+*.erl
+*.irx
+*.o
+bin/*.ELF
+bin/*.IRX
