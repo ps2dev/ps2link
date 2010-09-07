@@ -73,6 +73,7 @@ iop:
 clean:
 	$(MAKE) -C ee clean
 	$(MAKE) -C iop clean
+	@rm -f ee/*_irx.o bin/*.ELF bin/*.IRX
 
 check:
 	$(VARIABLES) $(MAKE) -C ee check
