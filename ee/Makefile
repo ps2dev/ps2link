@@ -1,5 +1,5 @@
 EE_BIN  = ps2link.elf
-EE_OBJS = ps2link.o cmdHandler.o excepHandler.o exceptions.o cd.o
+EE_OBJS = ps2link.o cmdHandler.o excepHandler.o exceptions.o
 EE_INCS += -I../include
 
 # This is for the sbv patch

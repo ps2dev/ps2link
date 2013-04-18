@@ -14,12 +14,11 @@
 #include <iopcontrol.h>
 #include <fileio.h>
 #include <malloc.h>
+#include <stdio.h>
 #include <string.h>
 #include "debug.h"
-#include "cd.h"
 #include "hostlink.h"
 #include "excepHandler.h"
-#include "stdio.h"
 
 #include <sbv_patches.h>
 
@@ -73,8 +72,6 @@ static unsigned int _binary_ioptrap_irx_size, _binary_ps2dev9_irx_size, \
                     _binary_ps2ip_irx_size, _binary_ps2smap_irx_size, _binary_poweroff_irx_size, \
 					_binary_ps2link_irx_size;
 #endif
-
-char *imgcmd = "rom0:UDNL rom0:EELOADCNF";
 
 // Flags for which type of boot
 #define B_CD 1
@@ -610,22 +607,17 @@ wipeUserMemLoadHigh(void)
 void
 restartIOP()
 {
-    if (boot == B_CD) {
-        cdvdInit(CDVD_EXIT);
-        cdvdExit();
-    }
     fioExit();
     SifExitIopHeap();
     SifLoadFileExit();
     SifExitRpc();
 
     dbgscr_printf("reset iop\n");
-    SifIopReset(imgcmd, 0);
-    while (SifIopSync()) ;
+    SifIopReset(NULL, 0);
+    while (!SifIopSync()) ;
 
     dbgscr_printf("rpc init\n");
     SifInitRpc(0);
-    cdvdInit(CDVD_INIT_NOWAIT);
 
     scr_printf("Initializing...\n");
     sio_printf("Initializing...\n");
@@ -793,7 +785,6 @@ main(int argc, char *argv[])
         // Booting from cd
         scr_printf("Booting from cdrom (%s)\n", bootPath);
         boot = B_CD;
-        cdvdInit(CDVD_INIT_NOWAIT);
     }
     else if(!strncmp(bootPath, "mc", strlen("mc"))) {
         // Booting from my mc

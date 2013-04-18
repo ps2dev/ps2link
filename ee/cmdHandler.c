@@ -6,7 +6,7 @@
  * details.
  */
 
-#include "stdio.h"
+#include <stdio.h>
 #include <tamtypes.h>
 #include <kernel.h>
 #include <sifrpc.h>
@@ -17,7 +17,6 @@
 #include "debug.h"
 #include "excepHandler.h"
 
-#include "cd.h"
 #include "byteorder.h"
 #include "ps2regs.h"
 #include "hostlink.h"
@@ -731,17 +730,13 @@ pkoReset(void)
     sif0HandlerId = 0;
 
     SifInitRpc(0);
-    cdvdInit(CDVD_INIT_NOWAIT);
-    cdvdInit(CDVD_EXIT);
+    SifExitRpc();
+
     SifIopReset(NULL, 0);
-    SifExitRpc();
     while(SifIopSync());
-#if 1
+
     SifInitRpc(0);
-    cdvdExit();
     SifExitRpc();
-#endif
-    FlushCache(0);
 
 #ifdef USE_CACHED_CFG
     argv[0] = elfName;
