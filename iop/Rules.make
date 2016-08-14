@@ -11,7 +11,7 @@ IOP_CC_VERSION := $(shell $(IOP_CC) -v 2>&1 | sed -n 's/^.*version //p')
 
 ASFLAGS_TARGET = -mcpu=r3000
 
-ifeq ($(IOP_CC_VERSION),3.2.2)
+ifeq ($(IOP_CC_VERSION),$(filter $(IOP_CC_VERSION),3.2.2 3.2.3))
 CFLAGS_TARGET  = -miop
 ASFLAGS_TARGET = -march=r3000
 LDFLAGS_TARGET = -miop
