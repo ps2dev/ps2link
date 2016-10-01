@@ -31,8 +31,12 @@ extern void pkoReset(void);
 #define dbgprintf(args...) printf(args)
 #define dbgscr_printf(args...) scr_printf(args)
 #else
-#define dbgprintf(args...) do { } while(0)
-#define dbgscr_printf(args...) do { } while(0)
+#define dbgprintf(args...) \
+    do {                   \
+    } while (0)
+#define dbgscr_printf(args...) \
+    do {                       \
+    } while (0)
 #endif
 
 //#define BGCOLOR	((volatile unsigned long*)0x120000e0)
@@ -58,19 +62,19 @@ char ps2smap_path[PKO_MAX_PATH];
 char ps2link_path[PKO_MAX_PATH];
 
 void *ioptrap_mod = NULL, *ps2dev9_mod = NULL,
-	 *ps2ip_mod = NULL, *ps2smap_mod = NULL, *poweroff_mod = NULL, *ps2link_mod = NULL;
+     *ps2ip_mod = NULL, *ps2smap_mod = NULL, *poweroff_mod = NULL, *ps2link_mod = NULL;
 int ioptrap_size = 0, ps2dev9_size = 0, ps2ip_size = 0,
-	poweroff_size = 0, ps2smap_size = 0, ps2link_size = 0;
+    poweroff_size = 0, ps2smap_size = 0, ps2link_size = 0;
 #else
-extern unsigned char _binary_ioptrap_irx_start[], _binary_ps2dev9_irx_start[], \
-                     _binary_ps2ip_irx_start[], _binary_ps2smap_irx_start[], _binary_poweroff_irx_start[], \
-					 _binary_ps2link_irx_start[];
-extern unsigned char _binary_ioptrap_irx_end[], _binary_ps2dev9_irx_end[], \
-                     _binary_ps2ip_irx_end[], _binary_ps2smap_irx_end[], _binary_poweroff_irx_end[], \
-					 _binary_ps2link_irx_end[];
-static unsigned int _binary_ioptrap_irx_size, _binary_ps2dev9_irx_size, \
-                    _binary_ps2ip_irx_size, _binary_ps2smap_irx_size, _binary_poweroff_irx_size, \
-					_binary_ps2link_irx_size;
+extern unsigned char _binary_ioptrap_irx_start[], _binary_ps2dev9_irx_start[],
+    _binary_ps2ip_irx_start[], _binary_ps2smap_irx_start[], _binary_poweroff_irx_start[],
+    _binary_ps2link_irx_start[];
+extern unsigned char _binary_ioptrap_irx_end[], _binary_ps2dev9_irx_end[],
+    _binary_ps2ip_irx_end[], _binary_ps2smap_irx_end[], _binary_poweroff_irx_end[],
+    _binary_ps2link_irx_end[];
+static unsigned int _binary_ioptrap_irx_size, _binary_ps2dev9_irx_size,
+    _binary_ps2ip_irx_size, _binary_ps2smap_irx_size, _binary_poweroff_irx_size,
+    _binary_ps2link_irx_size;
 #endif
 
 // Flags for which type of boot
@@ -103,70 +107,67 @@ char gw[16] __attribute__((aligned(16))) = "192.168.0.1";
 // Parse network configuration from IPCONFIG.DAT
 // Note: parsing really should be made more robust...
 
-static int getBufferValue(char* result, char* buffer, u32 buffer_size, char* field)
+static int getBufferValue(char *result, char *buffer, u32 buffer_size, char *field)
 {
-	u32 len = strlen(field);
-	u32 i = 0;
-	s32 j = 0;
-	char* start = 0;
-	char* end = 0;
+    u32 len = strlen(field);
+    u32 i = 0;
+    s32 j = 0;
+    char *start = 0;
+    char *end = 0;
 
-	while(strncmp(&buffer[i], field, len) != 0)
-	{
-		i++;
-		if(i == buffer_size) return -1;
-	}
+    while (strncmp(&buffer[i], field, len) != 0) {
+        i++;
+        if (i == buffer_size)
+            return -1;
+    }
 
-	// Look for # comment
-	j = i;
+    // Look for # comment
+    j = i;
 
-	while((j > 0) && (buffer[j] != '\n') && (buffer[j] !='\r'))
-	{
-		j--;
+    while ((j > 0) && (buffer[j] != '\n') && (buffer[j] != '\r')) {
+        j--;
 
-		if(buffer[j] == '#')
-			return -2;
-	}
+        if (buffer[j] == '#')
+            return -2;
+    }
 
 
-	while(buffer[i] != '=')
-	{
-		i++;
-		if(i == buffer_size) return -3;
-	}
-	i++;
+    while (buffer[i] != '=') {
+        i++;
+        if (i == buffer_size)
+            return -3;
+    }
+    i++;
 
-	while(buffer[i] == ' ')
-	{
-		i++;
-		if(i == buffer_size) return -4;
-	}
-	i++;
+    while (buffer[i] == ' ') {
+        i++;
+        if (i == buffer_size)
+            return -4;
+    }
+    i++;
 
-	if((buffer[i] != '\r') && (buffer[i] != '\n') && (buffer[i] != ';'))
-	{
-		start = &buffer[i];
-	}
-	else
-	{
-		return -5;
-	}
+    if ((buffer[i] != '\r') && (buffer[i] != '\n') && (buffer[i] != ';')) {
+        start = &buffer[i];
+    } else {
+        return -5;
+    }
 
-	while(buffer[i] != ';')
-	{
-		i++;
-		if(i == buffer_size) return -5;
-	}
+    while (buffer[i] != ';') {
+        i++;
+        if (i == buffer_size)
+            return -5;
+    }
 
-	end = &buffer[i];
+    end = &buffer[i];
 
-	len = end - start;
+    len = end - start;
 
-	if(len > 256) return -6;
+    if (len > 256)
+        return -6;
 
-	strncpy(result, start, len);
+    strncpy(result, start, len);
 
-	return 0;
+    return 0;
 }
 
 static void
@@ -177,24 +178,22 @@ getIpConfig(void)
     int t;
     int len;
     char c;
-    char buf[IPCONF_MAX_LEN+256];
+    char buf[IPCONF_MAX_LEN + 256];
     static char path[256];
 
     if (boot == B_CD) {
         sprintf(path, "%s%s;1", elfPath, "IPCONFIG.DAT");
-    }
-    else if (boot == B_CC) {
-	strcpy(path, "mc0:/BOOT/IPCONFIG.DAT");
-    }
-    else {
+    } else if (boot == B_CC) {
+        strcpy(path, "mc0:/BOOT/IPCONFIG.DAT");
+    } else {
         sprintf(path, "%s%s", elfPath, "IPCONFIG.DAT");
     }
     fd = fioOpen(path, O_RDONLY);
 
-    if (fd < 0)
-    {
+    if (fd < 0) {
         scr_printf("Could not find IPCONFIG.DAT, using defaults\n"
-                   "Net config: %s  %s  %s\n", ip, netmask, gw);
+                   "Net config: %s  %s  %s\n",
+                   ip, netmask, gw);
         // Set defaults
         memset(if_conf, 0x00, IPCONF_MAX_LEN);
         i = 0;
@@ -213,9 +212,9 @@ getIpConfig(void)
     }
 
     memset(if_conf, 0x00, IPCONF_MAX_LEN);
-    memset(buf, 0x00, IPCONF_MAX_LEN+256);
+    memset(buf, 0x00, IPCONF_MAX_LEN + 256);
 
-    len = fioRead(fd, buf, IPCONF_MAX_LEN + 256 - 1); // Let the last byte be '\0'
+    len = fioRead(fd, buf, IPCONF_MAX_LEN + 256 - 1);  // Let the last byte be '\0'
     fioClose(fd);
 
     if (len < 0) {
@@ -240,35 +239,30 @@ getIpConfig(void)
         i += strlen(&if_conf[i]) + 1;
     }
     scr_printf("\n");
-    // get extra config filename
+// get extra config filename
 
 #ifndef USE_CACHED_CFG
-	if(getBufferValue(fExtraConfig, buf, len, "EXTRACNF") == 0)
-	{
-		scr_printf("extra conf: %s\n", fExtraConfig);
+    if (getBufferValue(fExtraConfig, buf, len, "EXTRACNF") == 0) {
+        scr_printf("extra conf: %s\n", fExtraConfig);
 
-		load_extra_conf = 1;
-	}
-	else
-	{
-			load_extra_conf = 0;
-	}
+        load_extra_conf = 1;
+    } else {
+        load_extra_conf = 0;
+    }
 #else
-	load_extra_conf = 0;
+    load_extra_conf = 0;
 #endif
 
-	if_conf_len = i;
+    if_conf_len = i;
 }
 
-void
-getExtraConfig()
+void getExtraConfig()
 {
     int fd, size, ret;
     char *buf, *ptr, *ptr2;
     fd = fioOpen(fExtraConfig, O_RDONLY);
 
-	if ( fd < 0 )
-	{
+    if (fd < 0) {
         scr_printf("failed to open extra conf file\n");
         return;
     }
@@ -281,15 +275,15 @@ getExtraConfig()
     fioClose(fd);
     ptr = buf;
     ptr2 = buf;
-    while(ptr < buf+size) {
+    while (ptr < buf + size) {
         ptr2 = strstr(ptr, ";");
-        if ( ptr2 == 0 ) {
+        if (ptr2 == 0) {
             break;
         }
-        ptr[ptr2-ptr] = 0;
+        ptr[ptr2 - ptr] = 0;
         scr_printf("loading %s\n", ptr);
         pkoLoadModule(ptr, 0, NULL);
-        ptr = ptr2+1;
+        ptr = ptr2 + 1;
     }
     free(buf);
     return;
@@ -307,73 +301,73 @@ pkoLoadModule(char *path, int argc, char *argv)
         scr_printf("Could not load module %s: %d\n", path, ret);
         SleepThread();
     }
-	dbgscr_printf("[%d] returned\n", ret);
+    dbgscr_printf("[%d] returned\n", ret);
 }
 
 #ifndef BUILTIN_IRXS
 /* Load a module into RAM.  */
-void * modbuf_load(const char *filename, int *filesize)
+void *modbuf_load(const char *filename, int *filesize)
 {
-	void *res = NULL;
-	int fd = -1, size;
+    void *res = NULL;
+    int fd = -1, size;
 
-	if ((fd = fioOpen(filename, O_RDONLY)) < 0)
-		goto out;
+    if ((fd = fioOpen(filename, O_RDONLY)) < 0)
+        goto out;
 
-	if ((size = fioLseek(fd, 0, SEEK_END)) < 0)
-		goto out;
+    if ((size = fioLseek(fd, 0, SEEK_END)) < 0)
+        goto out;
 
-	fioLseek(fd, 0, SEEK_SET);
-	fioLseek(fd, 0, SEEK_SET);
+    fioLseek(fd, 0, SEEK_SET);
+    fioLseek(fd, 0, SEEK_SET);
 
-	res = (void *)irx_buffer_addr;
-	irx_buffer_addr += size + 32 - (size % 16);
-	dbgscr_printf(" modbuf_load : %s , %d (0x%X)\n",filename,size,(int)res);
+    res = (void *)irx_buffer_addr;
+    irx_buffer_addr += size + 32 - (size % 16);
+    dbgscr_printf(" modbuf_load : %s , %d (0x%X)\n", filename, size, (int)res);
 
-	if (fioRead(fd, res, size) != size)
-		res = NULL;
+    if (fioRead(fd, res, size) != size)
+        res = NULL;
 
-	if (filesize)
-		*filesize = size;
+    if (filesize)
+        *filesize = size;
 
 out:
-	if (fd >= 0)
-		fioClose(fd);
+    if (fd >= 0)
+        fioClose(fd);
 
-	return res;
+    return res;
 }
 
 static int loadHostModBuffers()
 {
-    if (irx_buffer_addr == 0)
-    {
-    irx_buffer_addr = IRX_BUFFER_BASE;
+    if (irx_buffer_addr == 0) {
+        irx_buffer_addr = IRX_BUFFER_BASE;
 
-    getIpConfig();
+        getIpConfig();
 
-	if (!(ioptrap_mod = modbuf_load(ioptrap_path, &ioptrap_size)))
-        {return -1;}
+        if (!(ioptrap_mod = modbuf_load(ioptrap_path, &ioptrap_size))) {
+            return -1;
+        }
 
-	if (!(poweroff_mod = modbuf_load(poweroff_path, &poweroff_size)))
-		return -1;
+        if (!(poweroff_mod = modbuf_load(poweroff_path, &poweroff_size)))
+            return -1;
 
-    if (!(ps2dev9_mod = modbuf_load(ps2dev9_path, &ps2dev9_size)))
-        {return -1;}
+        if (!(ps2dev9_mod = modbuf_load(ps2dev9_path, &ps2dev9_size))) {
+            return -1;
+        }
 
-    if (!(ps2ip_mod = modbuf_load(ps2ip_path, &ps2ip_size)))
-        return -1;
+        if (!(ps2ip_mod = modbuf_load(ps2ip_path, &ps2ip_size)))
+            return -1;
 
-    if (!(ps2smap_mod = modbuf_load(ps2smap_path, &ps2smap_size)))
-        return -1;
+        if (!(ps2smap_mod = modbuf_load(ps2smap_path, &ps2smap_size)))
+            return -1;
 
-    if (!(ps2link_mod = modbuf_load(ps2link_path, &ps2link_size)))
-        return -1;
+        if (!(ps2link_mod = modbuf_load(ps2link_path, &ps2link_size)))
+            return -1;
     }
 
-    else
-	{
-		dbgscr_printf("Using Cached Modules\n");
-	}
+    else {
+        dbgscr_printf("Using Cached Modules\n");
+    }
     return 0;
 }
 #endif
@@ -383,26 +377,24 @@ static int loadHostModBuffers()
 static void
 loadModules(void)
 {
-	int ret;
+    int ret;
 #ifdef USE_CACHED_CFG
-	int i,t;
+    int i, t;
 #endif
 
     dbgscr_printf("loadModules \n");
 
 #ifdef USE_CACHED_CFG
-  if(if_conf_len==0)
-  {
+    if (if_conf_len == 0) {
 #endif
-	 if ((boot == B_MC) || (boot == B_CC))
-    {
-        pkoLoadModule("rom0:SIO2MAN", 0, NULL);
-        pkoLoadModule("rom0:MCMAN", 0, NULL);
-        pkoLoadModule("rom0:MCSERV", 0, NULL);
-    }
+        if ((boot == B_MC) || (boot == B_CC)) {
+            pkoLoadModule("rom0:SIO2MAN", 0, NULL);
+            pkoLoadModule("rom0:MCMAN", 0, NULL);
+            pkoLoadModule("rom0:MCSERV", 0, NULL);
+        }
 #ifdef USE_CACHED_CFG
-	 return;
-  }
+        return;
+    }
 #endif
 
 #ifdef BUILTIN_IRXS
@@ -414,83 +406,80 @@ loadModules(void)
     _binary_ps2link_irx_size = _binary_ps2link_irx_end - _binary_ps2link_irx_start;
 
 #ifdef USE_CACHED_CFG
-    if(if_conf_len==0)
-	 {
-	    getIpConfig();
-    }
-    else
-	 {
-	    i=0;
-	    scr_printf("Net config: ");
-       for (t = 0, i = 0; t < 3; t++) {
-          scr_printf("%s  ", &if_conf[i]);
-          i += strlen(&if_conf[i]) + 1;
-       }
-       scr_printf("\n");
+    if (if_conf_len == 0) {
+        getIpConfig();
+    } else {
+        i = 0;
+        scr_printf("Net config: ");
+        for (t = 0, i = 0; t < 3; t++) {
+            scr_printf("%s  ", &if_conf[i]);
+            i += strlen(&if_conf[i]) + 1;
+        }
+        scr_printf("\n");
     }
 
 #else
     getIpConfig();
 #endif
 
-	    dbgscr_printf("Exec poweroff module. (%x,%d) ", (unsigned int)_binary_poweroff_irx_start, _binary_poweroff_irx_size);
-    SifExecModuleBuffer(_binary_poweroff_irx_start, _binary_poweroff_irx_size, 0, NULL,&ret);
-	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ps2dev9 module. (%x,%d) ", (unsigned int)_binary_ps2dev9_irx_start, _binary_ps2dev9_irx_size);
-    SifExecModuleBuffer(_binary_ps2dev9_irx_start, _binary_ps2dev9_irx_size, 0, NULL,&ret);
-	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ps2ip module. (%x,%d) ", (unsigned int)_binary_ps2ip_irx_start, _binary_ps2ip_irx_size);
-    SifExecModuleBuffer(_binary_ps2ip_irx_start, _binary_ps2ip_irx_size, 0, NULL,&ret);
-	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ps2smap module. (%x,%d) ", (unsigned int)_binary_ps2smap_irx_start, _binary_ps2smap_irx_size);
-    SifExecModuleBuffer(_binary_ps2smap_irx_start, _binary_ps2smap_irx_size, if_conf_len, &if_conf[0],&ret);
-	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ioptrap module. (%x,%d) ", (unsigned int)_binary_ioptrap_irx_start, _binary_ioptrap_irx_size);
-    SifExecModuleBuffer(_binary_ioptrap_irx_start, _binary_ioptrap_irx_size, 0, NULL,&ret);
-	    dbgscr_printf("[%d] returned\n", ret);
-		dbgscr_printf("Exec ps2link module. (%x,%d) ", (unsigned int)_binary_ps2link_irx_start, _binary_ps2link_irx_size);
-    SifExecModuleBuffer(_binary_ps2link_irx_start, _binary_ps2link_irx_size, 0, NULL,&ret);
-	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("All modules loaded on IOP.\n");
+    dbgscr_printf("Exec poweroff module. (%x,%d) ", (unsigned int)_binary_poweroff_irx_start, _binary_poweroff_irx_size);
+    SifExecModuleBuffer(_binary_poweroff_irx_start, _binary_poweroff_irx_size, 0, NULL, &ret);
+    dbgscr_printf("[%d] returned\n", ret);
+    dbgscr_printf("Exec ps2dev9 module. (%x,%d) ", (unsigned int)_binary_ps2dev9_irx_start, _binary_ps2dev9_irx_size);
+    SifExecModuleBuffer(_binary_ps2dev9_irx_start, _binary_ps2dev9_irx_size, 0, NULL, &ret);
+    dbgscr_printf("[%d] returned\n", ret);
+    dbgscr_printf("Exec ps2ip module. (%x,%d) ", (unsigned int)_binary_ps2ip_irx_start, _binary_ps2ip_irx_size);
+    SifExecModuleBuffer(_binary_ps2ip_irx_start, _binary_ps2ip_irx_size, 0, NULL, &ret);
+    dbgscr_printf("[%d] returned\n", ret);
+    dbgscr_printf("Exec ps2smap module. (%x,%d) ", (unsigned int)_binary_ps2smap_irx_start, _binary_ps2smap_irx_size);
+    SifExecModuleBuffer(_binary_ps2smap_irx_start, _binary_ps2smap_irx_size, if_conf_len, &if_conf[0], &ret);
+    dbgscr_printf("[%d] returned\n", ret);
+    dbgscr_printf("Exec ioptrap module. (%x,%d) ", (unsigned int)_binary_ioptrap_irx_start, _binary_ioptrap_irx_size);
+    SifExecModuleBuffer(_binary_ioptrap_irx_start, _binary_ioptrap_irx_size, 0, NULL, &ret);
+    dbgscr_printf("[%d] returned\n", ret);
+    dbgscr_printf("Exec ps2link module. (%x,%d) ", (unsigned int)_binary_ps2link_irx_start, _binary_ps2link_irx_size);
+    SifExecModuleBuffer(_binary_ps2link_irx_start, _binary_ps2link_irx_size, 0, NULL, &ret);
+    dbgscr_printf("[%d] returned\n", ret);
+    dbgscr_printf("All modules loaded on IOP.\n");
 #else
     if (boot == B_HOST) {
 
-		dbgscr_printf("Exec poweroff module. (%x,%d) ", (u32)poweroff_mod, poweroff_size);
-		SifExecModuleBuffer(poweroff_mod, poweroff_size, 0, NULL,&ret);
+        dbgscr_printf("Exec poweroff module. (%x,%d) ", (u32)poweroff_mod, poweroff_size);
+        SifExecModuleBuffer(poweroff_mod, poweroff_size, 0, NULL, &ret);
         dbgscr_printf("[%d] returned\n", ret);
-		dbgscr_printf("Exec ps2dev9 module. (%x,%d) ", (u32)ps2dev9_mod, ps2dev9_size);
-        SifExecModuleBuffer(ps2dev9_mod, ps2dev9_size, 0, NULL,&ret);
-		dbgscr_printf("[%d] returned\n", ret);
-		dbgscr_printf("Exec ps2ip module. (%x,%d) ", (u32)ps2ip_mod, ps2ip_size);
-        SifExecModuleBuffer(ps2ip_mod, ps2ip_size, 0, NULL,&ret);
-		dbgscr_printf("[%d] returned\n", ret);
-		dbgscr_printf("Exec ps2smap module. (%x,%d) ", (u32)ps2smap_mod, ps2smap_size);
-        SifExecModuleBuffer(ps2smap_mod, ps2smap_size, if_conf_len, &if_conf[0],&ret);
-		dbgscr_printf("[%d] returned\n", ret);
-		dbgscr_printf("Exec ioptrap module. (%x,%d) ", (u32)ioptrap_mod, ioptrap_size);
-		SifExecModuleBuffer(ioptrap_mod, ioptrap_size, 0, NULL,&ret);
+        dbgscr_printf("Exec ps2dev9 module. (%x,%d) ", (u32)ps2dev9_mod, ps2dev9_size);
+        SifExecModuleBuffer(ps2dev9_mod, ps2dev9_size, 0, NULL, &ret);
         dbgscr_printf("[%d] returned\n", ret);
-		dbgscr_printf("Exec ps2link module. (%x,%d) ", (u32)ps2link_mod, ps2link_size);
-        SifExecModuleBuffer(ps2link_mod, ps2link_size, 0, NULL,&ret);
-		dbgscr_printf("[%d] returned\n", ret);
+        dbgscr_printf("Exec ps2ip module. (%x,%d) ", (u32)ps2ip_mod, ps2ip_size);
+        SifExecModuleBuffer(ps2ip_mod, ps2ip_size, 0, NULL, &ret);
+        dbgscr_printf("[%d] returned\n", ret);
+        dbgscr_printf("Exec ps2smap module. (%x,%d) ", (u32)ps2smap_mod, ps2smap_size);
+        SifExecModuleBuffer(ps2smap_mod, ps2smap_size, if_conf_len, &if_conf[0], &ret);
+        dbgscr_printf("[%d] returned\n", ret);
+        dbgscr_printf("Exec ioptrap module. (%x,%d) ", (u32)ioptrap_mod, ioptrap_size);
+        SifExecModuleBuffer(ioptrap_mod, ioptrap_size, 0, NULL, &ret);
+        dbgscr_printf("[%d] returned\n", ret);
+        dbgscr_printf("Exec ps2link module. (%x,%d) ", (u32)ps2link_mod, ps2link_size);
+        SifExecModuleBuffer(ps2link_mod, ps2link_size, 0, NULL, &ret);
+        dbgscr_printf("[%d] returned\n", ret);
 
 
-		dbgscr_printf("All modules loaded on IOP.\n");
+        dbgscr_printf("All modules loaded on IOP.\n");
     } else {
         getIpConfig();
-		dbgscr_printf("Exec poweroff module. ");
-		pkoLoadModule(poweroff_path, 0, NULL);
-		dbgscr_printf("Exec ps2dev9 module. ");
+        dbgscr_printf("Exec poweroff module. ");
+        pkoLoadModule(poweroff_path, 0, NULL);
+        dbgscr_printf("Exec ps2dev9 module. ");
         pkoLoadModule(ps2dev9_path, 0, NULL);
-		dbgscr_printf("Exec ps2ip module. ");
+        dbgscr_printf("Exec ps2ip module. ");
         pkoLoadModule(ps2ip_path, 0, NULL);
-		dbgscr_printf("Exec ps2smap module. ");
+        dbgscr_printf("Exec ps2smap module. ");
         pkoLoadModule(ps2smap_path, if_conf_len, &if_conf[0]);
-		dbgscr_printf("Exec ioptrap module. ");
+        dbgscr_printf("Exec ioptrap module. ");
         pkoLoadModule(ioptrap_path, 0, NULL);
-		dbgscr_printf("Exec ps2link module. ");
+        dbgscr_printf("Exec ps2link module. ");
         pkoLoadModule(ps2link_path, 0, NULL);
-		dbgscr_printf("All modules loaded on IOP. ");
+        dbgscr_printf("All modules loaded on IOP. ");
     }
 #endif
 }
@@ -513,7 +502,7 @@ char *strrchr(const char *s, int i)
         last = s;
     }
 
-    return (char *) last;
+    return (char *)last;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -554,15 +543,15 @@ setPathInfo(char *path)
     sprintf(ps2smap_path, "%s%s", elfPath, "PS2SMAP.IRX");
     sprintf(ps2link_path, "%s%s", elfPath, "PS2LINK.IRX");
     sprintf(ioptrap_path, "%s%s", elfPath, "IOPTRAP.IRX");
-	sprintf(poweroff_path, "%s%s", elfPath, "POWEROFF.IRX");
+    sprintf(poweroff_path, "%s%s", elfPath, "POWEROFF.IRX");
 
-	if (boot == B_CD) {
-	    strcat(ioptrap_path, ";1");
-	    strcat(ps2dev9_path, ";1");
-	    strcat(ps2ip_path, ";1");
-	    strcat(ps2smap_path, ";1");
-	    strcat(ps2link_path, ";1");
-		strcat(poweroff_path, ";1");
+    if (boot == B_CD) {
+        strcat(ioptrap_path, ";1");
+        strcat(ps2dev9_path, ";1");
+        strcat(ps2ip_path, ";1");
+        strcat(ps2smap_path, ";1");
+        strcat(ps2link_path, ";1");
+        strcat(poweroff_path, ";1");
     }
 #endif
 
@@ -571,41 +560,36 @@ setPathInfo(char *path)
 
 ////////////////////////////////////////////////////////////////////////
 // Clear user memory
-void
-wipeUserMem(void)
+void wipeUserMem(void)
 {
     int i;
     // Whipe user mem
-    for (i = 0x100000; i < 0x2000000 ; i += 64) {
-        asm (
+    for (i = 0x100000; i < 0x2000000; i += 64) {
+        asm(
             "\tsq $0, 0(%0) \n"
             "\tsq $0, 16(%0) \n"
             "\tsq $0, 32(%0) \n"
-            "\tsq $0, 48(%0) \n"
-            :: "r" (i) );
+            "\tsq $0, 48(%0) \n" ::"r"(i));
     }
 }
 
 ////////////////////////////////////////////////////////////////////////
 // Clear user memory - Load High and Host version
-void
-wipeUserMemLoadHigh(void)
+void wipeUserMemLoadHigh(void)
 {
     int i;
     // Whipe user mem, apart from last bit
-    for (i = 0x100000; i < 0x1F00000 ; i += 64) {
-        asm (
+    for (i = 0x100000; i < 0x1F00000; i += 64) {
+        asm(
             "\tsq $0, 0(%0) \n"
             "\tsq $0, 16(%0) \n"
             "\tsq $0, 32(%0) \n"
-            "\tsq $0, 48(%0) \n"
-            :: "r" (i) );
+            "\tsq $0, 48(%0) \n" ::"r"(i));
     }
 }
 
 
-void
-restartIOP()
+void restartIOP()
 {
     fioExit();
     SifExitIopHeap();
@@ -614,7 +598,8 @@ restartIOP()
 
     dbgscr_printf("reset iop\n");
     SifIopReset(NULL, 0);
-    while (!SifIopSync()) ;
+    while (!SifIopSync())
+        ;
 
     dbgscr_printf("rpc init\n");
     SifInitRpc(0);
@@ -624,7 +609,7 @@ restartIOP()
     sbv_patch_enable_lmb();
     sbv_patch_disable_prefix_check();
 
-//	SifLoadFileReset();
+    //	SifLoadFileReset();
     dbgscr_printf("loading modules\n");
     loadModules();
 }
@@ -674,31 +659,32 @@ int Hook_LoadExecPS2(char *fname, int argc, char *argv[])
     RemoveKernelHooks();
 
     // call the real LoadExecPS2 handler, this will never return
-    return(((int (*)(char *, int, char **)) (addr_LoadExecPS2))(fname, argc, argv));
+    return (((int (*)(char *, int, char **))(addr_LoadExecPS2))(fname, argc, argv));
 }
 
 int Hook_CreateThread(ee_thread_t *thread_p)
 {
     int i;
-    for(i = 0; i < MAX_MONITORED_THREADS; i++)
-    {
-        if(active_threads[i] < 0) { break; }
+    for (i = 0; i < MAX_MONITORED_THREADS; i++) {
+        if (active_threads[i] < 0) {
+            break;
+        }
     }
 
-    if(i >= MAX_MONITORED_THREADS) { return(-1); }
+    if (i >= MAX_MONITORED_THREADS) {
+        return (-1);
+    }
 
     // call the real CreateThread handler, saving the thread id in our list
-    return(active_threads[i] = ((int (*)(ee_thread_t *)) (addr_CreateThread))(thread_p));
+    return (active_threads[i] = ((int (*)(ee_thread_t *))(addr_CreateThread))(thread_p));
 }
 
 int Hook_DeleteThread(int th_id)
 {
     int i;
 
-    for(i = 0; i < MAX_MONITORED_THREADS; i++)
-    {
-        if(active_threads[i] == th_id)
-        {
+    for (i = 0; i < MAX_MONITORED_THREADS; i++) {
+        if (active_threads[i] == th_id) {
             // remove the entry from the active thread list.
             active_threads[i] = -1;
             break;
@@ -706,7 +692,7 @@ int Hook_DeleteThread(int th_id)
     }
 
     // call the real DeleteThread handler
-    return(((int (*)(int)) (addr_DeleteThread))(th_id));
+    return (((int (*)(int))(addr_DeleteThread))(th_id));
 }
 
 // kill all threads created and not deleted since PS2LINK.ELF started except for the calling thread.
@@ -715,10 +701,8 @@ void KillActiveThreads(void)
     int my_id = GetThreadId();
     int i;
 
-    for(i = 0; i < MAX_MONITORED_THREADS; i++)
-    {
-        if((active_threads[i] >= 0) && (active_threads[i] != my_id))
-        {
+    for (i = 0; i < MAX_MONITORED_THREADS; i++) {
+        if ((active_threads[i] >= 0) && (active_threads[i] != my_id)) {
             TerminateThread(active_threads[i]);
             DeleteThread(active_threads[i]);
             active_threads[i] = -1;
@@ -729,7 +713,9 @@ void KillActiveThreads(void)
 void ResetActiveThreads(void)
 {
     int i;
-    for(i = 0; i < MAX_MONITORED_THREADS; i++) { active_threads[i] = -1; }
+    for (i = 0; i < MAX_MONITORED_THREADS; i++) {
+        active_threads[i] = -1;
+    }
 }
 #endif
 
@@ -737,8 +723,7 @@ extern void _start(void);
 extern int _end;
 
 ////////////////////////////////////////////////////////////////////////
-int
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     //    int ret;
     char *bootPath;
@@ -749,13 +734,12 @@ main(int argc, char *argv[])
     scr_printf("Highload version\n");
 #endif
 
-    scr_printf("ps2link loaded at 0x%08X-0x%08X\n", ((u32) _start) - 8, (u32) &_end);
+    scr_printf("ps2link loaded at 0x%08X-0x%08X\n", ((u32)_start) - 8, (u32)&_end);
 
     installExceptionHandlers();
 
 #if HOOK_THREADS
-    if(_first_load)
-    {
+    if (_first_load) {
         _first_load = 0;
         InstallKernelHooks();
     }
@@ -770,8 +754,7 @@ main(int argc, char *argv[])
     // reload1 usually gives an argc > 60000 (yea, this is kinda a hack..)
     else if (argc != 1) {
         bootPath = "mc0:/BWLINUX/";
-    }
-    else {
+    } else {
         bootPath = argv[0];
     }
 
@@ -785,63 +768,56 @@ main(int argc, char *argv[])
         // Booting from cd
         scr_printf("Booting from cdrom (%s)\n", bootPath);
         boot = B_CD;
-    }
-    else if(!strncmp(bootPath, "mc", strlen("mc"))) {
+    } else if (!strncmp(bootPath, "mc", strlen("mc"))) {
         // Booting from my mc
         scr_printf("Booting from mc dir (%s)\n", bootPath);
         boot = B_MC;
-    }
-    else if(!strncmp(bootPath, "host", strlen("host"))) {
+    } else if (!strncmp(bootPath, "host", strlen("host"))) {
         // Host
         scr_printf("Booting from host (%s)\n", bootPath);
         boot = B_HOST;
-    }
-    else if(!strncmp(bootPath, "rom0:OSDSYS", strlen("rom0:OSDSYS"))) {
+    } else if (!strncmp(bootPath, "rom0:OSDSYS", strlen("rom0:OSDSYS"))) {
         // From CC's firmware
-	scr_printf("Booting as CC firmware\n");
-	boot = B_CC;
-    }
-    else {
+        scr_printf("Booting as CC firmware\n");
+        boot = B_CC;
+    } else {
         // Unknown
         scr_printf("Booting from unrecognized place %s\n", bootPath);
         boot = B_UNKN;
     }
 
 #ifdef USE_CACHED_CFG
-    if(if_conf_len==0)
-    {
-       scr_printf("Initial boot, will load config then reset\n");
-		 if(boot == B_MC || boot == B_CC)
-			 restartIOP();
+    if (if_conf_len == 0) {
+        scr_printf("Initial boot, will load config then reset\n");
+        if (boot == B_MC || boot == B_CC)
+            restartIOP();
 
-       getIpConfig();
+        getIpConfig();
 
-		 pkoReset();
- 	 }
-	 else
-	 {
-	 	 scr_printf("Using cached config\n");
-	 }
+        pkoReset();
+    } else {
+        scr_printf("Using cached config\n");
+    }
 #endif
 
-    // System initalisation
+// System initalisation
 #ifndef BUILTIN_IRXS
     if (boot == B_HOST) {
         if (loadHostModBuffers() < 0) {
             dbgscr_printf("Unable to load modules from host:!\n");
             SleepThread();
-	}
+        }
     }
 #endif
 
-	restartIOP();
+    restartIOP();
 
     dbgscr_printf("init cmdrpc\n");
     initCmdRpc();
 
-// CLEARSPU seems to cause exceptions in the Multi_Thread_Manager module.
-// I suspect this is caused by the interrupt handlers or some such.
-/*
+    // CLEARSPU seems to cause exceptions in the Multi_Thread_Manager module.
+    // I suspect this is caused by the interrupt handlers or some such.
+    /*
     dbgscr_printf("clearing spu\n");
     if (SifLoadModule("rom0:CLEARSPU", 0, NULL)<0)
     {
@@ -851,16 +827,15 @@ main(int argc, char *argv[])
 */
 
     // get extra config
-	if(load_extra_conf)
-    {
+    if (load_extra_conf) {
         dbgscr_printf("getting extra config\n");
-	   getExtraConfig();
-	}
+        getExtraConfig();
+    }
 
     scr_printf("Ready\n");
     sio_printf("Ready\n");
 
-//    SleepThread();
+    //    SleepThread();
     ExitDeleteThread();
     return 0;
 }
