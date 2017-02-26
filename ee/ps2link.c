@@ -103,6 +103,7 @@ char gw[16] __attribute__((aligned(16))) = "192.168.0.1";
 // Parse network configuration from IPCONFIG.DAT
 // Note: parsing really should be made more robust...
 
+#ifndef USE_CACHED_CFG
 static int getBufferValue(char* result, char* buffer, u32 buffer_size, char* field)
 {
 	u32 len = strlen(field);
@@ -168,6 +169,7 @@ static int getBufferValue(char* result, char* buffer, u32 buffer_size, char* fie
 
 	return 0;
 }
+#endif
 
 static void
 getIpConfig(void)
