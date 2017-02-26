@@ -745,6 +745,9 @@ main(int argc, char *argv[])
     //    int ret;
     char *bootPath;
 
+    SifInitRpc(0);
+    fioInit();
+
     init_scr();
     scr_printf(WELCOME_STRING);
 #ifdef _LOADHIGHVER
@@ -777,7 +780,6 @@ main(int argc, char *argv[])
         bootPath = argv[0];
     }
 
-    SifInitRpc(0);
     dbgscr_printf("Checking argv\n");
     boot = 0;
 

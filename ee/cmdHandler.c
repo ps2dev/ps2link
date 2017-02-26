@@ -730,6 +730,7 @@ pkoReset(void)
     sif0HandlerId = 0;
 
     SifInitRpc(0);
+    fioExit();
     SifExitRpc();
 
     SifIopReset(NULL, 0);
