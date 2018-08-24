@@ -56,7 +56,6 @@ static int pkoWriteMem(pko_pkt_mem_io *);
 ////////////////////////////////////////////////////////////////////////
 // Globals
 extern u32 _start;
-extern int _gp;
 extern int boot;
 extern char elfName[];
 
