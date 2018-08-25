@@ -124,6 +124,10 @@ release:
 docs:
 	doxygen doxy.conf
 
+install:
+	mkdir -p $(PS2SDK)/iop/irx/
+	cp iop/ps2link.irx $(PS2SDK)/iop/irx/
+
 builtins:
 	@for file in $(IRXFILES); do \
 		basefile=$${file/*\//}; \
