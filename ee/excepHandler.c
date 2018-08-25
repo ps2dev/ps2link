@@ -12,7 +12,7 @@
 #include "excepHandler.h"
 #include "debug.h"
 
-extern int _gp;
+extern void *_gp;
 extern int userThreadID;
 extern int excepscrdump;
 
