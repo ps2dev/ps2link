@@ -14,7 +14,7 @@ LOADADDR  = 0xa8000
 else
 LOADADDR  = 0xc0000
 endif
-STACKADDR = 0x100000
+STACKADDR = 0xf8000
 
 # This is to build a highloading version
 ifeq ($(LOADHIGH),1)
@@ -23,7 +23,7 @@ LOADADDR  = 0x1ee8000
 else
 LOADADDR  = 0x1f00000
 endif
-STACKADDR = 0x1f40000
+STACKADDR = 0x1f38000
 EE_CFLAGS += -D_LOADHIGHVER
 endif
 
