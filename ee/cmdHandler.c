@@ -12,7 +12,8 @@
 #include <sifrpc.h>
 #include <loadfile.h>
 #include <iopcontrol.h>
-#include <fileio.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <string.h>
 #include "debug.h"
 #include "excepHandler.h"
@@ -218,12 +219,12 @@ static int
 pkoGSExec(pko_pkt_gsexec_req *cmd) {
 	int fd;
     int len;
-	fd = fioOpen(cmd->file, O_RDONLY);
+	fd = open(cmd->file, O_RDONLY);
 	if ( fd < 0 ) {
 		return fd;
 	}
-	len = fioRead(fd, dataBuffer, 128);
-	fioClose(fd);
+	len = read(fd, dataBuffer, 128);
+	close(fd);
     // stop/reset dma02
 
     // dmasend via GIF channel
@@ -267,7 +268,7 @@ pkoDumpMem(pko_pkt_mem_io *cmd) {
 		ntohl(cmd->offset), ntohl(cmd->size)
 		);
     memcpy(path, cmd->argv, PKO_MAX_PATH);
-	fd = fioOpen(path, O_WRONLY|O_CREAT);
+	fd = open(path, O_WRONLY|O_CREAT);
     total = 0;
     len = 16*1024;
 	if ( fd > 0 ) {
@@ -280,16 +281,16 @@ pkoDumpMem(pko_pkt_mem_io *cmd) {
             
             memcpy(dataBuffer, (void *)offset, len);
             
-            if ((ret = fioWrite(fd, (void *)dataBuffer, len)) > 0) {
+            if ((ret = write(fd, (void *)dataBuffer, len)) > 0) {
             } else {
-                printf("EE: pkoDumpMem() fioWrite failed\n");
+                printf("EE: pkoDumpMem() write failed\n");
                 return fd;
             }	
             offset = offset + len;	
             total += len;
         }
     }
-	fioClose(fd);
+	close(fd);
 	return ret;
 }
 
@@ -306,7 +307,7 @@ pkoWriteMem(pko_pkt_mem_io *cmd) {
 		ntohl(cmd->offset), ntohl(cmd->size)
 		);
     memcpy(path, cmd->argv, PKO_MAX_PATH);
-	fd = fioOpen(path, O_RDONLY);
+	fd = open(path, O_RDONLY);
     total = 0;
     len = 16*1024;
     if( fd > 0) {
@@ -317,9 +318,9 @@ pkoWriteMem(pko_pkt_mem_io *cmd) {
                 len = size - total;
             }
 
-            if ((ret = fioRead(fd, (void *)dataBuffer, len)) > 0) {
+            if ((ret = read(fd, (void *)dataBuffer, len)) > 0) {
             } else {
-                printf("EE: pkoDumpMem() fioWrite failed\n");
+                printf("EE: pkoDumpMem() read failed\n");
                 return fd;
             }
 
@@ -328,7 +329,7 @@ pkoWriteMem(pko_pkt_mem_io *cmd) {
             total += len;
         }
     }
-    fioClose(fd);
+    close(fd);
     return ret;
 }
 
@@ -646,15 +647,15 @@ pkoDumpReg(pko_pkt_dump_regs *cmd) {
 	}
 
     memcpy(path, cmd->argv, PKO_MAX_PATH);
-	fd = fioOpen(path, O_WRONLY|O_CREAT);
+	fd = open(path, O_WRONLY|O_CREAT);
 	if ( fd > 0 ) {
-		if ((ret = fioWrite(fd, regs, size)) > 0) {
+		if ((ret = write(fd, regs, size)) > 0) {
 		} else {
-			scr_printf("EE: pkoDumpReg() fioWrite failed\n");
+			scr_printf("EE: pkoDumpReg() write failed\n");
 			return fd;
 		}
 	}
-	fioClose(fd);
+	close(fd);
 	return ret;
 }
 
@@ -730,7 +731,7 @@ pkoReset(void)
     sif0HandlerId = 0;
 
     SifInitRpc(0);
-    fioExit();
+//    fioExit();
     SifExitRpc();
 
     SifIopReset(NULL, 0);

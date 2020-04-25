@@ -12,7 +12,8 @@
 #include <iopheap.h>
 #include <loadfile.h>
 #include <iopcontrol.h>
-#include <fileio.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <malloc.h>
 #include <stdio.h>
 #include <string.h>
@@ -191,7 +192,7 @@ getIpConfig(void)
     else {
         sprintf(path, "%s%s", elfPath, "IPCONFIG.DAT");
     }
-    fd = fioOpen(path, O_RDONLY);
+    fd = open(path, O_RDONLY);
 
     if (fd < 0)
     {
@@ -217,8 +218,8 @@ getIpConfig(void)
     memset(if_conf, 0x00, IPCONF_MAX_LEN);
     memset(buf, 0x00, IPCONF_MAX_LEN+256);
 
-    len = fioRead(fd, buf, IPCONF_MAX_LEN + 256 - 1); // Let the last byte be '\0'
-    fioClose(fd);
+    len = read(fd, buf, IPCONF_MAX_LEN + 256 - 1); // Let the last byte be '\0'
+    close(fd);
 
     if (len < 0) {
         dbgprintf("Error reading ipconfig.dat\n");
@@ -267,7 +268,7 @@ getExtraConfig()
 {
     int fd, size, ret;
     char *buf, *ptr, *ptr2;
-    fd = fioOpen(fExtraConfig, O_RDONLY);
+    fd = open(fExtraConfig, O_RDONLY);
 
 	if ( fd < 0 )
 	{
@@ -275,12 +276,12 @@ getExtraConfig()
         return;
     }
 
-    size = fioLseek(fd, 0, SEEK_END);
-    fioLseek(fd, 0, SEEK_SET);
+    size = lseek(fd, 0, SEEK_END);
+    lseek(fd, 0, SEEK_SET);
     buf = malloc(size + 1);
-    ret = fioRead(fd, buf, size);
+    ret = read(fd, buf, size);
     buf[size] = 0;
-    fioClose(fd);
+    close(fd);
     ptr = buf;
     ptr2 = buf;
     while(ptr < buf+size) {
@@ -319,20 +320,20 @@ void * modbuf_load(const char *filename, int *filesize)
 	void *res = NULL;
 	int fd = -1, size;
 
-	if ((fd = fioOpen(filename, O_RDONLY)) < 0)
+	if ((fd = open(filename, O_RDONLY)) < 0)
 		goto out;
 
-	if ((size = fioLseek(fd, 0, SEEK_END)) < 0)
+	if ((size = lseek(fd, 0, SEEK_END)) < 0)
 		goto out;
 
-	fioLseek(fd, 0, SEEK_SET);
-	fioLseek(fd, 0, SEEK_SET);
+	lseek(fd, 0, SEEK_SET);
+	lseek(fd, 0, SEEK_SET);
 
 	res = (void *)irx_buffer_addr;
 	irx_buffer_addr += size + 32 - (size % 16);
 	dbgscr_printf(" modbuf_load : %s , %d (0x%X)\n",filename,size,(int)res);
 
-	if (fioRead(fd, res, size) != size)
+	if (read(fd, res, size) != size)
 		res = NULL;
 
 	if (filesize)
@@ -340,7 +341,7 @@ void * modbuf_load(const char *filename, int *filesize)
 
 out:
 	if (fd >= 0)
-		fioClose(fd);
+		close(fd);
 
 	return res;
 }
@@ -609,7 +610,7 @@ wipeUserMemLoadHigh(void)
 void
 restartIOP()
 {
-    fioExit();
+//    fioExit();
     SifExitIopHeap();
     SifLoadFileExit();
     SifExitRpc();
@@ -746,7 +747,7 @@ main(int argc, char *argv[])
     char *bootPath;
 
     SifInitRpc(0);
-    fioInit();
+//    fioInit();
 
     init_scr();
     scr_printf(WELCOME_STRING);

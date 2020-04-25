@@ -37,9 +37,8 @@ EE_CXX_COMPILE = $(EE_CC) $(EE_CXXFLAGS) $(EE_INCS)
 %.o : %.s
 	$(EE_AS) $(EE_ASFLAGS) $< -o $@
 
-$(EE_BIN) : $(EE_OBJS) $(PS2SDK)/ee/startup/crt0.o
-	$(EE_CC) -nostartfiles -T$(PS2SDK)/ee/startup/linkfile $(EE_LDFLAGS) \
-		-o $(EE_BIN) $(PS2SDK)/ee/startup/crt0.o $(EE_OBJS) $(EE_LIBS)
+$(EE_BIN) : $(EE_OBJS)
+	$(EE_CC) $(EE_LDFLAGS) -o $(EE_BIN) $(EE_OBJS) $(EE_LIBS)
 
 $(EE_LIB) : $(EE_OBJS)
 	$(EE_AR) cru $(EE_LIB) $(EE_OBJS)
