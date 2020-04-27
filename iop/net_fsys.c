@@ -14,6 +14,7 @@
 #include <intrman.h>
 #include <loadcore.h>
 #include <thsemap.h>
+#include <iox_stat.h>
 
 #include "net_fio.h"
 
@@ -217,7 +218,12 @@ static int fsysMkdir(iop_file_t* file, char *name, int mode)
 {
     int ret;
     dbgprintf("fsysMkdir..\n");
-    dbgprintf("  name: '%s'\n\n", name);
+    dbgprintf("  name: '%s', mode: '%i'\n\n", name, mode);
+
+    if (mode == 0) {
+        mode = (FIO_S_IRWXU | FIO_S_IRGRP | FIO_S_IXGRP | FIO_S_IROTH | FIO_S_IXOTH);
+        printf("mkdir wrong mode, using fallback value %i\n", mode);
+    }
 
     WaitSema(fsys_sema);
     ret = pko_mkdir(name, mode);
