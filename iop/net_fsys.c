@@ -14,7 +14,6 @@
 #include <intrman.h>
 #include <loadcore.h>
 #include <thsemap.h>
-#include <iox_stat.h>
 
 #include "net_fio.h"
 
@@ -51,7 +50,7 @@ static int fsys_pid = 0;
 ////////////////////////////////////////////////////////////////////////
 static int dummy5()
 {
-    printf("dummy function called\n");
+    printf("ps2link: dummy function called\n");
     return -5;
 }
 
@@ -304,12 +303,26 @@ static int fsysDclose(int fd)
     return ret;
 }
 
+////////////////////////////////////////////////////////////////////////
+static int fsysGetstat(iop_file_t *file, const char *name, iox_stat_t *stat)
+{
+    int ret;
+    dbgprintf("fsysGetstat..\n");
+    dbgprintf("  name: '%s'\n\n", name);
+
+    WaitSema(fsys_sema);
+    ret = pko_get_stat(name, stat);
+    SignalSema(fsys_sema);
+
+    return ret;
+}
+
 iop_device_ops_t fsys_functarray = { (void *)fsysInit, (void *)fsysDestroy, (void *)dummy5, 
 	(void *)fsysOpen, (void *)fsysClose, (void *)fsysRead, 
 	(void *)fsysWrite, (void *)fsysLseek, (void *)dummy5,
 	(void *)fsysRemove, (void *)fsysMkdir, (void *)fsysRmdir,
 	(void *)fsysDopen, (void *)fsysDclose, (void *)fsysDread,
-	(void *)dummy5,  (void *)dummy5 };
+	(void *)fsysGetstat, (void *)dummy5 };
 
 iop_device_t fsys_driver = { fsname, 16, 1, "fsys driver", 
 							&fsys_functarray };

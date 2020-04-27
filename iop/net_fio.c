@@ -649,6 +649,52 @@ int pko_close_dir(int fd)
 }
 
 //----------------------------------------------------------------------
+//
+int pko_get_stat(char *name, iox_stat_t *stat)
+{
+    pko_pkt_getstat_req *getstatreq;
+    pko_pkt_getstat_rly *getstatrly;
+
+    if (pko_fileio_sock < 0) {
+        return -1;
+    }
+
+    dbgprintf("pko_file: make dir req (%s)\n", name);
+
+    getstatreq = (pko_pkt_getstat_req *)&send_packet[0];
+
+    // Build packet
+    getstatreq->cmd = htonl(PKO_GETSTAT_CMD);
+    getstatreq->len = htons((unsigned short)sizeof(pko_pkt_getstat_req));
+    strncpy(getstatreq->name, name, PKO_MAX_PATH);
+    getstatreq->name[PKO_MAX_PATH - 1] = 0; // Make sure it's null-terminated
+
+    if (pko_lwip_send(pko_fileio_sock, getstatreq, sizeof(pko_pkt_getstat_req), 0) < 0) {
+        return -1;
+    }
+
+    if (!pko_accept_pkt(pko_fileio_sock, recv_packet, 
+                        sizeof(pko_pkt_getstat_rly), PKO_GETSTAT_RLY)) {
+        dbgprintf("pko_file: pko_get_stat: did not receive PKO_GETSTAT_RLY\n");
+        return -1;
+    }
+
+    getstatrly = (pko_pkt_getstat_rly *)recv_packet;
+
+    dbgprintf("pko_file: get stat reply received (ret %ld)\n", ntohl(getstatrly->retval));
+    if (ntohl(getstatrly->retval) == 0) {
+        // now handle the return buffer translation, to build reply bit
+        stat->mode  = ntohl(getstatrly->mode);
+        stat->attr = ntohl(getstatrly->attr);
+        stat->size = ntohl(getstatrly->size);
+        stat->hisize = ntohl(getstatrly->hisize);
+        memcpy(stat->ctime, getstatrly->ctime, 8*3);
+    }
+
+    return ntohl(getstatrly->retval);
+}
+
+//----------------------------------------------------------------------
 // Thread that waits for a PC to connect/disconnect/reconnect blah..
 int
 pko_file_serv(void *argv)

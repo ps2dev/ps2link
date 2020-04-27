@@ -31,6 +31,8 @@
 #define PKO_MKDIR_RLY    0xbabe01a2
 #define PKO_RMDIR_CMD    0xbabe01b1
 #define PKO_RMDIR_RLY    0xbabe01b2
+#define PKO_GETSTAT_CMD  0xbabe01c1
+#define PKO_GETSTAT_RLY  0xbabe01c2
 
 #define PKO_RESET_CMD       0xbabe0201
 #define PKO_EXECIOP_CMD     0xbabe0202
@@ -181,6 +183,28 @@ typedef struct
     unsigned int hisize;
     char name[256];
 } __attribute__((packed)) pko_pkt_dread_rly;
+
+typedef struct
+{
+    unsigned int cmd;
+    unsigned short len;
+    char name[PKO_MAX_PATH];
+} __attribute__((packed)) pko_pkt_getstat_req;
+
+typedef struct
+{
+    unsigned int cmd;
+    unsigned short len;
+    int retval;
+/* from io_common.h (fio_dirent_t) in ps2lib */
+    unsigned int	mode;
+	unsigned int	attr;
+	unsigned int	size;
+	unsigned char	ctime[8];
+	unsigned char	atime[8];
+	unsigned char	mtime[8];
+	unsigned int	hisize;
+} __attribute__((packed)) pko_pkt_getstat_rly;
 
 ////
 
