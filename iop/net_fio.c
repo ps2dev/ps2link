@@ -362,7 +362,6 @@ int pko_write_file(int fd, char *buf, int length)
 //
 int pko_read_file(int fd, char *buf, int length)
 {
-    int readbytes;
     int nbytes;
     int i;
     pko_pkt_read_req *readcmd;
@@ -375,13 +374,11 @@ int pko_read_file(int fd, char *buf, int length)
 
     readcmd = (pko_pkt_read_req *)&send_packet[0];
     readrly = (pko_pkt_read_rly *)&recv_packet[0];
-    readbytes = 0;
 
     readcmd->cmd = htonl(PKO_READ_CMD);
     readcmd->len = htons((unsigned short)sizeof(pko_pkt_read_req));
     readcmd->fd = htonl(fd);
 
-    readbytes = 0;
 
     if (length < 0) {
         dbgprintf("pko_read_file: illegal req!! (whish to read < 0 bytes!)\n");
@@ -415,7 +412,6 @@ int pko_read_file(int fd, char *buf, int length)
         return -1;
     }
     return nbytes;
-    return readbytes;
 }
 
 //----------------------------------------------------------------------
@@ -650,6 +646,52 @@ int pko_close_dir(int fd)
               ntohl(closerly->retval));
 
     return ntohl(closerly->retval);
+}
+
+//----------------------------------------------------------------------
+//
+int pko_get_stat(char *name, iox_stat_t *stat)
+{
+    pko_pkt_getstat_req *getstatreq;
+    pko_pkt_getstat_rly *getstatrly;
+
+    if (pko_fileio_sock < 0) {
+        return -1;
+    }
+
+    dbgprintf("pko_file: make dir req (%s)\n", name);
+
+    getstatreq = (pko_pkt_getstat_req *)&send_packet[0];
+
+    // Build packet
+    getstatreq->cmd = htonl(PKO_GETSTAT_CMD);
+    getstatreq->len = htons((unsigned short)sizeof(pko_pkt_getstat_req));
+    strncpy(getstatreq->name, name, PKO_MAX_PATH);
+    getstatreq->name[PKO_MAX_PATH - 1] = 0; // Make sure it's null-terminated
+
+    if (pko_lwip_send(pko_fileio_sock, getstatreq, sizeof(pko_pkt_getstat_req), 0) < 0) {
+        return -1;
+    }
+
+    if (!pko_accept_pkt(pko_fileio_sock, recv_packet, 
+                        sizeof(pko_pkt_getstat_rly), PKO_GETSTAT_RLY)) {
+        dbgprintf("pko_file: pko_get_stat: did not receive PKO_GETSTAT_RLY\n");
+        return -1;
+    }
+
+    getstatrly = (pko_pkt_getstat_rly *)recv_packet;
+
+    dbgprintf("pko_file: get stat reply received (ret %ld)\n", ntohl(getstatrly->retval));
+    if (ntohl(getstatrly->retval) == 0) {
+        // now handle the return buffer translation, to build reply bit
+        stat->mode  = ntohl(getstatrly->mode);
+        stat->attr = ntohl(getstatrly->attr);
+        stat->size = ntohl(getstatrly->size);
+        stat->hisize = ntohl(getstatrly->hisize);
+        memcpy(stat->ctime, getstatrly->ctime, 8*3);
+    }
+
+    return ntohl(getstatrly->retval);
 }
 
 //----------------------------------------------------------------------
