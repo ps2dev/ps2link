@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  repository_dispatch:
+    types: [run_build]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: ps2dev/ps2dev:latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: |
+        apk add build-base git bash
+
+    - name: Install ps2eth
+      run: |
+        git clone https://github.com/ps2dev/ps2eth.git
+        cd ps2eth && make clean all install
+
+    - name: Compile project
+      run: |
+        make clean all
+
+    - name: Get short SHA
+      id: slug
+      run: echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"
+
+    - name: Upload artifacts
+      if: ${{ success() }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: pslink-${{ steps.slug.outputs.sha8 }}
+        path: bin
