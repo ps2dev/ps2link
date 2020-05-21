@@ -26,7 +26,7 @@
 extern int initCmdRpc(void);
 extern void pkoReset(void);
 
-#define WELCOME_STRING "Welcome to ps2link v1.51\n"
+#define WELCOME_STRING "Welcome to ps2link %s\n"
 
 #ifdef DEBUG
 #define dbgprintf(args...) printf(args)
@@ -750,7 +750,7 @@ main(int argc, char *argv[])
 //    fioInit();
 
     init_scr();
-    scr_printf(WELCOME_STRING);
+    scr_printf(WELCOME_STRING, APP_VERSION);
 #ifdef _LOADHIGHVER
     scr_printf("Highload version\n");
 #endif
