@@ -15,11 +15,13 @@ jobs:
     runs-on: ubuntu-latest
     container: ps2dev/ps2dev:latest
     steps:
-    - uses: actions/checkout@v2
-
     - name: Install dependencies
       run: |
         apk add build-base git bash
+
+    - uses: actions/checkout@v2
+    - run: |
+        git fetch --prune --unshallow
 
     - name: Install ps2eth
       run: |
