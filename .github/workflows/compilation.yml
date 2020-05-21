@@ -40,7 +40,7 @@ jobs:
       if: ${{ success() }}
       uses: actions/upload-artifact@v2
       with:
-        name: pslink-${{ steps.slug.outputs.sha8 }}
+        name: ps2link-${{ steps.slug.outputs.sha8 }}
         path: bin
     
     - name: Extract tag name
