@@ -91,10 +91,12 @@ static void getIpConfig(void);
 ////////////////////////////////////////////////////////////////////////
 #define IPCONF_MAX_LEN 1024
 
-char if_conf[IPCONF_MAX_LEN] = "";
-char fExtraConfig[256];
-int load_extra_conf = 0;
-int if_conf_len = 0;
+// Make sure the "cached config" is in the data section
+// To prevent it from being "zeroed" on a restart of ps2link
+char if_conf[IPCONF_MAX_LEN] __attribute__ ((section (".data"))) = "";
+char fExtraConfig[256] __attribute__ ((section (".data")));
+int load_extra_conf __attribute__ ((section (".data"))) = 0;
+int if_conf_len __attribute__ ((section (".data"))) = 0;
 
 char ip[16] __attribute__((aligned(16))) = "192.168.0.10";
 char netmask[16] __attribute__((aligned(16))) = "255.255.255.0";
