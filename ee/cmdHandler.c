@@ -56,7 +56,7 @@ static int pkoWriteMem(pko_pkt_mem_io *);
 
 ////////////////////////////////////////////////////////////////////////
 // Globals
-extern u32 _start;
+extern u32 __start;
 extern void *_gp;
 extern int boot;
 extern char elfName[];
@@ -743,14 +743,14 @@ pkoReset(void)
 #ifdef USE_CACHED_CFG
     argv[0] = elfName;
 	 SifLoadFileExit();
-    ExecPS2(&_start, 0, 1, argv);
+    ExecPS2(&__start, 0, 1, argv);
     return;
 #endif
 
     if ((boot == B_MC) || (boot == B_HOST) || (boot == B_UNKN) || (boot == B_CC)) {
        argv[0] = elfName;
 		 SifLoadFileExit();
-       ExecPS2(&_start, 0, 1, argv);
+       ExecPS2(&__start, 0, 1, argv);
     }
     else {
        LoadExecPS2(elfName, 0, NULL);

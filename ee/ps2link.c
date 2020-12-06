@@ -738,7 +738,7 @@ void ResetActiveThreads(void)
 }
 #endif
 
-extern void _start(void);
+extern void __start(void);
 extern int _end;
 
 ////////////////////////////////////////////////////////////////////////
@@ -757,7 +757,7 @@ main(int argc, char *argv[])
     scr_printf("Highload version\n");
 #endif
 
-    scr_printf("ps2link loaded at 0x%08X-0x%08X\n", ((u32) _start) - 8, (u32) &_end);
+    scr_printf("ps2link loaded at 0x%08X-0x%08X\n", ((u32) __start) - 8, (u32) &_end);
 
     installExceptionHandlers();
 
