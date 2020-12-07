@@ -9,8 +9,9 @@
 #define BYTEORDER_H
 
 #include <tamtypes.h>
+#include <machine/endian.h>
 
-#ifdef BIG_ENDIAN
+#if BYTE_ORDER == BIG_ENDIAN
 inline unsigned int   htonl(unsigned int   x) { return x; }
 inline unsigned short htons(unsigned short x) { return x; }
 #else // LITTLE_ENDIAN
