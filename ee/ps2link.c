@@ -63,15 +63,12 @@ void *ioptrap_mod = NULL, *ps2dev9_mod = NULL,
 int ioptrap_size = 0, ps2dev9_size = 0, ps2ip_size = 0,
 	poweroff_size = 0, ps2smap_size = 0, ps2link_size = 0;
 #else
-extern unsigned char _binary_ioptrap_irx_start[], _binary_ps2dev9_irx_start[], \
-                     _binary_ps2ip_irx_start[], _binary_ps2smap_irx_start[], _binary_poweroff_irx_start[], \
-					 _binary_ps2link_irx_start[];
-extern unsigned char _binary_ioptrap_irx_end[], _binary_ps2dev9_irx_end[], \
-                     _binary_ps2ip_irx_end[], _binary_ps2smap_irx_end[], _binary_poweroff_irx_end[], \
-					 _binary_ps2link_irx_end[];
-static unsigned int _binary_ioptrap_irx_size, _binary_ps2dev9_irx_size, \
-                    _binary_ps2ip_irx_size, _binary_ps2smap_irx_size, _binary_poweroff_irx_size, \
-					_binary_ps2link_irx_size;
+extern unsigned char ioptrap_irx[], ps2dev9_irx[], \
+                     ps2ip_irx[], ps2smap_irx[], poweroff_irx[], \
+					 ps2link_irx[];
+extern unsigned int size_ioptrap_irx, size_ps2dev9_irx, \
+                    size_ps2ip_irx, size_ps2smap_irx, size_poweroff_irx, \
+					size_ps2link_irx;
 #endif
 
 // Flags for which type of boot
@@ -411,12 +408,6 @@ loadModules(void)
 #endif
 
 #ifdef BUILTIN_IRXS
-    _binary_ioptrap_irx_size = _binary_ioptrap_irx_end - _binary_ioptrap_irx_start;
-    _binary_ps2dev9_irx_size = _binary_ps2dev9_irx_end - _binary_ps2dev9_irx_start;
-    _binary_ps2ip_irx_size = _binary_ps2ip_irx_end - _binary_ps2ip_irx_start;
-    _binary_ps2smap_irx_size = _binary_ps2smap_irx_end - _binary_ps2smap_irx_start;
-    _binary_poweroff_irx_size = _binary_poweroff_irx_end - _binary_poweroff_irx_start;
-    _binary_ps2link_irx_size = _binary_ps2link_irx_end - _binary_ps2link_irx_start;
 
 #ifdef USE_CACHED_CFG
     if(if_conf_len==0)
@@ -438,23 +429,23 @@ loadModules(void)
     getIpConfig();
 #endif
 
-	    dbgscr_printf("Exec poweroff module. (%x,%d) ", (unsigned int)_binary_poweroff_irx_start, _binary_poweroff_irx_size);
-    SifExecModuleBuffer(_binary_poweroff_irx_start, _binary_poweroff_irx_size, 0, NULL,&ret);
+	    dbgscr_printf("Exec poweroff module. (%x,%d) ", (unsigned int)poweroff_irx, size_poweroff_irx);
+    SifExecModuleBuffer(poweroff_irx, size_poweroff_irx, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ps2dev9 module. (%x,%d) ", (unsigned int)_binary_ps2dev9_irx_start, _binary_ps2dev9_irx_size);
-    SifExecModuleBuffer(_binary_ps2dev9_irx_start, _binary_ps2dev9_irx_size, 0, NULL,&ret);
+	    dbgscr_printf("Exec ps2dev9 module. (%x,%d) ", (unsigned int)ps2dev9_irx, size_ps2dev9_irx);
+    SifExecModuleBuffer(ps2dev9_irx, size_ps2dev9_irx, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ps2ip module. (%x,%d) ", (unsigned int)_binary_ps2ip_irx_start, _binary_ps2ip_irx_size);
-    SifExecModuleBuffer(_binary_ps2ip_irx_start, _binary_ps2ip_irx_size, 0, NULL,&ret);
+	    dbgscr_printf("Exec ps2ip module. (%x,%d) ", (unsigned int)ps2ip_irx, size_ps2ip_irx);
+    SifExecModuleBuffer(ps2ip_irx, size_ps2ip_irx, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ps2smap module. (%x,%d) ", (unsigned int)_binary_ps2smap_irx_start, _binary_ps2smap_irx_size);
-    SifExecModuleBuffer(_binary_ps2smap_irx_start, _binary_ps2smap_irx_size, if_conf_len, &if_conf[0],&ret);
+	    dbgscr_printf("Exec ps2smap module. (%x,%d) ", (unsigned int)ps2smap_irx, size_ps2smap_irx);
+    SifExecModuleBuffer(ps2smap_irx, size_ps2smap_irx, if_conf_len, &if_conf[0],&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ioptrap module. (%x,%d) ", (unsigned int)_binary_ioptrap_irx_start, _binary_ioptrap_irx_size);
-    SifExecModuleBuffer(_binary_ioptrap_irx_start, _binary_ioptrap_irx_size, 0, NULL,&ret);
+	    dbgscr_printf("Exec ioptrap module. (%x,%d) ", (unsigned int)ioptrap_irx, size_ioptrap_irx);
+    SifExecModuleBuffer(ioptrap_irx, size_ioptrap_irx, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-		dbgscr_printf("Exec ps2link module. (%x,%d) ", (unsigned int)_binary_ps2link_irx_start, _binary_ps2link_irx_size);
-    SifExecModuleBuffer(_binary_ps2link_irx_start, _binary_ps2link_irx_size, 0, NULL,&ret);
+		dbgscr_printf("Exec ps2link module. (%x,%d) ", (unsigned int)ps2link_irx, size_ps2link_irx);
+    SifExecModuleBuffer(ps2link_irx, size_ps2link_irx, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
 	    dbgscr_printf("All modules loaded on IOP.\n");
 #else
