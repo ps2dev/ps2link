@@ -3,9 +3,6 @@
 # Set this to 1 to enable debug mode
 DEBUG = 0
 
-# Set this to 1 to build a highloading version, 0 for normal low version
-LOADHIGH = 0
-
 # Set this to 1 to build ps2link with all the needed IRX builtins
 BUILTIN_IRXS = 1
 
@@ -58,7 +55,7 @@ ee/%_irx.o: %.irx
 	$(EE_CC) -c $*_irx.c -o ee/$*_irx.o
 	rm $*_irx.c
 
-VARIABLES=DEBUG=$(DEBUG) LOADHIGH=$(LOADHIGH) BUILTIN_IRXS=$(BUILTIN_IRXS) ZEROCOPY=$(ZEROCOPY) PWOFFONRESET=$(PWOFFONRESET) CACHED_CFG=$(CACHED_CFG) HOOK_THREADS=$(HOOK_THREADS)
+VARIABLES=DEBUG=$(DEBUG) BUILTIN_IRXS=$(BUILTIN_IRXS) ZEROCOPY=$(ZEROCOPY) PWOFFONRESET=$(PWOFFONRESET) CACHED_CFG=$(CACHED_CFG) HOOK_THREADS=$(HOOK_THREADS)
 
 ifeq ($(BUILTIN_IRXS),1)
 TARGETS = iop builtins ee
@@ -88,9 +85,6 @@ clean:
 	$(MAKE) -C ee clean
 	$(MAKE) -C iop clean
 	@rm -f ee/*_irx.o bin/*.ELF bin/*.IRX
-
-check:
-	$(VARIABLES) $(MAKE) -C ee check
 
 # Creates a zip from what you have
 dist: all
