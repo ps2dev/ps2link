@@ -38,7 +38,7 @@ EE_CXX_COMPILE = $(EE_CC) $(EE_CXXFLAGS) $(EE_INCS)
 	$(EE_AS) $(EE_ASFLAGS) $< -o $@
 
 $(EE_BIN) : $(EE_OBJS)
-	$(EE_CC) -T$(PS2SDK)/ee/startup/linkfile $(EE_LDFLAGS) -o $(EE_BIN) $(EE_OBJS) $(EE_LIBS)
+	$(EE_CC) -Tlinkfile $(EE_LDFLAGS) -o $(EE_BIN) $(EE_OBJS) $(EE_LIBS)
 
 $(EE_LIB) : $(EE_OBJS)
 	$(EE_AR) cru $(EE_LIB) $(EE_OBJS)
