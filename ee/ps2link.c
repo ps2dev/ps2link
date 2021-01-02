@@ -616,7 +616,7 @@ restartIOP()
     SifInitRpc(0);
 
     scr_printf("Initializing...\n");
-    sio_printf("Initializing...\n");
+//    sio_printf("Initializing...\n");
     sbv_patch_enable_lmb();
     sbv_patch_disable_prefix_check();
 
@@ -853,7 +853,7 @@ main(int argc, char *argv[])
 	}
 
     scr_printf("Ready\n");
-    sio_printf("Ready\n");
+//    sio_printf("Ready\n");
 
 //    SleepThread();
     ExitDeleteThread();
