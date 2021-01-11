@@ -56,7 +56,7 @@ static int pkoWriteMem(pko_pkt_mem_io *);
 
 ////////////////////////////////////////////////////////////////////////
 // Globals
-extern u32 _start;
+extern u32 __start;
 extern void *_gp;
 extern int boot;
 extern char elfName[];
@@ -474,11 +474,11 @@ pkoDumpReg(pko_pkt_dump_regs *cmd) {
 				// Save VU1 floats
 				"move	$8, %0;"			// save away dst
 				"ori	$1, $0, 1024;"		// start of vu1 mapped floats
-				"ctc2   $1, $vi01;"			// ctc2 t0, vi1
+				"ctc2   $1, $vi1;"			// ctc2 t0, vi1
 				"ori	$1, $0, 32;"
 				"vu1_float_loop:"
-				"vlqi	$vf01, ($vi01++);"
-				"sqc2   $vf01, 0($8);"
+				"vlqi	$vf1, ($vi1++);"
+				"sqc2   $vf1, 0($8);"
 				"addiu	$1, -1;"
 				"addiu	$8, 16;"
 				"nop;"
@@ -487,11 +487,11 @@ pkoDumpReg(pko_pkt_dump_regs *cmd) {
 
 				// Save VU1 Integers
 				"ori	$1, $0, 1056;"
-				"ctc2   $1, $vi01;"			// ctc2 t0, vi1
+				"ctc2   $1, $vi1;"			// ctc2 t0, vi1
 				"ori	$1, $0, 16;"
 				"vu1_int_loop:"
-				"vlqi	$vf01, ($vi01++);"
-				"sqc2   $vf01, 0($8);"
+				"vlqi	$vf1, ($vi1++);"
+				"sqc2   $vf1, 0($8);"
 				"addiu	$1, -1;"
 				"addiu	$8, 16;"
 				"nop;"
@@ -501,25 +501,25 @@ pkoDumpReg(pko_pkt_dump_regs *cmd) {
 				// Stop GIF
 				// Save VU1 Control registers
 				"ori	$1, $0, 1072;"
-				"ctc2	$1, $vi01;"
-				"vlqi	$vf01, ($vi01++);"
-				"sqc2   $vf01, 0($8);"
-				"vlqi	$vf01, ($vi01++);"
-				"sqc2   $vf01, 16($8);"
-				"vlqi	$vf01, ($vi01++);"
-				"sqc2   $vf01, 32($8);"
-				"viaddi	$vi01, $vi01, 1;"
-				"vlqi	$vf01, ($vi01++);"
-				"sqc2   $vf01, 48($8);"
-				"vlqi	$vf01, ($vi01++);"
-				"sqc2   $vf01, 64($8);"
-				"vlqi	$vf01, ($vi01++);"
-				"sqc2   $vf01, 80($8);"
-				"vlqi	$vf01, ($vi01++);"
-				"sqc2   $vf01, 96($8);"
-				"viaddi	$vi01, $vi01, 2;"
-				"vlqi	$vf01, ($vi01++);"
-				"sqc2   $vf01, 112($8);"
+				"ctc2	$1, $vi1;"
+				"vlqi	$vf1, ($vi1++);"
+				"sqc2   $vf1, 0($8);"
+				"vlqi	$vf1, ($vi1++);"
+				"sqc2   $vf1, 16($8);"
+				"vlqi	$vf1, ($vi1++);"
+				"sqc2   $vf1, 32($8);"
+				"viaddi	$vi1, $vi1, 1;"
+				"vlqi	$vf1, ($vi1++);"
+				"sqc2   $vf1, 48($8);"
+				"vlqi	$vf1, ($vi1++);"
+				"sqc2   $vf1, 64($8);"
+				"vlqi	$vf1, ($vi1++);"
+				"sqc2   $vf1, 80($8);"
+				"vlqi	$vf1, ($vi1++);"
+				"sqc2   $vf1, 96($8);"
+				"viaddi	$vi1, $vi1, 2;"
+				"vlqi	$vf1, ($vi1++);"
+				"sqc2   $vf1, 112($8);"
 
 				// FIXME remember to save/restore vi1 and vf1
 
@@ -571,25 +571,25 @@ pkoDumpReg(pko_pkt_dump_regs *cmd) {
 				"sqc2   $vf31, 496(%0);"
 
 				// Save VU0 integer registers
-				"cfc2	$8, $vi00;"
+				"cfc2	$8, $vi0;"
 				"sq		$8, 512(%0);"
-				"cfc2	$8, $vi01;"
+				"cfc2	$8, $vi1;"
 				"sq		$8, 528(%0);"
-				"cfc2	$8, $vi02;"
+				"cfc2	$8, $vi2;"
 				"sq		$8, 544(%0);"
-				"cfc2	$8, $vi03;"
+				"cfc2	$8, $vi3;"
 				"sq		$8, 560(%0);"
-				"cfc2	$8, $vi04;"
+				"cfc2	$8, $vi4;"
 				"sq		$8, 576(%0);"
-				"cfc2	$8, $vi05;"
+				"cfc2	$8, $vi5;"
 				"sq		$8, 592(%0);"
-				"cfc2	$8, $vi06;"
+				"cfc2	$8, $vi6;"
 				"sq		$8, 608(%0);"
-				"cfc2	$8, $vi07;"
+				"cfc2	$8, $vi7;"
 				"sq		$8, 624(%0);"
-				"cfc2	$8, $vi08;"
+				"cfc2	$8, $vi8;"
 				"sq		$8, 640(%0);"
-				"cfc2	$8, $vi09;"
+				"cfc2	$8, $vi9;"
 				"sq		$8, 656(%0);"
 				"cfc2	$8, $vi10;"
 				"sq		$8, 672(%0);"
@@ -743,14 +743,14 @@ pkoReset(void)
 #ifdef USE_CACHED_CFG
     argv[0] = elfName;
 	 SifLoadFileExit();
-    ExecPS2(&_start, 0, 1, argv);
+    ExecPS2(&__start, 0, 1, argv);
     return;
 #endif
 
     if ((boot == B_MC) || (boot == B_HOST) || (boot == B_UNKN) || (boot == B_CC)) {
        argv[0] = elfName;
 		 SifLoadFileExit();
-       ExecPS2(&_start, 0, 1, argv);
+       ExecPS2(&__start, 0, 1, argv);
     }
     else {
        LoadExecPS2(elfName, 0, NULL);

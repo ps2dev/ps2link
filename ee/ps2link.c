@@ -63,15 +63,12 @@ void *ioptrap_mod = NULL, *ps2dev9_mod = NULL,
 int ioptrap_size = 0, ps2dev9_size = 0, ps2ip_size = 0,
 	poweroff_size = 0, ps2smap_size = 0, ps2link_size = 0;
 #else
-extern unsigned char _binary_ioptrap_irx_start[], _binary_ps2dev9_irx_start[], \
-                     _binary_ps2ip_irx_start[], _binary_ps2smap_irx_start[], _binary_poweroff_irx_start[], \
-					 _binary_ps2link_irx_start[];
-extern unsigned char _binary_ioptrap_irx_end[], _binary_ps2dev9_irx_end[], \
-                     _binary_ps2ip_irx_end[], _binary_ps2smap_irx_end[], _binary_poweroff_irx_end[], \
-					 _binary_ps2link_irx_end[];
-static unsigned int _binary_ioptrap_irx_size, _binary_ps2dev9_irx_size, \
-                    _binary_ps2ip_irx_size, _binary_ps2smap_irx_size, _binary_poweroff_irx_size, \
-					_binary_ps2link_irx_size;
+extern unsigned char ioptrap_irx[], ps2dev9_irx[], \
+                     ps2ip_irx[], ps2smap_irx[], poweroff_irx[], \
+					 ps2link_irx[];
+extern unsigned int size_ioptrap_irx, size_ps2dev9_irx, \
+                    size_ps2ip_irx, size_ps2smap_irx, size_poweroff_irx, \
+					size_ps2link_irx;
 #endif
 
 // Flags for which type of boot
@@ -91,10 +88,12 @@ static void getIpConfig(void);
 ////////////////////////////////////////////////////////////////////////
 #define IPCONF_MAX_LEN 1024
 
-char if_conf[IPCONF_MAX_LEN] = "";
-char fExtraConfig[256];
-int load_extra_conf = 0;
-int if_conf_len = 0;
+// Make sure the "cached config" is in the data section
+// To prevent it from being "zeroed" on a restart of ps2link
+char if_conf[IPCONF_MAX_LEN] __attribute__ ((section (".data"))) = "";
+char fExtraConfig[256] __attribute__ ((section (".data")));
+int load_extra_conf __attribute__ ((section (".data"))) = 0;
+int if_conf_len __attribute__ ((section (".data"))) = 0;
 
 char ip[16] __attribute__((aligned(16))) = "192.168.0.10";
 char netmask[16] __attribute__((aligned(16))) = "255.255.255.0";
@@ -409,12 +408,6 @@ loadModules(void)
 #endif
 
 #ifdef BUILTIN_IRXS
-    _binary_ioptrap_irx_size = _binary_ioptrap_irx_end - _binary_ioptrap_irx_start;
-    _binary_ps2dev9_irx_size = _binary_ps2dev9_irx_end - _binary_ps2dev9_irx_start;
-    _binary_ps2ip_irx_size = _binary_ps2ip_irx_end - _binary_ps2ip_irx_start;
-    _binary_ps2smap_irx_size = _binary_ps2smap_irx_end - _binary_ps2smap_irx_start;
-    _binary_poweroff_irx_size = _binary_poweroff_irx_end - _binary_poweroff_irx_start;
-    _binary_ps2link_irx_size = _binary_ps2link_irx_end - _binary_ps2link_irx_start;
 
 #ifdef USE_CACHED_CFG
     if(if_conf_len==0)
@@ -436,23 +429,23 @@ loadModules(void)
     getIpConfig();
 #endif
 
-	    dbgscr_printf("Exec poweroff module. (%x,%d) ", (unsigned int)_binary_poweroff_irx_start, _binary_poweroff_irx_size);
-    SifExecModuleBuffer(_binary_poweroff_irx_start, _binary_poweroff_irx_size, 0, NULL,&ret);
+	    dbgscr_printf("Exec poweroff module. (%x,%d) ", (unsigned int)poweroff_irx, size_poweroff_irx);
+    SifExecModuleBuffer(poweroff_irx, size_poweroff_irx, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ps2dev9 module. (%x,%d) ", (unsigned int)_binary_ps2dev9_irx_start, _binary_ps2dev9_irx_size);
-    SifExecModuleBuffer(_binary_ps2dev9_irx_start, _binary_ps2dev9_irx_size, 0, NULL,&ret);
+	    dbgscr_printf("Exec ps2dev9 module. (%x,%d) ", (unsigned int)ps2dev9_irx, size_ps2dev9_irx);
+    SifExecModuleBuffer(ps2dev9_irx, size_ps2dev9_irx, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ps2ip module. (%x,%d) ", (unsigned int)_binary_ps2ip_irx_start, _binary_ps2ip_irx_size);
-    SifExecModuleBuffer(_binary_ps2ip_irx_start, _binary_ps2ip_irx_size, 0, NULL,&ret);
+	    dbgscr_printf("Exec ps2ip module. (%x,%d) ", (unsigned int)ps2ip_irx, size_ps2ip_irx);
+    SifExecModuleBuffer(ps2ip_irx, size_ps2ip_irx, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ps2smap module. (%x,%d) ", (unsigned int)_binary_ps2smap_irx_start, _binary_ps2smap_irx_size);
-    SifExecModuleBuffer(_binary_ps2smap_irx_start, _binary_ps2smap_irx_size, if_conf_len, &if_conf[0],&ret);
+	    dbgscr_printf("Exec ps2smap module. (%x,%d) ", (unsigned int)ps2smap_irx, size_ps2smap_irx);
+    SifExecModuleBuffer(ps2smap_irx, size_ps2smap_irx, if_conf_len, &if_conf[0],&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-	    dbgscr_printf("Exec ioptrap module. (%x,%d) ", (unsigned int)_binary_ioptrap_irx_start, _binary_ioptrap_irx_size);
-    SifExecModuleBuffer(_binary_ioptrap_irx_start, _binary_ioptrap_irx_size, 0, NULL,&ret);
+	    dbgscr_printf("Exec ioptrap module. (%x,%d) ", (unsigned int)ioptrap_irx, size_ioptrap_irx);
+    SifExecModuleBuffer(ioptrap_irx, size_ioptrap_irx, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
-		dbgscr_printf("Exec ps2link module. (%x,%d) ", (unsigned int)_binary_ps2link_irx_start, _binary_ps2link_irx_size);
-    SifExecModuleBuffer(_binary_ps2link_irx_start, _binary_ps2link_irx_size, 0, NULL,&ret);
+		dbgscr_printf("Exec ps2link module. (%x,%d) ", (unsigned int)ps2link_irx, size_ps2link_irx);
+    SifExecModuleBuffer(ps2link_irx, size_ps2link_irx, 0, NULL,&ret);
 	    dbgscr_printf("[%d] returned\n", ret);
 	    dbgscr_printf("All modules loaded on IOP.\n");
 #else
@@ -623,7 +616,7 @@ restartIOP()
     SifInitRpc(0);
 
     scr_printf("Initializing...\n");
-    sio_printf("Initializing...\n");
+//    sio_printf("Initializing...\n");
     sbv_patch_enable_lmb();
     sbv_patch_disable_prefix_check();
 
@@ -736,7 +729,7 @@ void ResetActiveThreads(void)
 }
 #endif
 
-extern void _start(void);
+extern void __start(void);
 extern int _end;
 
 ////////////////////////////////////////////////////////////////////////
@@ -751,11 +744,8 @@ main(int argc, char *argv[])
 
     init_scr();
     scr_printf(WELCOME_STRING, APP_VERSION);
-#ifdef _LOADHIGHVER
-    scr_printf("Highload version\n");
-#endif
 
-    scr_printf("ps2link loaded at 0x%08X-0x%08X\n", ((u32) _start) - 8, (u32) &_end);
+    scr_printf("ps2link loaded at 0x%08X-0x%08X\n", ((u32) __start) - 8, (u32) &_end);
 
     installExceptionHandlers();
 
@@ -863,7 +853,7 @@ main(int argc, char *argv[])
 	}
 
     scr_printf("Ready\n");
-    sio_printf("Ready\n");
+//    sio_printf("Ready\n");
 
 //    SleepThread();
     ExitDeleteThread();

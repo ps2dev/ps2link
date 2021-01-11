@@ -9,16 +9,13 @@
 #define BYTEORDER_H
 
 #include <tamtypes.h>
+#include <machine/endian.h>
 
-#ifdef BIG_ENDIAN
-inline unsigned int   ntohl(x) { return x; }
-inline unsigned short ntohs(x) { return x; }
-inline unsigned int   ntohl(x) { return x; }
-inline unsigned short ntohs(x) { return x; }
-#else
-// LITTLE_ENDIAN
-inline unsigned int
-htonl(unsigned int x)
+#if BYTE_ORDER == BIG_ENDIAN
+inline unsigned int   htonl(unsigned int   x) { return x; }
+inline unsigned short htons(unsigned short x) { return x; }
+#else // LITTLE_ENDIAN
+inline unsigned int   htonl(unsigned int   x)
 {
     return ((x & 0xff) << 24 ) |
         ((x & 0xff00) << 8 ) |
@@ -26,16 +23,14 @@ htonl(unsigned int x)
         ((x & 0xff000000) >> 24 );
 }
 
-inline unsigned short 
-htons(unsigned short x)
+inline unsigned short htons(unsigned short x)
 {
     return ((x & 0xff) << 8 ) | ((x & 0xff00) >> 8 );
 }
+#endif
 
 #define ntohl	htonl
 #define ntohs	htons
-
-#endif
 
 #define IP4_ADDR(ipaddr, a,b,c,d) (ipaddr)->s_addr = htonl(((u32)(a & 0xff) << 24) | ((u32)(b & 0xff) << 16 ) | ((u32)(c & 0xff) << 8) | (u32)(d & 0xff))
 

@@ -3,9 +3,6 @@
 # Set this to 1 to enable debug mode
 DEBUG = 0
 
-# Set this to 1 to build a highloading version, 0 for normal low version
-LOADHIGH = 0
-
 # Set this to 1 to build ps2link with all the needed IRX builtins
 BUILTIN_IRXS = 1
 
@@ -27,7 +24,7 @@ HOOK_THREADS = 0
 PS2ETH = $(PS2DEV)/ps2eth
 
 SHELL=/usr/bin/env bash
-BIN2O=$(PS2SDK)/bin/bin2o
+BIN2C=bin2c
 RM=rm -f
 
 #
@@ -38,13 +35,27 @@ include $(PS2SDK)/Defs.make
 
 EEFILES=ee/ps2link.elf
 
-IRXFILES=iop/ps2link.irx $(PS2SDK)/iop/irx/ps2ip.irx \
-	$(PS2ETH)/smap/ps2smap.irx \
-	$(PS2SDK)/iop/irx/ioptrap.irx \
-	$(PS2SDK)/iop/irx/ps2dev9.irx \
-	$(PS2SDK)/iop/irx/poweroff.irx
+IRXFILES=\
+	ps2link.irx \
+	ps2ip.irx \
+	ps2smap.irx \
+	ioptrap.irx \
+	ps2dev9.irx \
+	poweroff.irx
+EE_IRX_OBJS = $(addprefix ee/, $(addsuffix _irx.o, $(basename $(IRXFILES))))
 
-VARIABLES=DEBUG=$(DEBUG) LOADHIGH=$(LOADHIGH) BUILTIN_IRXS=$(BUILTIN_IRXS) ZEROCOPY=$(ZEROCOPY) PWOFFONRESET=$(PWOFFONRESET) CACHED_CFG=$(CACHED_CFG) HOOK_THREADS=$(HOOK_THREADS)
+# Where to find the IRX files
+vpath %.irx $(PS2SDK)/iop/irx/
+vpath %.irx $(PS2ETH)/smap/
+vpath %.irx iop/
+
+# Rule to generate them
+ee/%_irx.o: %.irx
+	$(BIN2C) $< $*_irx.c $*_irx
+	$(EE_CC) -c $*_irx.c -o ee/$*_irx.o
+	rm $*_irx.c
+
+VARIABLES=DEBUG=$(DEBUG) BUILTIN_IRXS=$(BUILTIN_IRXS) ZEROCOPY=$(ZEROCOPY) PWOFFONRESET=$(PWOFFONRESET) CACHED_CFG=$(CACHED_CFG) HOOK_THREADS=$(HOOK_THREADS)
 
 ifeq ($(BUILTIN_IRXS),1)
 TARGETS = iop builtins ee
@@ -74,9 +85,6 @@ clean:
 	$(MAKE) -C ee clean
 	$(MAKE) -C iop clean
 	@rm -f ee/*_irx.o bin/*.ELF bin/*.IRX
-
-check:
-	$(VARIABLES) $(MAKE) -C ee check
 
 # Creates a zip from what you have
 dist: all
@@ -124,12 +132,6 @@ release:
 docs:
 	doxygen doxy.conf
 
-builtins:
-	@for file in $(IRXFILES); do \
-		basefile=$${file/*\//}; \
-		basefile=$${basefile/\.*/}; \
-		echo "Embedding IRX file $$basefile"; \
-		$(BIN2O) $$file ee/$${basefile}_irx.o _binary_$${basefile}_irx; \
-	done;
+builtins: $(EE_IRX_OBJS)
 
 .PHONY: iop ee
