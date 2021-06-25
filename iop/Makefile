@@ -12,7 +12,7 @@ IOP_OBJS = net_fsys.o net_fio.o ps2link.o cmdHandler.o tty.o nprintf.o excepHand
 IOP_INCS += -I../include
 IOP_LIBS += 
 IOP_LDFLAGS += 
-IOP_CFLAGS += -Wall
+IOP_CFLAGS += 
 
 # Enable zero-copy on fileio writes.
 ifeq ($(ZEROCOPY),1)
@@ -35,4 +35,4 @@ clean:
 	-rm -f $(IOP_OBJS) $(IOP_BIN)
 
 include $(PS2SDK)/Defs.make
-include Rules.make
+include $(PS2SDK)/samples/Makefile.iopglobal
