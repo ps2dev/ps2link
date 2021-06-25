@@ -12,7 +12,7 @@ IOP_OBJS = net_fsys.o net_fio.o ps2link.o cmdHandler.o tty.o nprintf.o excepHand
 IOP_INCS += -I../include
 IOP_LIBS += 
 IOP_LDFLAGS += 
-IOP_CFLAGS += -Wall
+IOP_CFLAGS += -Wall -fno-builtin
 
 # Enable zero-copy on fileio writes.
 ifeq ($(ZEROCOPY),1)
