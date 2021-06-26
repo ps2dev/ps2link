@@ -29,6 +29,14 @@ endif
 APP_VERSION := $(shell git describe --tags --abbrev=0)
 EE_CFLAGS += -DAPP_VERSION=\"$(APP_VERSION)\"
 
+# Link with following libraries.  This is a special case, and instead of
+# allowing the user to override the library order, we always make sure
+# libkernel is the last library to be linked.
+EE_LIBS += -lc -lkernel-nopatch
+
+# Use custom linkfile
+EE_LINKFILE = linkfile
+
 ifeq ($(DEBUG),1)
 EE_LDFLAGS += -g
 else
@@ -41,4 +49,4 @@ clean:
 	-rm -f $(EE_OBJS) $(EE_BIN)
 
 include $(PS2SDK)/Defs.make
-include Rules.make
+include $(PS2SDK)/samples/Makefile.eeglobal_cpp
