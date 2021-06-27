@@ -90,16 +90,19 @@ static void getIpConfig(void);
 ////////////////////////////////////////////////////////////////////////
 #define IPCONF_MAX_LEN 1024
 
+#define DEFAULT_IP "192.168.0.10"
+#define DEFAULT_NETMASK "255.255.255.0"
+#define DEFAULT_GW "192.168.0.1"
+#define SEPARATOR " "
+// DEFAULT_IP_CONFIG should be something as "192.168.0.10 255.0.0.0 192.168.0.1"
+#define DEFAULT_IP_CONFIG DEFAULT_IP SEPARATOR DEFAULT_NETMASK SEPARATOR DEFAULT_GW
+
 // Make sure the "cached config" is in the data section
 // To prevent it from being "zeroed" on a restart of ps2link
 char if_conf[IPCONF_MAX_LEN] __attribute__ ((section (".data"))) = "";
 char fExtraConfig[256] __attribute__ ((section (".data")));
 int load_extra_conf __attribute__ ((section (".data"))) = 0;
 int if_conf_len __attribute__ ((section (".data"))) = 0;
-
-char ip[16] __attribute__((aligned(16))) = "192.168.0.10";
-char netmask[16] __attribute__((aligned(16))) = "255.255.255.0";
-char gw[16] __attribute__((aligned(16))) = "192.168.0.1";
 
 ////////////////////////////////////////////////////////////////////////
 // Parse network configuration from IPCONFIG.DAT
@@ -198,20 +201,11 @@ getIpConfig(void)
     if (fd < 0)
     {
         scr_printf("Could not find IPCONFIG.DAT, using defaults\n"
-                   "Net config: %s  %s  %s\n", ip, netmask, gw);
+                   "Net config: %s\n", DEFAULT_IP_CONFIG);
         // Set defaults
         memset(if_conf, 0x00, IPCONF_MAX_LEN);
-        i = 0;
-        strncpy(&if_conf[i], ip, 15);
-        i += strlen(ip) + 1;
-
-        strncpy(&if_conf[i], netmask, 15);
-        i += strlen(netmask) + 1;
-
-        strncpy(&if_conf[i], gw, 15);
-        i += strlen(gw) + 1;
-
-        if_conf_len = i;
+        strcpy(if_conf, DEFAULT_IP_CONFIG);
+        i = strlen(DEFAULT_IP_CONFIG);
         dbgscr_printf("conf len %d\n", if_conf_len);
         return;
     }
