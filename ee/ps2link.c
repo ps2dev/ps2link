@@ -45,10 +45,12 @@ int irx_buffer_addr = 0;
 ////////////////////////////////////////////////////////////////////////
 // Globals
 extern int userThreadID;
+extern void __start(void);
+extern int _end;
 
 // Argv name+path & just path
 char elfName[256] __attribute__((aligned(16)));
-char elfPath[256];
+char elfPath[241]; // It isn't 256 because elfPath will add subpaths
 
 #ifndef BUILTIN_IRXS
 char poweroff_path[PKO_MAX_PATH];
@@ -279,6 +281,13 @@ getExtraConfig()
     lseek(fd, 0, SEEK_SET);
     buf = malloc(size + 1);
     ret = read(fd, buf, size);
+    
+    if ( ret < 0 )
+	{
+        scr_printf("failed to read extra conf file\n");
+        return;
+    }
+
     buf[size] = 0;
     close(fd);
     ptr = buf;
@@ -521,10 +530,8 @@ setPathInfo(char *path)
 {
     char *ptr;
 
-    strncpy(elfName, path, 255);
-    strncpy(elfPath, path, 255);
-    elfName[255] = '\0';
-    elfPath[255] = '\0';
+    strcpy(elfName, path);
+    strcpy(elfPath, path);
 
 
     ptr = strrchr(elfPath, '/');
@@ -597,6 +604,13 @@ wipeUserMemLoadHigh(void)
             "\tsq $0, 48(%0) \n"
             :: "r" (i) );
     }
+}
+
+void printWelcomeInfo()
+{
+    scr_printf(WELCOME_STRING, APP_VERSION);
+    scr_printf("ps2link loaded at 0x%08X-0x%08X\n", ((u32) __start) - 8, (u32) &_end);
+    scr_printf("Initializing...\n");
 }
 
 
@@ -728,16 +742,6 @@ void ResetActiveThreads(void)
     for(i = 0; i < MAX_MONITORED_THREADS; i++) { active_threads[i] = -1; }
 }
 #endif
-
-extern void __start(void);
-extern int _end;
-
-void printWelcomeInfo()
-{
-    scr_printf(WELCOME_STRING, APP_VERSION);
-    scr_printf("ps2link loaded at 0x%08X-0x%08X\n", ((u32) __start) - 8, (u32) &_end);
-    scr_printf("Initializing...\n");
-}
 
 ////////////////////////////////////////////////////////////////////////
 int

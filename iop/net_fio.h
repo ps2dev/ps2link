@@ -27,7 +27,7 @@ int pko_rmdir(char *name);
 int pko_open_dir(char *path);
 int pko_read_dir(int fd, void *buf);
 int pko_close_dir(int fd);
-int pko_get_stat(char *name, iox_stat_t *stat);
+int pko_get_stat(const char *name, iox_stat_t *stat);
 
 /*
  * Don't want printfs to broadcast in case more than 1 ps2 on the same network, so at
