@@ -615,7 +615,7 @@ restartIOP()
     dbgscr_printf("rpc init\n");
     SifInitRpc(0);
 
-    scr_printf("Initializing...\n");
+    printWelcomeInfo();
 //    sio_printf("Initializing...\n");
     sbv_patch_enable_lmb();
     sbv_patch_disable_prefix_check();
@@ -732,6 +732,13 @@ void ResetActiveThreads(void)
 extern void __start(void);
 extern int _end;
 
+void printWelcomeInfo()
+{
+    scr_printf(WELCOME_STRING, APP_VERSION);
+    scr_printf("ps2link loaded at 0x%08X-0x%08X\n", ((u32) __start) - 8, (u32) &_end);
+    scr_printf("Initializing...\n");
+}
+
 ////////////////////////////////////////////////////////////////////////
 int
 main(int argc, char *argv[])
@@ -743,9 +750,7 @@ main(int argc, char *argv[])
 //    fioInit();
 
     init_scr();
-    scr_printf(WELCOME_STRING, APP_VERSION);
-
-    scr_printf("ps2link loaded at 0x%08X-0x%08X\n", ((u32) __start) - 8, (u32) &_end);
+    printWelcomeInfo();
 
     installExceptionHandlers();
 
