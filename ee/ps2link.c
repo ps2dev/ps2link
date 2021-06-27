@@ -738,6 +738,10 @@ void ResetActiveThreads(void)
 #endif
 
 ////////////////////////////////////////////////////////////////////////
+
+// We are not using time zone, so we can safe some KB
+void _ps2sdk_timezone_update() {}
+
 int
 main(int argc, char *argv[])
 {
