@@ -17,11 +17,11 @@ extern int userThreadID;
 extern int excepscrdump;
 
 ////////////////////////////////////////////////////////////////////////
-typedef union 
+typedef union __attribute__((packed))
 {
     unsigned int  uint128 __attribute__(( mode(TI) ));
     unsigned long uint64[2];
-} eeReg __attribute((packed));
+} eeReg;
 
 ////////////////////////////////////////////////////////////////////////
 // Prototypes

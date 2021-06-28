@@ -45,10 +45,12 @@ int irx_buffer_addr = 0;
 ////////////////////////////////////////////////////////////////////////
 // Globals
 extern int userThreadID;
+extern void __start(void);
+extern int _end;
 
 // Argv name+path & just path
 char elfName[256] __attribute__((aligned(16)));
-char elfPath[256];
+char elfPath[241]; // It isn't 256 because elfPath will add subpaths
 
 #ifndef BUILTIN_IRXS
 char poweroff_path[PKO_MAX_PATH];
@@ -88,16 +90,19 @@ static void getIpConfig(void);
 ////////////////////////////////////////////////////////////////////////
 #define IPCONF_MAX_LEN 1024
 
+#define DEFAULT_IP "192.168.0.10"
+#define DEFAULT_NETMASK "255.255.255.0"
+#define DEFAULT_GW "192.168.0.1"
+#define SEPARATOR " "
+// DEFAULT_IP_CONFIG should be something as "192.168.0.10 255.0.0.0 192.168.0.1"
+#define DEFAULT_IP_CONFIG DEFAULT_IP SEPARATOR DEFAULT_NETMASK SEPARATOR DEFAULT_GW
+
 // Make sure the "cached config" is in the data section
 // To prevent it from being "zeroed" on a restart of ps2link
 char if_conf[IPCONF_MAX_LEN] __attribute__ ((section (".data"))) = "";
 char fExtraConfig[256] __attribute__ ((section (".data")));
 int load_extra_conf __attribute__ ((section (".data"))) = 0;
 int if_conf_len __attribute__ ((section (".data"))) = 0;
-
-char ip[16] __attribute__((aligned(16))) = "192.168.0.10";
-char netmask[16] __attribute__((aligned(16))) = "255.255.255.0";
-char gw[16] __attribute__((aligned(16))) = "192.168.0.1";
 
 ////////////////////////////////////////////////////////////////////////
 // Parse network configuration from IPCONFIG.DAT
@@ -196,20 +201,11 @@ getIpConfig(void)
     if (fd < 0)
     {
         scr_printf("Could not find IPCONFIG.DAT, using defaults\n"
-                   "Net config: %s  %s  %s\n", ip, netmask, gw);
+                   "Net config: %s\n", DEFAULT_IP_CONFIG);
         // Set defaults
         memset(if_conf, 0x00, IPCONF_MAX_LEN);
-        i = 0;
-        strncpy(&if_conf[i], ip, 15);
-        i += strlen(ip) + 1;
-
-        strncpy(&if_conf[i], netmask, 15);
-        i += strlen(netmask) + 1;
-
-        strncpy(&if_conf[i], gw, 15);
-        i += strlen(gw) + 1;
-
-        if_conf_len = i;
+        strcpy(if_conf, DEFAULT_IP_CONFIG);
+        i = strlen(DEFAULT_IP_CONFIG);
         dbgscr_printf("conf len %d\n", if_conf_len);
         return;
     }
@@ -279,6 +275,13 @@ getExtraConfig()
     lseek(fd, 0, SEEK_SET);
     buf = malloc(size + 1);
     ret = read(fd, buf, size);
+    
+    if ( ret < 0 )
+	{
+        scr_printf("failed to read extra conf file\n");
+        return;
+    }
+
     buf[size] = 0;
     close(fd);
     ptr = buf;
@@ -521,10 +524,8 @@ setPathInfo(char *path)
 {
     char *ptr;
 
-    strncpy(elfName, path, 255);
-    strncpy(elfPath, path, 255);
-    elfName[255] = '\0';
-    elfPath[255] = '\0';
+    strcpy(elfName, path);
+    strcpy(elfPath, path);
 
 
     ptr = strrchr(elfPath, '/');
@@ -599,6 +600,13 @@ wipeUserMemLoadHigh(void)
     }
 }
 
+void printWelcomeInfo()
+{
+    scr_printf(WELCOME_STRING, APP_VERSION);
+    scr_printf("ps2link loaded at 0x%08X-0x%08X\n", ((u32) __start) - 8, (u32) &_end);
+    scr_printf("Initializing...\n");
+}
+
 
 void
 restartIOP()
@@ -615,7 +623,7 @@ restartIOP()
     dbgscr_printf("rpc init\n");
     SifInitRpc(0);
 
-    scr_printf("Initializing...\n");
+    printWelcomeInfo();
 //    sio_printf("Initializing...\n");
     sbv_patch_enable_lmb();
     sbv_patch_disable_prefix_check();
@@ -729,10 +737,11 @@ void ResetActiveThreads(void)
 }
 #endif
 
-extern void __start(void);
-extern int _end;
-
 ////////////////////////////////////////////////////////////////////////
+
+// We are not using time zone, so we can safe some KB
+void _ps2sdk_timezone_update() {}
+
 int
 main(int argc, char *argv[])
 {
@@ -743,9 +752,7 @@ main(int argc, char *argv[])
 //    fioInit();
 
     init_scr();
-    scr_printf(WELCOME_STRING, APP_VERSION);
-
-    scr_printf("ps2link loaded at 0x%08X-0x%08X\n", ((u32) __start) - 8, (u32) &_end);
+    printWelcomeInfo();
 
     installExceptionHandlers();
 

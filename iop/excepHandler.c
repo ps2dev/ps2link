@@ -62,7 +62,7 @@ char* ExceptionGetModuleName(u32 epc, u32* r_epc)
 			if(r_epc)
 				*r_epc = epc -  mod_info->text_start;
 			
-			return mod_info->name;
+			return (char *)mod_info->name;
 		}	
 	}
 	

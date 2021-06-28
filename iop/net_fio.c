@@ -650,7 +650,7 @@ int pko_close_dir(int fd)
 
 //----------------------------------------------------------------------
 //
-int pko_get_stat(char *name, iox_stat_t *stat)
+int pko_get_stat(const char *name, iox_stat_t *stat)
 {
     pko_pkt_getstat_req *getstatreq;
     pko_pkt_getstat_rly *getstatrly;

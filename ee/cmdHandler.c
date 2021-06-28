@@ -97,9 +97,6 @@ makeArgs(int cmdargc, char *cmdargv, struct argData *arg_data)
 {
     int i;
     int t;
-    int argc;
-
-    argc = 0;
 
     if (cmdargc > MAX_ARGS)
         cmdargc = MAX_ARGS;
@@ -137,6 +134,11 @@ pkoLoadElf(char *path)
     int pid;
 
     ret = SifLoadElf(path, &elfdata);
+
+	if (ret < 0) {
+        dbgprintf("EE: Could not load ELF file\n");
+        return -1;
+    }
 
     FlushCache(0);
     FlushCache(2);
@@ -219,12 +221,18 @@ static int
 pkoGSExec(pko_pkt_gsexec_req *cmd) {
 	int fd;
     int len;
-	fd = open(cmd->file, O_RDONLY);
+	fd = open((const char *)cmd->file, O_RDONLY);
 	if ( fd < 0 ) {
 		return fd;
 	}
 	len = read(fd, dataBuffer, 128);
 	close(fd);
+
+	if (len < 0 ) {
+		printf("EE: pkoGSExec failed\n");
+		return -1;
+	}
+
     // stop/reset dma02
 
     // dmasend via GIF channel
@@ -856,7 +864,7 @@ cmdThread()
     }
 
     ExitDeleteThread();
-    return 0;
+    return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////
