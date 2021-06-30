@@ -37,9 +37,6 @@ extern void pkoReset(void);
 #define dbgscr_printf(args...) do { } while(0)
 #endif
 
-//#define BGCOLOR	((volatile unsigned long*)0x120000e0)
-//#define GS_SET_BGCOLOR(R,G,B) *BGCOLOR = ((u64)(R)<< 0) | ((u64)(G)<< 8) | ((u64)(B)<< 16)
-
 #define IRX_BUFFER_BASE 0x1F80000
 int irx_buffer_addr = 0;
 
@@ -364,27 +361,6 @@ loadModules(void)
 }
 
 ////////////////////////////////////////////////////////////////////////
-// C standard strrchr func..
-char *strrchr(const char *s, int i)
-{
-    const char *last = NULL;
-    char c = i;
-
-    while (*s) {
-        if (*s == c) {
-            last = s;
-        }
-        s++;
-    }
-
-    if (*s == c) {
-        last = s;
-    }
-
-    return (char *) last;
-}
-
-////////////////////////////////////////////////////////////////////////
 // Split path (argv[0]) at the last '/', '\' or ':' and initialise
 // elfName (whole path & name to the elf, for example 'cdrom:\pukklink.elf')
 // elfPath (path to where the elf was started, for example 'cdrom:\')
@@ -413,40 +389,6 @@ setPathInfo(char *path)
     *ptr = '\0';
 
     dbgscr_printf("path is %s\n", elfPath);
-}
-
-////////////////////////////////////////////////////////////////////////
-// Clear user memory
-void
-wipeUserMem(void)
-{
-    int i;
-    // Whipe user mem
-    for (i = 0x100000; i < 0x2000000 ; i += 64) {
-        asm (
-            "\tsq $0, 0(%0) \n"
-            "\tsq $0, 16(%0) \n"
-            "\tsq $0, 32(%0) \n"
-            "\tsq $0, 48(%0) \n"
-            :: "r" (i) );
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
-// Clear user memory - Load High and Host version
-void
-wipeUserMemLoadHigh(void)
-{
-    int i;
-    // Whipe user mem, apart from last bit
-    for (i = 0x100000; i < 0x1F00000 ; i += 64) {
-        asm (
-            "\tsq $0, 0(%0) \n"
-            "\tsq $0, 16(%0) \n"
-            "\tsq $0, 32(%0) \n"
-            "\tsq $0, 48(%0) \n"
-            :: "r" (i) );
-    }
 }
 
 void printWelcomeInfo()
@@ -594,11 +536,9 @@ void _ps2sdk_timezone_update() {}
 int
 main(int argc, char *argv[])
 {
-    //    int ret;
     char *bootPath;
 
     SifInitRpc(0);
-//    fioInit();
 
     init_scr();
     printWelcomeInfo();
@@ -681,17 +621,6 @@ main(int argc, char *argv[])
     dbgscr_printf("init cmdrpc\n");
     initCmdRpc();
 
-// CLEARSPU seems to cause exceptions in the Multi_Thread_Manager module.
-// I suspect this is caused by the interrupt handlers or some such.
-/*
-    dbgscr_printf("clearing spu\n");
-    if (SifLoadModule("rom0:CLEARSPU", 0, NULL)<0)
-    {
-        scr_printf("rom0:CLEARSPU failed\n");
-        sio_printf("rom0:CLEARSPU failed\n");
-    }
-*/
-
     // get extra config
 	if(load_extra_conf)
     {
@@ -700,7 +629,6 @@ main(int argc, char *argv[])
 	}
 
     scr_printf("Ready\n");
-//    sio_printf("Ready\n");
 
 //    SleepThread();
     ExitDeleteThread();
