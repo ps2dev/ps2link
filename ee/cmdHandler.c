@@ -7,17 +7,17 @@
  */
 
 #include <stdio.h>
-#include <tamtypes.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
+
 #include <kernel.h>
 #include <sifrpc.h>
 #include <loadfile.h>
 #include <iopcontrol.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <string.h>
-#include "debug.h"
-#include "excepHandler.h"
+#include <debug.h>
 
+#include "excepHandler.h"
 #include "byteorder.h"
 #include "ps2regs.h"
 #include "hostlink.h"

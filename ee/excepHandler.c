@@ -6,13 +6,13 @@
  * details.
  */
 
-#include "stdio.h"
+#include <stdio.h>
 #include <tamtypes.h>
 #include <kernel.h>
-#include "excepHandler.h"
-#include "debug.h"
+#include <debug.h>
 
-extern void *_gp;
+#include "excepHandler.h"
+
 extern int userThreadID;
 extern int excepscrdump;
 
