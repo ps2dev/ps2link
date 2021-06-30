@@ -49,11 +49,6 @@ char elfName[256] __attribute__((aligned(16)));
 char elfPath[241]; // It isn't 256 because elfPath will add subpaths
 
 ////////////////////////////////////////////////////////////////////////
-// Prototypes
-static void loadModules(void);
-static void getIpConfig(void);
-
-////////////////////////////////////////////////////////////////////////
 #define IPCONF_MAX_LEN 1024
 
 #define DEFAULT_IP "192.168.0.10"
@@ -241,7 +236,6 @@ void printWelcomeInfo()
 void
 restartIOP()
 {
-//    fioExit();
     SifExitIopHeap();
     SifLoadFileExit();
     SifExitRpc();
@@ -254,18 +248,17 @@ restartIOP()
     SifInitRpc(0);
 
     printWelcomeInfo();
-//    sio_printf("Initializing...\n");
     sbv_patch_enable_lmb();
     sbv_patch_disable_prefix_check();
 
-//	SifLoadFileReset();
     dbgscr_printf("loading modules\n");
     loadModules();
 }
 
 ////////////////////////////////////////////////////////////////////////
 
-// We are not using time zone, so we can safe some KB
+// This function is defined as weak in ps2sdkc, so how
+// we are not using time zone, so we can safe some KB
 void _ps2sdk_timezone_update() {}
 
 int
@@ -306,7 +299,6 @@ main(int argc, char *argv[])
     initCmdRpc();
     scr_printf("Ready\n");
 
-//    SleepThread();
     ExitDeleteThread();
     return 0;
 }
