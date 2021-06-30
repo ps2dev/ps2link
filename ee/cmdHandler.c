@@ -30,10 +30,6 @@
 #define dbgprintf(args...) do { } while(0)
 #endif
 
-#if HOOK_THREADS
-extern void KillActiveThreads(void);
-#endif
-
 ////////////////////////////////////////////////////////////////////////
 // Prototypes
 static int cmdThread(void);
@@ -722,17 +718,10 @@ pkoReset(void)
     char *argv[1];
     // Check if user thread is running, if so kill it
 
-#if 1
-
-#if HOOK_THREADS
-    KillActiveThreads();
-#else
     if (userThreadID) {
         TerminateThread(userThreadID);
         DeleteThread(userThreadID);
     }
-#endif
-#endif
     userThreadID = 0;
 
     RemoveDmacHandler(5, sif0HandlerId);

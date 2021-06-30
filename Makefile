@@ -10,10 +10,6 @@ ZEROCOPY = 0
 # otherwise it will try and reset ps2link
 PWOFFONRESET = 1
 
-# Set this to 1 to hook the kernel CreateThread/DeleteThread calls.
-# Note that this will cause problems when loading PS2LINK.ELF from PS2LINK...
-HOOK_THREADS = 0
-
 # Set to the path where ps2eth is located
 PS2ETH = $(PS2DEV)/ps2eth
 
@@ -49,7 +45,7 @@ ee/%_irx.o: %.irx
 	$(EE_CC) -c $*_irx.c -o ee/$*_irx.o
 	rm $*_irx.c
 
-VARIABLES=DEBUG=$(DEBUG) BUILTIN_IRXS=$(BUILTIN_IRXS) ZEROCOPY=$(ZEROCOPY) PWOFFONRESET=$(PWOFFONRESET) HOOK_THREADS=$(HOOK_THREADS)
+VARIABLES=DEBUG=$(DEBUG) BUILTIN_IRXS=$(BUILTIN_IRXS) ZEROCOPY=$(ZEROCOPY) PWOFFONRESET=$(PWOFFONRESET)
 
 TARGETS = iop builtins ee
 

@@ -58,7 +58,6 @@ int boot;
 ////////////////////////////////////////////////////////////////////////
 // Prototypes
 static void loadModules(void);
-static void pkoLoadModule(char *path, int argc, char *argv);
 static void getIpConfig(void);
 
 ////////////////////////////////////////////////////////////////////////
@@ -282,110 +281,6 @@ restartIOP()
     loadModules();
 }
 
-#if HOOK_THREADS
-
-// we can spare 1k to allow a generous number of threads..
-#define MAX_MONITORED_THREADS 256
-
-int _first_load = 1;
-
-int th_count;
-int active_threads[MAX_MONITORED_THREADS];
-
-void *addr_LoadExecPS2;
-void *addr_CreateThread;
-void *addr_DeleteThread;
-
-void InstallKernelHooks(void)
-{
-    // get the current address of each syscall we want to hook then replace the entry
-    // in the syscall table with that of our hook function.
-
-    addr_LoadExecPS2 = GetSyscall(6);
-    SetSyscall(6, &Hook_LoadExecPS2);
-
-    addr_CreateThread = GetSyscall(32);
-    SetSyscall(32, &Hook_CreateThread);
-
-    addr_DeleteThread = GetSyscall(33);
-    SetSyscall(33, &Hook_DeleteThread);
-}
-
-void RemoveKernelHooks(void)
-{
-    SetSyscall(6, addr_LoadExecPS2);
-    SetSyscall(32, addr_CreateThread);
-    SetSyscall(33, addr_DeleteThread);
-}
-
-int Hook_LoadExecPS2(char *fname, int argc, char *argv[])
-{
-    // kill any active threads
-    KillActiveThreads();
-
-    // remove our kernel hooks
-    RemoveKernelHooks();
-
-    // call the real LoadExecPS2 handler, this will never return
-    return(((int (*)(char *, int, char **)) (addr_LoadExecPS2))(fname, argc, argv));
-}
-
-int Hook_CreateThread(ee_thread_t *thread_p)
-{
-    int i;
-    for(i = 0; i < MAX_MONITORED_THREADS; i++)
-    {
-        if(active_threads[i] < 0) { break; }
-    }
-
-    if(i >= MAX_MONITORED_THREADS) { return(-1); }
-
-    // call the real CreateThread handler, saving the thread id in our list
-    return(active_threads[i] = ((int (*)(ee_thread_t *)) (addr_CreateThread))(thread_p));
-}
-
-int Hook_DeleteThread(int th_id)
-{
-    int i;
-
-    for(i = 0; i < MAX_MONITORED_THREADS; i++)
-    {
-        if(active_threads[i] == th_id)
-        {
-            // remove the entry from the active thread list.
-            active_threads[i] = -1;
-            break;
-        }
-    }
-
-    // call the real DeleteThread handler
-    return(((int (*)(int)) (addr_DeleteThread))(th_id));
-}
-
-// kill all threads created and not deleted since PS2LINK.ELF started except for the calling thread.
-void KillActiveThreads(void)
-{
-    int my_id = GetThreadId();
-    int i;
-
-    for(i = 0; i < MAX_MONITORED_THREADS; i++)
-    {
-        if((active_threads[i] >= 0) && (active_threads[i] != my_id))
-        {
-            TerminateThread(active_threads[i]);
-            DeleteThread(active_threads[i]);
-            active_threads[i] = -1;
-        }
-    }
-}
-
-void ResetActiveThreads(void)
-{
-    int i;
-    for(i = 0; i < MAX_MONITORED_THREADS; i++) { active_threads[i] = -1; }
-}
-#endif
-
 ////////////////////////////////////////////////////////////////////////
 
 // We are not using time zone, so we can safe some KB
@@ -402,16 +297,6 @@ main(int argc, char *argv[])
     printWelcomeInfo();
 
     installExceptionHandlers();
-
-#if HOOK_THREADS
-    if(_first_load)
-    {
-        _first_load = 0;
-        InstallKernelHooks();
-    }
-
-    ResetActiveThreads();
-#endif
 
     // argc == 0 usually means naplink..
     if (argc == 0) {
