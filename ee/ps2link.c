@@ -74,8 +74,6 @@ static void getIpConfig(void);
 // Make sure the "cached config" is in the data section
 // To prevent it from being "zeroed" on a restart of ps2link
 char if_conf[IPCONF_MAX_LEN] __attribute__ ((section (".data"))) = "";
-char fExtraConfig[256] __attribute__ ((section (".data")));
-int load_extra_conf __attribute__ ((section (".data"))) = 0;
 int if_conf_len __attribute__ ((section (".data"))) = 0;
 
 ////////////////////////////////////////////////////////////////////////
@@ -144,52 +142,8 @@ getIpConfig(void)
         i += strlen(&if_conf[i]) + 1;
     }
     scr_printf("\n");
-    // get extra config filename
-
-	load_extra_conf = 0;
-	if_conf_len = i;
-}
-
-void
-getExtraConfig()
-{
-    int fd, size, ret;
-    char *buf, *ptr, *ptr2;
-    fd = open(fExtraConfig, O_RDONLY);
-
-	if ( fd < 0 )
-	{
-        scr_printf("failed to open extra conf file\n");
-        return;
-    }
-
-    size = lseek(fd, 0, SEEK_END);
-    lseek(fd, 0, SEEK_SET);
-    buf = malloc(size + 1);
-    ret = read(fd, buf, size);
     
-    if ( ret < 0 )
-	{
-        scr_printf("failed to read extra conf file\n");
-        return;
-    }
-
-    buf[size] = 0;
-    close(fd);
-    ptr = buf;
-    ptr2 = buf;
-    while(ptr < buf+size) {
-        ptr2 = strstr(ptr, ";");
-        if ( ptr2 == 0 ) {
-            break;
-        }
-        ptr[ptr2-ptr] = 0;
-        scr_printf("loading %s\n", ptr);
-        pkoLoadModule(ptr, 0, NULL);
-        ptr = ptr2+1;
-    }
-    free(buf);
-    return;
+	if_conf_len = i;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -522,14 +476,6 @@ main(int argc, char *argv[])
 
     dbgscr_printf("init cmdrpc\n");
     initCmdRpc();
-
-    // get extra config
-	if(load_extra_conf)
-    {
-        dbgscr_printf("getting extra config\n");
-	   getExtraConfig();
-	}
-
     scr_printf("Ready\n");
 
 //    SleepThread();
