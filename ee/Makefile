@@ -8,10 +8,6 @@ EE_LIBS += -lpatches -ldebug
 # This is to builtin the IRXs into ps2link
 EE_LDFLAGS += ps2link_irx.o ps2ip_irx.o ps2smap_irx.o ps2dev9_irx.o ioptrap_irx.o poweroff_irx.o
 
-ifeq ($(CACHED_CFG),1)
-EE_CFLAGS += -DUSE_CACHED_CFG
-endif
-
 # This is to enable the debug mode into ps2link
 ifeq ($(DEBUG),1)
 EE_CFLAGS += -DDEBUG -g

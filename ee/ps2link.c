@@ -85,74 +85,6 @@ int if_conf_len __attribute__ ((section (".data"))) = 0;
 // Parse network configuration from IPCONFIG.DAT
 // Note: parsing really should be made more robust...
 
-#ifndef USE_CACHED_CFG
-static int getBufferValue(char* result, char* buffer, u32 buffer_size, char* field)
-{
-	u32 len = strlen(field);
-	u32 i = 0;
-	s32 j = 0;
-	char* start = 0;
-	char* end = 0;
-
-	while(strncmp(&buffer[i], field, len) != 0)
-	{
-		i++;
-		if(i == buffer_size) return -1;
-	}
-
-	// Look for # comment
-	j = i;
-
-	while((j > 0) && (buffer[j] != '\n') && (buffer[j] !='\r'))
-	{
-		j--;
-
-		if(buffer[j] == '#')
-			return -2;
-	}
-
-
-	while(buffer[i] != '=')
-	{
-		i++;
-		if(i == buffer_size) return -3;
-	}
-	i++;
-
-	while(buffer[i] == ' ')
-	{
-		i++;
-		if(i == buffer_size) return -4;
-	}
-	i++;
-
-	if((buffer[i] != '\r') && (buffer[i] != '\n') && (buffer[i] != ';'))
-	{
-		start = &buffer[i];
-	}
-	else
-	{
-		return -5;
-	}
-
-	while(buffer[i] != ';')
-	{
-		i++;
-		if(i == buffer_size) return -5;
-	}
-
-	end = &buffer[i];
-
-	len = end - start;
-
-	if(len > 256) return -6;
-
-	strncpy(result, start, len);
-
-	return 0;
-}
-#endif
-
 static void
 getIpConfig(void)
 {
@@ -217,21 +149,7 @@ getIpConfig(void)
     scr_printf("\n");
     // get extra config filename
 
-#ifndef USE_CACHED_CFG
-	if(getBufferValue(fExtraConfig, buf, len, "EXTRACNF") == 0)
-	{
-		scr_printf("extra conf: %s\n", fExtraConfig);
-
-		load_extra_conf = 1;
-	}
-	else
-	{
-			load_extra_conf = 0;
-	}
-#else
 	load_extra_conf = 0;
-#endif
-
 	if_conf_len = i;
 }
 
@@ -298,28 +216,21 @@ static void
 loadModules(void)
 {
 	int ret;
-#ifdef USE_CACHED_CFG
 	int i,t;
-#endif
 
     dbgscr_printf("loadModules \n");
 
-#ifdef USE_CACHED_CFG
   if(if_conf_len==0)
   {
-#endif
 	 if ((boot == B_MC) || (boot == B_CC))
     {
         pkoLoadModule("rom0:SIO2MAN", 0, NULL);
         pkoLoadModule("rom0:MCMAN", 0, NULL);
         pkoLoadModule("rom0:MCSERV", 0, NULL);
     }
-#ifdef USE_CACHED_CFG
 	 return;
   }
-#endif
 
-#ifdef USE_CACHED_CFG
     if(if_conf_len==0)
 	 {
 	    getIpConfig();
@@ -334,10 +245,6 @@ loadModules(void)
        }
        scr_printf("\n");
     }
-
-#else
-    getIpConfig();
-#endif
 
 	    dbgscr_printf("Exec poweroff module. (%x,%d) ", (unsigned int)poweroff_irx, size_poweroff_irx);
     SifExecModuleBuffer(poweroff_irx, size_poweroff_irx, 0, NULL,&ret);
@@ -598,7 +505,6 @@ main(int argc, char *argv[])
         boot = B_UNKN;
     }
 
-#ifdef USE_CACHED_CFG
     if(if_conf_len==0)
     {
        scr_printf("Initial boot, will load config then reset\n");
@@ -613,7 +519,6 @@ main(int argc, char *argv[])
 	 {
 	 	 scr_printf("Using cached config\n");
 	 }
-#endif
 
     // System initalisation
 	restartIOP();

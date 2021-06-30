@@ -739,7 +739,6 @@ pkoReset(void)
     sif0HandlerId = 0;
 
     SifInitRpc(0);
-//    fioExit();
     SifExitRpc();
 
     SifIopReset(NULL, 0);
@@ -748,21 +747,9 @@ pkoReset(void)
     SifInitRpc(0);
     SifExitRpc();
 
-#ifdef USE_CACHED_CFG
     argv[0] = elfName;
-	 SifLoadFileExit();
+	SifLoadFileExit();
     ExecPS2(&__start, 0, 1, argv);
-    return;
-#endif
-
-    if ((boot == B_MC) || (boot == B_HOST) || (boot == B_UNKN) || (boot == B_CC)) {
-       argv[0] = elfName;
-		 SifLoadFileExit();
-       ExecPS2(&__start, 0, 1, argv);
-    }
-    else {
-       LoadExecPS2(elfName, 0, NULL);
-    }
 }
 
 

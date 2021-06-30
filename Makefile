@@ -3,9 +3,6 @@
 # Set this to 1 to enable debug mode
 DEBUG = 0
 
-# Set this to 1 to enable caching of config files
-CACHED_CFG = 1
-
 # Set this to 1 to enable zero-copy on fileio writes.
 ZEROCOPY = 0
 
@@ -52,7 +49,7 @@ ee/%_irx.o: %.irx
 	$(EE_CC) -c $*_irx.c -o ee/$*_irx.o
 	rm $*_irx.c
 
-VARIABLES=DEBUG=$(DEBUG) BUILTIN_IRXS=$(BUILTIN_IRXS) ZEROCOPY=$(ZEROCOPY) PWOFFONRESET=$(PWOFFONRESET) CACHED_CFG=$(CACHED_CFG) HOOK_THREADS=$(HOOK_THREADS)
+VARIABLES=DEBUG=$(DEBUG) BUILTIN_IRXS=$(BUILTIN_IRXS) ZEROCOPY=$(ZEROCOPY) PWOFFONRESET=$(PWOFFONRESET) HOOK_THREADS=$(HOOK_THREADS)
 
 TARGETS = iop builtins ee
 
