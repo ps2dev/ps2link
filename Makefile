@@ -3,9 +3,6 @@
 # Set this to 1 to enable debug mode
 DEBUG = 0
 
-# Set this to 1 to build ps2link with all the needed IRX builtins
-BUILTIN_IRXS = 1
-
 # Set this to 1 to enable caching of config files
 CACHED_CFG = 1
 
@@ -57,19 +54,9 @@ ee/%_irx.o: %.irx
 
 VARIABLES=DEBUG=$(DEBUG) BUILTIN_IRXS=$(BUILTIN_IRXS) ZEROCOPY=$(ZEROCOPY) PWOFFONRESET=$(PWOFFONRESET) CACHED_CFG=$(CACHED_CFG) HOOK_THREADS=$(HOOK_THREADS)
 
-ifeq ($(BUILTIN_IRXS),1)
 TARGETS = iop builtins ee
-else
-TARGETS = ee iop
-endif
 
 all: $(TARGETS)
-ifneq ($(BUILTIN_IRXS),1)
-	@for file in $(IRXFILES); do \
-		new=`echo $${file/*\//}|tr "[:lower:]" "[:upper:]"`; \
-		cp $$file bin/$$new; \
-	done;
-endif
 	@for file in $(EEFILES); do \
 		new=`echo $${file/*\//}|tr "[:lower:]" "[:upper:]"`; \
 		ps2-packer $$file bin/$$new; \
@@ -90,12 +77,6 @@ clean:
 dist: all
 	@rm -rf dist
 	@mkdir -p dist/ps2link
-ifneq ($(BUILTIN_IRXS),1)
-	@for file in $(IRXFILES); do \
-		new=`echo $${file/*\//}|tr "[:lower:]" "[:upper:]"`; \
-		cp $$file dist/ps2link/$$new; \
-	done;
-endif
 	@for file in $(EEFILES); do \
 		new=`echo $${file/*\//}|tr "[:lower:]" "[:upper:]"`; \
 		cp $$file dist/ps2link/$$new; \
