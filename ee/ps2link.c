@@ -6,6 +6,7 @@
  * details.
  */
 
+#include <limits.h>
 #include <tamtypes.h>
 #include <kernel.h>
 #include <sifrpc.h>
@@ -47,14 +48,6 @@ extern int _end;
 char elfName[256] __attribute__((aligned(16)));
 char elfPath[241]; // It isn't 256 because elfPath will add subpaths
 
-// Flags for which type of boot
-#define B_CD 1
-#define B_MC 2
-#define B_HOST 3
-#define B_CC 4
-#define B_UNKN 5
-int boot;
-
 ////////////////////////////////////////////////////////////////////////
 // Prototypes
 static void loadModules(void);
@@ -90,15 +83,7 @@ getIpConfig(void)
     char buf[IPCONF_MAX_LEN+256];
     static char path[256];
 
-    if (boot == B_CD) {
-        sprintf(path, "%s%s;1", elfPath, "IPCONFIG.DAT");
-    }
-    else if (boot == B_CC) {
-	strcpy(path, "mc0:/BOOT/IPCONFIG.DAT");
-    }
-    else {
-        sprintf(path, "%s%s", elfPath, "IPCONFIG.DAT");
-    }
+    sprintf(path, "%s%s", elfPath, "IPCONFIG.DAT");
     fd = open(path, O_RDONLY);
 
     if (fd < 0)
@@ -161,7 +146,7 @@ pkoLoadModule(char *path, int argc, char *argv)
 }
 
 ////////////////////////////////////////////////////////////////////////
-// Load all the irx modules we need, according to 'boot mode'
+// Load all the irx modules we need
 static void
 loadModules(void)
 {
@@ -170,23 +155,20 @@ loadModules(void)
 
     dbgscr_printf("loadModules \n");
 
-  if(if_conf_len==0)
-  {
-	 if ((boot == B_MC) || (boot == B_CC))
+    if(if_conf_len==0)
     {
         pkoLoadModule("rom0:SIO2MAN", 0, NULL);
         pkoLoadModule("rom0:MCMAN", 0, NULL);
         pkoLoadModule("rom0:MCSERV", 0, NULL);
+	    return;
     }
-	 return;
-  }
 
     if(if_conf_len==0)
-	 {
+	{
 	    getIpConfig();
     }
     else
-	 {
+	{
 	    i=0;
 	    scr_printf("Net config: ");
        for (t = 0, i = 0; t < 3; t++) {
@@ -289,7 +271,7 @@ void _ps2sdk_timezone_update() {}
 int
 main(int argc, char *argv[])
 {
-    char *bootPath;
+    char cwd[NAME_MAX];
 
     SifInitRpc(0);
 
@@ -298,63 +280,24 @@ main(int argc, char *argv[])
 
     installExceptionHandlers();
 
-    // argc == 0 usually means naplink..
-    if (argc == 0) {
-        bootPath = "host:";
-    }
-    // reload1 usually gives an argc > 60000 (yea, this is kinda a hack..)
-    else if (argc != 1) {
-        bootPath = "mc0:/BWLINUX/";
-    }
-    else {
-        bootPath = argv[0];
-    }
-
     dbgscr_printf("Checking argv\n");
-    boot = 0;
 
-    setPathInfo(bootPath);
-
-    if (!strncmp(bootPath, "cdrom", strlen("cdrom"))) {
-        // Booting from cd
-        scr_printf("Booting from cdrom (%s)\n", bootPath);
-        boot = B_CD;
-    }
-    else if(!strncmp(bootPath, "mc", strlen("mc"))) {
-        // Booting from my mc
-        scr_printf("Booting from mc dir (%s)\n", bootPath);
-        boot = B_MC;
-    }
-    else if(!strncmp(bootPath, "host", strlen("host"))) {
-        // Host
-        scr_printf("Booting from host (%s)\n", bootPath);
-        boot = B_HOST;
-    }
-    else if(!strncmp(bootPath, "rom0:OSDSYS", strlen("rom0:OSDSYS"))) {
-        // From CC's firmware
-	scr_printf("Booting as CC firmware\n");
-	boot = B_CC;
-    }
-    else {
-        // Unknown
-        scr_printf("Booting from unrecognized place %s\n", bootPath);
-        boot = B_UNKN;
-    }
+    getcwd(cwd, sizeof(cwd));
+    scr_printf("Booting from %s\n", cwd);
+    setPathInfo(cwd);
 
     if(if_conf_len==0)
     {
-       scr_printf("Initial boot, will load config then reset\n");
-		 if(boot == B_MC || boot == B_CC)
-			 restartIOP();
-
-       getIpConfig();
-
-		 pkoReset();
- 	 }
-	 else
-	 {
-	 	 scr_printf("Using cached config\n");
-	 }
+        scr_printf("Initial boot, will load config then reset\n");
+        restartIOP();
+        getIpConfig();
+        pkoReset();
+ 	}
+	else
+	{
+        scr_printf("Booting from %s\n", cwd);
+        scr_printf("Using cached config\n");
+	}
 
     // System initalisation
 	restartIOP();

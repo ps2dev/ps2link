@@ -43,18 +43,10 @@ static int pkoLoadElf(char *path);
 static int pkoGSExec(pko_pkt_gsexec_req *);
 static int pkoWriteMem(pko_pkt_mem_io *);
 
-// Flags for which type of boot (oh crap, make a header file dammit)
-#define B_CD 1
-#define B_MC 2
-#define B_HOST 3
-#define B_CC 4
-#define B_UNKN 5
-
 ////////////////////////////////////////////////////////////////////////
 // Globals
 extern u32 __start;
 extern void *_gp;
-extern int boot;
 extern char elfName[];
 
 int userThreadID = 0;
