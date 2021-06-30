@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "debug.h"
+#include "irx_variables.h"
 #include "hostlink.h"
 #include "excepHandler.h"
 
@@ -51,13 +52,6 @@ extern int _end;
 // Argv name+path & just path
 char elfName[256] __attribute__((aligned(16)));
 char elfPath[241]; // It isn't 256 because elfPath will add subpaths
-
-extern unsigned char ioptrap_irx[], ps2dev9_irx[], \
-                     ps2ip_irx[], ps2smap_irx[], poweroff_irx[], \
-					 ps2link_irx[];
-extern unsigned int size_ioptrap_irx, size_ps2dev9_irx, \
-                    size_ps2ip_irx, size_ps2smap_irx, size_poweroff_irx, \
-					size_ps2link_irx;
 
 // Flags for which type of boot
 #define B_CD 1
