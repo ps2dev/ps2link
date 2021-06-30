@@ -37,9 +37,6 @@ extern void pkoReset(void);
 #define dbgscr_printf(args...) do { } while(0)
 #endif
 
-#define IRX_BUFFER_BASE 0x1F80000
-int irx_buffer_addr = 0;
-
 ////////////////////////////////////////////////////////////////////////
 // Globals
 extern int userThreadID;
