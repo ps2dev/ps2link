@@ -62,12 +62,10 @@ pkoDebug(int cause, int badvaddr, int status, int epc, eeReg *regs)
     FlushCache(0);
     FlushCache(2);
 
-#if 1
     if (userThreadID) {
         TerminateThread(userThreadID);
         DeleteThread(userThreadID);
     }
-#endif
 
     code = cause & 0x7c;
 
@@ -106,12 +104,10 @@ void iopException(int cause, int badvaddr, int status, int epc, u32 *regs, int r
     FlushCache(0);
     FlushCache(2);
 
-#if 1
     if (userThreadID) {
         TerminateThread(userThreadID);
         DeleteThread(userThreadID);
     }
-#endif
 
     code = cause & 0x7c;
 
