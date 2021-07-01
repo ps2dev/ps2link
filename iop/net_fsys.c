@@ -16,12 +16,7 @@
 #include <thsemap.h>
 
 #include "net_fio.h"
-
-#ifdef DEBUG
-#define dbgprintf(args...) printf(args)
-#else
-#define dbgprintf(args...) do { } while(0)
-#endif
+#include "globals.h"
 
 static char fsname[] = "host";
 

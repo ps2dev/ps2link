@@ -21,14 +21,8 @@
 #include "byteorder.h"
 #include "ps2regs.h"
 #include "hostlink.h"
-
-//#define scr_printf(args...) printf(args)
-//#define init_scr() do { } while(0)
-#ifdef DEBUG
-#define dbgprintf(args...) printf(args)
-#else
-#define dbgprintf(args...) do { } while(0)
-#endif
+#include "ps2link.h"
+#include "globals.h"
 
 ////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -44,10 +38,6 @@ static int pkoGSExec(pko_pkt_gsexec_req *);
 static int pkoWriteMem(pko_pkt_mem_io *);
 
 ////////////////////////////////////////////////////////////////////////
-// Globals
-extern u32 __start;
-extern void *_gp;
-extern char elfName[];
 
 int userThreadID = 0;
 static int cmdThreadID = 0;

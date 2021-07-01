@@ -12,9 +12,9 @@
 #include <debug.h>
 
 #include "excepHandler.h"
-
-extern int userThreadID;
-extern int excepscrdump;
+#include "cmdHandler.h"
+#include "exceptions.h"
+#include "globals.h"
 
 ////////////////////////////////////////////////////////////////////////
 typedef union __attribute__((packed))
@@ -22,12 +22,6 @@ typedef union __attribute__((packed))
     unsigned int  uint128 __attribute__(( mode(TI) ));
     unsigned long uint64[2];
 } eeReg;
-
-////////////////////////////////////////////////////////////////////////
-// Prototypes
-void pkoDebug(int cause, int badvaddr, int status, int epc, eeReg *regs);
-
-extern void pkoExceptionHandler(void);
 
 ////////////////////////////////////////////////////////////////////////
 static const unsigned char regName[32][5] =
@@ -56,7 +50,6 @@ pkoDebug(int cause, int badvaddr, int status, int epc, eeReg *regs)
 {
     int i;
     int code;
-    //    extern void printf(char *, ...);
     static void (* excpPrintf)(const char *, ...);
 
     FlushCache(0);
@@ -98,7 +91,6 @@ void iopException(int cause, int badvaddr, int status, int epc, u32 *regs, int r
 {
     int i;
     int code;
-    //    extern void printf(char *, ...);
     static void (* excpPrintf)(const char *, ...);
 
     FlushCache(0);

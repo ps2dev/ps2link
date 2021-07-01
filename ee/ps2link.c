@@ -24,33 +24,17 @@
 #include "irx_variables.h"
 #include "hostlink.h"
 #include "excepHandler.h"
-
-extern int initCmdRpc(void);
-extern void pkoReset(void);
-
-#ifdef DEBUG
-#define dbgprintf(args...) printf(args)
-#define dbgscr_printf(args...) scr_printf(args)
-#else
-#define dbgprintf(args...) do { } while(0)
-#define dbgscr_printf(args...) do { } while(0)
-#endif
+#include "cmdHandler.h"
+#include "globals.h"
 
 ////////////////////////////////////////////////////////////////////////
-// Globals
-extern void __start(void);
-extern int _end;
 
 // Argv name+path & just path
 char elfName[NAME_MAX] __attribute__((aligned(16)));
 static char elfPath[NAME_MAX - 14]; // It isn't 256 because elfPath will add subpaths
 
 ////////////////////////////////////////////////////////////////////////
-#define IPCONF_MAX_LEN 64 
-
-#define DEFAULT_IP "192.168.1.10"
-#define DEFAULT_NETMASK "255.255.255.0"
-#define DEFAULT_GW "192.168.1.0"
+#define IPCONF_MAX_LEN 64 // Don't reduce even more this value
 
 // Make sure the "cached config" is in the data section
 // To prevent it from being "zeroed" on a restart of ps2link
@@ -58,8 +42,6 @@ char if_conf[IPCONF_MAX_LEN] __attribute__ ((section (".data"))) = "";
 int if_conf_len __attribute__ ((section (".data"))) = 0;
 
 ////////////////////////////////////////////////////////////////////////
-// Parse network configuration from IPCONFIG.DAT
-// Note: parsing really should be made more robust...
 
 static void printIpConfig(void)
 {
@@ -74,6 +56,8 @@ static void printIpConfig(void)
     scr_printf("\n");
 }
 
+// Parse network configuration from IPCONFIG.DAT
+// Note: parsing really should be made more robust...
 static int readIpConfigFromFile(char *buf) 
 {
     int fd;

@@ -12,13 +12,13 @@
 #include <types.h>
 #include <sifrpc.h>
 #include <cdvdman.h>
-#include "excepHandler.h"
 
-// Entry points
-extern int fsysMount(void);
-extern int cmdHandlerInit(void);
-extern int ttyMount(void);
-extern int naplinkRpcInit(void);
+#include "excepHandler.h"
+#include "net_fsys.h"
+#include "cmdHandler.h"
+#include "tty.h"
+#include "nprintf.h"
+
 ////////////////////////////////////////////////////////////////////////
 // main
 //   start threads & init rpc & filesys

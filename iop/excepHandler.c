@@ -8,13 +8,11 @@
 #include <tamtypes.h>
 #include "irx_imports.h"
 #include "hostlink.h"
+#include "cmdHandler.h"
 
 #define BUFFER_SIZE		sizeof(exception_frame_t)+4+4+128
 
 u32 excep_buffer[BUFFER_SIZE/4] __attribute__ ((aligned(16)));
-
-extern unsigned int pkoSendSifCmd(unsigned int cmd, void *src, unsigned int len); // lazy fix :)
-extern int excepscrdump;
 
 // taken from smod by mrbrown, only use one function, didn't wanna include another irx.
 

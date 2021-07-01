@@ -19,6 +19,7 @@
 #include "ps2ip.h"
 #include "net_fio.h"
 #include "hostlink.h"
+#include "globals.h"
 
 unsigned int remote_pc_addr = 0xffffffff;
 
@@ -29,12 +30,6 @@ static char recv_packet[PACKET_MAXSIZE] __attribute__((aligned(16)));
 
 static int pko_fileio_sock = -1;
 static int pko_fileio_active = 0;
-
-#ifdef DEBUG
-#define dbgprintf(args...) printf(args)
-#else
-#define dbgprintf(args...) do { } while(0)
-#endif
 
 //---------------------------------------------------------------------- 
 //
