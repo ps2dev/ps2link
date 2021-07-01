@@ -2,7 +2,20 @@ PS2Link (C) 2003 Tord Lindstrom (pukko@home.se)
         (C) 2003,2004 adresd (adresd_ps2dev@yahoo.com)
 	(C) 2004 Lukasz Bruun (mail@lukasz.dk)
 	(C) 2006 Drakonite (makeshift_ps2dev@123mail.org)
+	(C) 2021 fjtrujy (fjtrujy@gmail.org)
 ------------------------------------------------------------------------
+
+2021-07-02 Version 1.80
+	- Removed legacy function that is no longer used
+	- Removed unused functions
+	- Simplify logic in the startup process
+	- Improve messages on the screen
+	- Improve how it gets IP Config (file/default config)
+	- Reduce the binary size
+	- Create a specific header for IRX variables
+	- Create global header
+	- Create headers instead of making references with "extern ..."
+	- Cleaning code in general
 
 2006-02-18 Version 1.46
 	- Added Cached Config support
