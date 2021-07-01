@@ -46,14 +46,11 @@ char elfName[NAME_MAX] __attribute__((aligned(16)));
 static char elfPath[NAME_MAX - 14]; // It isn't 256 because elfPath will add subpaths
 
 ////////////////////////////////////////////////////////////////////////
-#define IPCONF_MAX_LEN 1024
+#define IPCONF_MAX_LEN 64 
 
-#define DEFAULT_IP "192.168.0.10"
+#define DEFAULT_IP "192.168.1.10"
 #define DEFAULT_NETMASK "255.255.255.0"
-#define DEFAULT_GW "192.168.0.1"
-#define SEPARATOR " "
-// DEFAULT_IP_CONFIG should be something as "192.168.0.10 255.0.0.0 192.168.0.1"
-#define DEFAULT_IP_CONFIG DEFAULT_IP SEPARATOR DEFAULT_NETMASK SEPARATOR DEFAULT_GW
+#define DEFAULT_GW "192.168.1.0"
 
 // Make sure the "cached config" is in the data section
 // To prevent it from being "zeroed" on a restart of ps2link
@@ -77,44 +74,59 @@ static void printIpConfig(void)
     scr_printf("\n");
 }
 
-static void getIpConfig(void)
+static int readIpConfigFromFile(char *buf) 
 {
     int fd;
-    int i;
-    int t;
     int len;
-    char c;
-    char buf[IPCONF_MAX_LEN];
-    static char path[256];
+    char path[256];
 
     sprintf(path, "%s%s", elfPath, "IPCONFIG.DAT");
     fd = open(path, O_RDONLY);
 
-    // Clean buffers
-    memset(if_conf, 0x00, IPCONF_MAX_LEN);
-    memset(buf, 0x00, IPCONF_MAX_LEN);
-
-    if (fd < 0)
-    {
-        scr_printf("Could not find IPCONFIG.DAT, using defaults\n"
-                   "Net config: %s\n", DEFAULT_IP_CONFIG);
-        // Set defaults
-        strcpy(if_conf, DEFAULT_IP_CONFIG);
-        if_conf_len = strlen(DEFAULT_IP_CONFIG);
-        dbgscr_printf("conf len %d\n", if_conf_len);
-        return;
+    if (fd < 0) {
+        dbgprintf("Error reading ipconfig.dat\n");
+        return -1;
     }
-
+    
     len = read(fd, buf, IPCONF_MAX_LEN - 1); // Let the last byte be '\0'
     close(fd);
 
     if (len < 0) {
         dbgprintf("Error reading ipconfig.dat\n");
-        return;
+        return -1;
     }
 
     dbgscr_printf("ipconfig: Read %d bytes\n", len);
+    return 0;
+}
 
+static int readDefaultIpConfig(char *buf) 
+{
+    int i = 0;
+    
+    strncpy(&buf[i], DEFAULT_IP, 15);
+    i += strlen(&buf[i]) + 1;
+    strncpy(&buf[i], DEFAULT_NETMASK, 15);
+    i += strlen(&buf[i]) + 1;
+    strncpy(&buf[i], DEFAULT_GW, 15);
+
+    return 0;
+}
+
+static void getIpConfig(void)
+{
+    int i;
+    int t;
+    char c;
+    char buf[IPCONF_MAX_LEN];
+
+    // Clean buffers
+    memset(buf, 0x00, IPCONF_MAX_LEN);
+    memset(buf, 0x00, IPCONF_MAX_LEN);
+
+    if (readIpConfigFromFile(buf))
+        readDefaultIpConfig(buf);
+    
     i = 0;
     // Clear out spaces (and potential ending CR/LF)
     while ((c = buf[i]) != '\0') {
@@ -129,7 +141,7 @@ static void getIpConfig(void)
         i += strlen(&if_conf[i]) + 1;
     }
     
-	if_conf_len = i;
+    if_conf_len = i;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -143,7 +155,7 @@ static void pkoLoadModule(char *path, int argc, char *argv)
         scr_printf("Could not load module %s: %d\n", path, ret);
         SleepThread();
     }
-	dbgscr_printf("[%d] returned\n", ret);
+    dbgscr_printf("[%d] returned\n", ret);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -157,10 +169,10 @@ static void loadModules(void)
         pkoLoadModule("rom0:SIO2MAN", 0, NULL);
         pkoLoadModule("rom0:MCMAN", 0, NULL);
         pkoLoadModule("rom0:MCSERV", 0, NULL);
-	    return;
+        return;
     }
 
-	dbgscr_printf("Exec poweroff module. (%x,%d) ", (unsigned int)poweroff_irx, size_poweroff_irx);
+    dbgscr_printf("Exec poweroff module. (%x,%d) ", (unsigned int)poweroff_irx, size_poweroff_irx);
     SifExecModuleBuffer(poweroff_irx, size_poweroff_irx, 0, NULL,&ret);
     dbgscr_printf("[%d] returned\n", ret);
     dbgscr_printf("Exec ps2dev9 module. (%x,%d) ", (unsigned int)ps2dev9_irx, size_ps2dev9_irx);
@@ -265,7 +277,7 @@ int main(int argc, char *argv[])
         getIpConfig();
         printIpConfig();
         pkoReset(); // Will restart execution
- 	}
+     }
 
     scr_printf("Using cached config\n");
     printIpConfig();
