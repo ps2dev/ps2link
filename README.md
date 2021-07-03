@@ -6,6 +6,7 @@
 PS2Link (C) 2003 Tord Lindstrom (pukko@home.se)
         (C) 2003,2004 adresd (adresd_ps2dev@yahoo.com)
         (C) 2003,2004,2005 Khaled (khaled@w-arts.com)
+        (C) 2019,2020,2021 fjtrujy (fjtrujy@gmail.com)
 ```
 
 Please read the file LICENSE regarding PS2Link licensing.
@@ -43,17 +44,10 @@ make clean all release
 Credit for the icon logo goes to Revolt from `ps2dev`.
 
 NOTES + WARNINGS:
-ALL IRX FILENAMES SHOULD BE UPPERCASE.
 IPCONFIG.DAT FILENAME SHOULD BE UPPERCASE.
 
 IPCONFIG.DAT uses the following format:
 PS2IPADDRESS NETMASK GATEWAYIP
 seperated by a single space.
-
-You can load addition IRX's by specifying EXTRACNF file in IPCONFIG.DAT. It
-will load the EXTRACNF file and and load all irx's terminated with ';' in the order
-they are listed in the EXTRACNF file. By default the EXTRACNF setting is
-disabled (commented) with '#' in IPCONFIG.DAT, remove the '#' the load the 
-EXTRACNF file.
 
 If you have any questions or bugreports about ps2link go to forums.ps2dev.org.

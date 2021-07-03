@@ -3,22 +3,12 @@
 # Set this to 1 to enable debug mode
 DEBUG = 0
 
-# Set this to 1 to build ps2link with all the needed IRX builtins
-BUILTIN_IRXS = 1
-
-# Set this to 1 to enable caching of config files
-CACHED_CFG = 1
-
 # Set this to 1 to enable zero-copy on fileio writes.
 ZEROCOPY = 0
 
 # Set this to 1 to power off the ps2 when the reset button is tapped
 # otherwise it will try and reset ps2link
 PWOFFONRESET = 1
-
-# Set this to 1 to hook the kernel CreateThread/DeleteThread calls.
-# Note that this will cause problems when loading PS2LINK.ELF from PS2LINK...
-HOOK_THREADS = 0
 
 # Set to the path where ps2eth is located
 PS2ETH = $(PS2DEV)/ps2eth
@@ -55,21 +45,11 @@ ee/%_irx.o: %.irx
 	$(EE_CC) -c $*_irx.c -o ee/$*_irx.o
 	rm $*_irx.c
 
-VARIABLES=DEBUG=$(DEBUG) BUILTIN_IRXS=$(BUILTIN_IRXS) ZEROCOPY=$(ZEROCOPY) PWOFFONRESET=$(PWOFFONRESET) CACHED_CFG=$(CACHED_CFG) HOOK_THREADS=$(HOOK_THREADS)
+VARIABLES=DEBUG=$(DEBUG) BUILTIN_IRXS=$(BUILTIN_IRXS) ZEROCOPY=$(ZEROCOPY) PWOFFONRESET=$(PWOFFONRESET)
 
-ifeq ($(BUILTIN_IRXS),1)
 TARGETS = iop builtins ee
-else
-TARGETS = ee iop
-endif
 
 all: $(TARGETS)
-ifneq ($(BUILTIN_IRXS),1)
-	@for file in $(IRXFILES); do \
-		new=`echo $${file/*\//}|tr "[:lower:]" "[:upper:]"`; \
-		cp $$file bin/$$new; \
-	done;
-endif
 	@for file in $(EEFILES); do \
 		new=`echo $${file/*\//}|tr "[:lower:]" "[:upper:]"`; \
 		ps2-packer $$file bin/$$new; \
@@ -90,12 +70,6 @@ clean:
 dist: all
 	@rm -rf dist
 	@mkdir -p dist/ps2link
-ifneq ($(BUILTIN_IRXS),1)
-	@for file in $(IRXFILES); do \
-		new=`echo $${file/*\//}|tr "[:lower:]" "[:upper:]"`; \
-		cp $$file dist/ps2link/$$new; \
-	done;
-endif
 	@for file in $(EEFILES); do \
 		new=`echo $${file/*\//}|tr "[:lower:]" "[:upper:]"`; \
 		cp $$file dist/ps2link/$$new; \

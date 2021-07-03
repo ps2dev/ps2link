@@ -21,18 +21,8 @@
 
 #include "ps2ip.h"
 #include "hostlink.h"
-
-#ifdef DEBUG
-#define dbgprintf(args...) printf(args)
-#else
-#define dbgprintf(args...) do { } while(0)
-#endif
-
-//////////////////////////////////////////////////////////////////////////
-// How about a header file?..
-extern int fsysUnmount(void);
-
-//////////////////////////////////////////////////////////////////////////
+#include "net_fsys.h"
+#include "globals.h"
 
 #define BUF_SIZE 1024
 static char recvbuf[BUF_SIZE] __attribute__((aligned(16)));

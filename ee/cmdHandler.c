@@ -7,32 +7,22 @@
  */
 
 #include <stdio.h>
-#include <tamtypes.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
+
 #include <kernel.h>
 #include <sifrpc.h>
 #include <loadfile.h>
 #include <iopcontrol.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <string.h>
-#include "debug.h"
-#include "excepHandler.h"
+#include <debug.h>
 
+#include "excepHandler.h"
 #include "byteorder.h"
 #include "ps2regs.h"
 #include "hostlink.h"
-
-//#define scr_printf(args...) printf(args)
-//#define init_scr() do { } while(0)
-#ifdef DEBUG
-#define dbgprintf(args...) printf(args)
-#else
-#define dbgprintf(args...) do { } while(0)
-#endif
-
-#if HOOK_THREADS
-extern void KillActiveThreads(void);
-#endif
+#include "ps2link.h"
+#include "globals.h"
 
 ////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -47,19 +37,7 @@ static int pkoLoadElf(char *path);
 static int pkoGSExec(pko_pkt_gsexec_req *);
 static int pkoWriteMem(pko_pkt_mem_io *);
 
-// Flags for which type of boot (oh crap, make a header file dammit)
-#define B_CD 1
-#define B_MC 2
-#define B_HOST 3
-#define B_CC 4
-#define B_UNKN 5
-
 ////////////////////////////////////////////////////////////////////////
-// Globals
-extern u32 __start;
-extern void *_gp;
-extern int boot;
-extern char elfName[];
 
 int userThreadID = 0;
 static int cmdThreadID = 0;
@@ -722,24 +700,16 @@ pkoReset(void)
     char *argv[1];
     // Check if user thread is running, if so kill it
 
-#if 1
-
-#if HOOK_THREADS
-    KillActiveThreads();
-#else
     if (userThreadID) {
         TerminateThread(userThreadID);
         DeleteThread(userThreadID);
     }
-#endif
-#endif
     userThreadID = 0;
 
     RemoveDmacHandler(5, sif0HandlerId);
     sif0HandlerId = 0;
 
     SifInitRpc(0);
-//    fioExit();
     SifExitRpc();
 
     SifIopReset(NULL, 0);
@@ -748,21 +718,9 @@ pkoReset(void)
     SifInitRpc(0);
     SifExitRpc();
 
-#ifdef USE_CACHED_CFG
     argv[0] = elfName;
-	 SifLoadFileExit();
+	SifLoadFileExit();
     ExecPS2(&__start, 0, 1, argv);
-    return;
-#endif
-
-    if ((boot == B_MC) || (boot == B_HOST) || (boot == B_UNKN) || (boot == B_CC)) {
-       argv[0] = elfName;
-		 SifLoadFileExit();
-       ExecPS2(&__start, 0, 1, argv);
-    }
-    else {
-       LoadExecPS2(elfName, 0, NULL);
-    }
 }
 
 
