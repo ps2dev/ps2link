@@ -11,19 +11,23 @@
 #define GLOBALS_H
 
 #ifdef DEBUG
-#define dbgprintf(args...) printf(args)
+#define dbgprintf(args...)     printf(args)
 #define dbgscr_printf(args...) scr_printf(args)
 #else
-#define dbgprintf(args...) do { } while(0)
-#define dbgscr_printf(args...) do { } while(0)
+#define dbgprintf(args...) \
+    do {                   \
+    } while (0)
+#define dbgscr_printf(args...) \
+    do {                       \
+    } while (0)
 #endif
 
 // DEFAULT IPCONFIG IF FILE CONFIG CAN NOT BE READ
 ////////////////////////////////////////////////////////////////////////
 
-#define DEFAULT_IP "192.168.1.10"
+#define DEFAULT_IP      "192.168.1.10"
 #define DEFAULT_NETMASK "255.255.255.0"
-#define DEFAULT_GW "192.168.1.0"
+#define DEFAULT_GW      "192.168.1.0"
 ////////////////////////////////////////////////////////////////////////
 
 // Globals

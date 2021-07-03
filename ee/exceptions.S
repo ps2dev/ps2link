@@ -8,7 +8,7 @@
 # ASM exception handlers
 
 #include "r5900_regs.h"
-        
+
 .set noat
 .set noreorder
 
@@ -17,29 +17,29 @@
 .p2align 4
 
         .global _savedRegs
-        
+
         .global pkoStepBP
         .ent    pkoStepBP
 pkoStepBP:
         # Should check for cause in cop0 Cause reg
         # If Bp, increase EPC (DO NOT PUT 'break' in a branch delay slot!!!)
-        mfc0    k0, EPC         # cop0 EPC
-        addiu   k0, k0, 4     # Step over breakpoint
+        mfc0    k0, EPC                 # cop0 EPC
+        addiu   k0, k0, 4               # Step over breakpoint
         mtc0    k0, EPC
         sync.p
         eret
-        .end pkoStepBP
+        .end    pkoStepBP
 
-     
+
         # Save all user regs
-        # Save HI/LO, SR, BadVAddr, Cause, EPC, ErrorEPC, 
+        # Save HI/LO, SR, BadVAddr, Cause, EPC, ErrorEPC,
         # ShiftAmount, cop0: $24, $25
         # Save float regs??
         # Set EPC to debugger
         # Set stack to 'exception stack'
         # eret
         .global pkoExceptionHandler
-        .ent	pkoExceptionHandler
+        .ent    pkoExceptionHandler
 pkoExceptionHandler:
         la      k0, _savedRegs
         sq      $0,  0x00(k0)
@@ -68,7 +68,7 @@ pkoExceptionHandler:
         sq      s5,  0x170(k0)
         sq      s6,  0x180(k0)
         sq      s7,  0x190(k0)
-#        sq      k0,  0x1a0(k0)          # $k0
+        # sq      k0,  0x1a0(k0)          # $k0
         sq      zero, 0x1a0(k0)         # zero instead
         sq      k1,  0x1b0(k0)          # $k1
         sq      gp,  0x1c0(k0)
@@ -80,7 +80,7 @@ pkoExceptionHandler:
         pmflo   t1                      # LO
         sq      t0, 0x200(k0)
         sq      t1, 0x210(k0)
-       
+
         mfc0    t0, BadVAddr            # Cop0 state regs
         mfc0    t1, Status
         sw      t0, 0x220(k0)
@@ -102,8 +102,8 @@ pkoExceptionHandler:
 
         # Use our own stack..
         la      sp, _exceptionStack+0x2000-16
-        la       gp, _gp                 # Use exception handlers _gp
-        
+        la      gp, _gp                 # Use exception handlers _gp
+
         # Return from exception and start 'debugger'
         mfc0    a0, Cause               # arg0
         mfc0    a1, BadVAddr
@@ -114,7 +114,7 @@ pkoExceptionHandler:
         la      k0, pkoDebug
         mtc0    k0, EPC                 # eret return address
         sync.p
-        mfc0    k0, Status                  # check this out..
+        mfc0    k0, Status              # check this out..
         li      v0, 0xfffffffe
         and     k0, v0
         mtc0    k0, Status
@@ -125,10 +125,10 @@ pkoExceptionHandler:
         nop
         eret
         nop
-        .end	pkoExceptionHandler
+        .end    pkoExceptionHandler
 
 
-        
+
         # Put EE in kernel mode
         # Restore all user regs etc
         # Restore PC? & Stack ptr
@@ -146,14 +146,14 @@ _disable:
         and     t0, t1
         beqz    t0, _disable
         nop
-        
+
         la      k0, _savedRegs
-                
+
         lq      t0, 0x200(k0)
         lq      t1, 0x210(k0)
         pmthi   t0                      # HI
         pmtlo   t1                      # LO
-       
+
         lw      t0, 0x220(k0)
         lw      t1, 0x224(k0)
         mtc0    t0, BadVAddr
@@ -175,10 +175,10 @@ _disable:
         mtsa    t0
 
 
-#        ori     t2, 0xff
-#        sw      t2, 0(k1)
-        
-        #        lq      $0,  0x00(k0)
+        # ori     t2, 0xff
+        # sw      t2, 0(k1)
+
+        # lq      $0,  0x00(k0)
         lq      $1,  0x10(k0)
         lq      $2,  0x20(k0)
         lq      $3,  0x30(k0)
@@ -204,15 +204,15 @@ _disable:
         lq      $23, 0x170(k0)
         lq      $24, 0x180(k0)
         lq      $25, 0x190(k0)
-#        lq      $26, 0x1a0(k0)          # $k0
+        # lq      $26, 0x1a0(k0)          # $k0
         lq      $27, 0x1b0(k0)          # $k1
         lq      $28, 0x1c0(k0)
         lq      $29, 0x1d0(k0)          # $sp
         lq      $30, 0x1e0(k0)
-#        lq      $31, 0x1f0(k0)          # $ra
+        # lq      $31, 0x1f0(k0)          # $ra
 
         lw      ra, 0x22c(k0)
-        # Guess one should have some check here, and only advance PC if 
+        # Guess one should have some check here, and only advance PC if
         # we are going to step over a Breakpoint or something
         # (i.e. do stuff depending on Cause)
         addiu   ra, 4
@@ -221,5 +221,5 @@ _disable:
         sync.p
 
         jr      ra
-        nop        
+        nop
         .end pkoReturnFromDebug

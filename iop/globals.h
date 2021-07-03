@@ -11,11 +11,15 @@
 #define GLOBALS_H
 
 #ifdef DEBUG
-#define dbgprintf(args...) printf(args)
+#define dbgprintf(args...)     printf(args)
 #define dbgscr_printf(args...) scr_printf(args)
 #else
-#define dbgprintf(args...) do { } while(0)
-#define dbgscr_printf(args...) do { } while(0)
+#define dbgprintf(args...) \
+    do {                   \
+    } while (0)
+#define dbgscr_printf(args...) \
+    do {                       \
+    } while (0)
 #endif
 
 #endif /* GLOBALS_H */

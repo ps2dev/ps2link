@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: 
+    branches:
       - '*'
     tags:
       - v*
@@ -42,7 +42,7 @@ jobs:
       with:
         name: ps2link-${{ steps.slug.outputs.sha8 }}
         path: bin
-    
+
     - name: Extract tag name
       if: startsWith(github.ref, 'refs/tags/')
       id: tag
@@ -53,7 +53,7 @@ jobs:
       run: |
         mv bin/ ps2link/
         tar -zcvf ps2link-${{ steps.tag.outputs.VERSION }}.tar.gz ps2link
-    
+
     - name: Release
       if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v1
