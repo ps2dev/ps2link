@@ -23,14 +23,15 @@ The IRX's and the IPCONFIG.DAT should be in the directory which PS2LINK is loade
 
     PS2LINK.IRX               from: ps2link
     PS2DEV9.IRX                     ps2sdk
-    PS2IP.IRX                       ps2sdk
+    PS2IP-NM.IRX                    ps2sdk
+    NETMAN.IRX                      ps2sdk
+    SMAP.IRX                        ps2sdk
     IOPTRAP.IRX                     ps2sdk
     POWEROFF.IRX                    ps2sdk
-    PS2SMAP.IRX                     ps2eth
 
 ## Compilation
 
-Building ps2link requires two projects `PS2SDK` and `PS2ETH`.
+Building `ps2link` just requires project `PS2SDK`.
 
 For building against ps2sdk make sure `PS2SDK` is set to your ps2sdk release
 dir.
