@@ -2,12 +2,10 @@
 
 [![CI](https://github.com/ps2dev/ps2link/workflows/CI/badge.svg)](https://github.com/ps2dev/ps2link/actions?query=workflow%3ACI)
 
-```
-PS2Link (C) 2003 Tord Lindstrom (pukko@home.se)
-        (C) 2003,2004 adresd (adresd_ps2dev@yahoo.com)
-        (C) 2003,2004,2005 Khaled (khaled@w-arts.com)
-        (C) 2019,2020,2021 fjtrujy (fjtrujy@gmail.com)
-```
+    PS2Link (C) 2003 Tord Lindstrom (pukko@home.se)
+            (C) 2003,2004 adresd (adresd_ps2dev@yahoo.com)
+            (C) 2003,2004,2005 Khaled (khaled@w-arts.com)
+            (C) 2019,2020,2021 fjtrujy (fjtrujy@gmail.com)
 
 Please read the file LICENSE regarding PS2Link licensing.
 
@@ -22,14 +20,13 @@ The IRX's and the IPCONFIG.DAT should be in the directory which PS2LINK is loade
 ## Required modules
 
 `PS2Link` requires the following IRX modules:
-```
-PS2LINK.IRX               from: ps2link
-PS2DEV9.IRX                     ps2sdk
-PS2IP.IRX                       ps2sdk
-IOPTRAP.IRX                     ps2sdk
-POWEROFF.IRX                    ps2sdk
-PS2SMAP.IRX                     ps2eth
-```
+
+    PS2LINK.IRX               from: ps2link
+    PS2DEV9.IRX                     ps2sdk
+    PS2IP.IRX                       ps2sdk
+    IOPTRAP.IRX                     ps2sdk
+    POWEROFF.IRX                    ps2sdk
+    PS2SMAP.IRX                     ps2eth
 
 ## Compilation
 
@@ -37,9 +34,8 @@ Building ps2link requires two projects `PS2SDK` and `PS2ETH`.
 
 For building against ps2sdk make sure `PS2SDK` is set to your ps2sdk release
 dir.
-```
-make clean all release
-```
+
+    make clean all release
 
 Credit for the icon logo goes to Revolt from `ps2dev`.
 

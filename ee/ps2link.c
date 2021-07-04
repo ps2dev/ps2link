@@ -38,8 +38,8 @@ static char elfPath[NAME_MAX - 14]; // It isn't 256 because elfPath will add sub
 
 // Make sure the "cached config" is in the data section
 // To prevent it from being "zeroed" on a restart of ps2link
-char if_conf[IPCONF_MAX_LEN] __attribute__ ((section (".data"))) = "";
-int if_conf_len __attribute__ ((section (".data"))) = 0;
+char if_conf[IPCONF_MAX_LEN] __attribute__((section(".data"))) = "";
+int if_conf_len __attribute__((section(".data"))) = 0;
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -58,7 +58,7 @@ static void printIpConfig(void)
 
 // Parse network configuration from IPCONFIG.DAT
 // Note: parsing really should be made more robust...
-static int readIpConfigFromFile(char *buf) 
+static int readIpConfigFromFile(char *buf)
 {
     int fd;
     int len;
@@ -71,7 +71,7 @@ static int readIpConfigFromFile(char *buf)
         dbgprintf("Error reading ipconfig.dat\n");
         return -1;
     }
-    
+
     len = read(fd, buf, IPCONF_MAX_LEN - 1); // Let the last byte be '\0'
     close(fd);
 
@@ -84,10 +84,10 @@ static int readIpConfigFromFile(char *buf)
     return 0;
 }
 
-static int readDefaultIpConfig(char *buf) 
+static int readDefaultIpConfig(char *buf)
 {
     int i = 0;
-    
+
     strncpy(&buf[i], DEFAULT_IP, 15);
     i += strlen(&buf[i]) + 1;
     strncpy(&buf[i], DEFAULT_NETMASK, 15);
@@ -110,7 +110,7 @@ static void getIpConfig(void)
 
     if (readIpConfigFromFile(buf))
         readDefaultIpConfig(buf);
-    
+
     i = 0;
     // Clear out spaces (and potential ending CR/LF)
     while ((c = buf[i]) != '\0') {
@@ -124,7 +124,7 @@ static void getIpConfig(void)
         strncpy(&if_conf[i], &buf[i], 15);
         i += strlen(&if_conf[i]) + 1;
     }
-    
+
     if_conf_len = i;
 }
 
@@ -148,8 +148,7 @@ static void loadModules(void)
 {
     int ret;
 
-    if(if_conf_len==0)
-    {
+    if (if_conf_len == 0) {
         pkoLoadModule("rom0:SIO2MAN", 0, NULL);
         pkoLoadModule("rom0:MCMAN", 0, NULL);
         pkoLoadModule("rom0:MCSERV", 0, NULL);
@@ -157,22 +156,22 @@ static void loadModules(void)
     }
 
     dbgscr_printf("Exec poweroff module. (%x,%d) ", (unsigned int)poweroff_irx, size_poweroff_irx);
-    SifExecModuleBuffer(poweroff_irx, size_poweroff_irx, 0, NULL,&ret);
+    SifExecModuleBuffer(poweroff_irx, size_poweroff_irx, 0, NULL, &ret);
     dbgscr_printf("[%d] returned\n", ret);
     dbgscr_printf("Exec ps2dev9 module. (%x,%d) ", (unsigned int)ps2dev9_irx, size_ps2dev9_irx);
-    SifExecModuleBuffer(ps2dev9_irx, size_ps2dev9_irx, 0, NULL,&ret);
+    SifExecModuleBuffer(ps2dev9_irx, size_ps2dev9_irx, 0, NULL, &ret);
     dbgscr_printf("[%d] returned\n", ret);
     dbgscr_printf("Exec ps2ip module. (%x,%d) ", (unsigned int)ps2ip_irx, size_ps2ip_irx);
-    SifExecModuleBuffer(ps2ip_irx, size_ps2ip_irx, 0, NULL,&ret);
+    SifExecModuleBuffer(ps2ip_irx, size_ps2ip_irx, 0, NULL, &ret);
     dbgscr_printf("[%d] returned\n", ret);
     dbgscr_printf("Exec ps2smap module. (%x,%d) ", (unsigned int)ps2smap_irx, size_ps2smap_irx);
-    SifExecModuleBuffer(ps2smap_irx, size_ps2smap_irx, if_conf_len, &if_conf[0],&ret);
+    SifExecModuleBuffer(ps2smap_irx, size_ps2smap_irx, if_conf_len, &if_conf[0], &ret);
     dbgscr_printf("[%d] returned\n", ret);
     dbgscr_printf("Exec ioptrap module. (%x,%d) ", (unsigned int)ioptrap_irx, size_ioptrap_irx);
-    SifExecModuleBuffer(ioptrap_irx, size_ioptrap_irx, 0, NULL,&ret);
+    SifExecModuleBuffer(ioptrap_irx, size_ioptrap_irx, 0, NULL, &ret);
     dbgscr_printf("[%d] returned\n", ret);
     dbgscr_printf("Exec ps2link module. (%x,%d) ", (unsigned int)ps2link_irx, size_ps2link_irx);
-    SifExecModuleBuffer(ps2link_irx, size_ps2link_irx, 0, NULL,&ret);
+    SifExecModuleBuffer(ps2link_irx, size_ps2link_irx, 0, NULL, &ret);
     dbgscr_printf("[%d] returned\n", ret);
     dbgscr_printf("All modules loaded on IOP.\n");
 }
@@ -210,7 +209,7 @@ static void setPathInfo(char *path)
 static void printWelcomeInfo()
 {
     scr_printf("Welcome to ps2link %s\n", APP_VERSION);
-    scr_printf("ps2link loaded at 0x%08X-0x%08X\n", ((u32) __start) - 8, (u32) &_end);
+    scr_printf("ps2link loaded at 0x%08X-0x%08X\n", ((u32)__start) - 8, (u32)&_end);
     scr_printf("Initializing...\n");
 }
 
@@ -222,7 +221,8 @@ static void restartIOP()
 
     dbgscr_printf("reset iop\n");
     SifIopReset(NULL, 0);
-    while (!SifIopSync()) ;
+    while (!SifIopSync())
+        ;
 
     dbgscr_printf("rpc init\n");
     SifInitRpc(0);
@@ -255,13 +255,12 @@ int main(int argc, char *argv[])
     dbgscr_printf("loading modules\n");
     loadModules();
 
-    if(if_conf_len==0)
-    {
+    if (if_conf_len == 0) {
         scr_printf("Initial boot, will load config then reset\n");
         getIpConfig();
         printIpConfig();
         pkoReset(); // Will restart execution
-     }
+    }
 
     scr_printf("Using cached config\n");
     printIpConfig();

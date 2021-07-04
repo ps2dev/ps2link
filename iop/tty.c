@@ -42,27 +42,27 @@ static int ttyInit(iop_device_t *driver)
 {
     iop_sema_t sema_info;
 
-    sema_info.attr       = 0;
-    sema_info.initial = 1;	/* Unlocked.  */
-    sema_info.max  = 1;
+    sema_info.attr = 0;
+    sema_info.initial = 1; /* Unlocked.  */
+    sema_info.max = 1;
     if ((tty_sema = CreateSema(&sema_info)) < 0)
-	    return -1;
+        return -1;
 
     // Create/open udp socket
     if ((tty_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
-	    return -1;
+        return -1;
 
-	return 1;
+    return 1;
 }
 
 ////////////////////////////////////////////////////////////////////////
-static int ttyOpen( int fd, char *name, int mode)
+static int ttyOpen(int fd, char *name, int mode)
 {
     return 1;
 }
 
 ////////////////////////////////////////////////////////////////////////
-static int ttyClose( int fd)
+static int ttyClose(int fd)
 {
     return 1;
 }
@@ -76,26 +76,26 @@ static int ttyWrite(iop_file_t *file, char *buf, int size)
 
     WaitSema(tty_sema);
 
-    dstaddr.sin_family      = AF_INET;
+    dstaddr.sin_family = AF_INET;
     dstaddr.sin_addr.s_addr = remote_pc_addr;
-    dstaddr.sin_port        = htons(PKO_PRINTF_PORT);
+    dstaddr.sin_port = htons(PKO_PRINTF_PORT);
 
     res = sendto(tty_socket, buf, size, 0, (struct sockaddr *)&dstaddr,
-                    sizeof(dstaddr));
+                 sizeof(dstaddr));
 
     SignalSema(tty_sema);
     return res;
 }
 
-iop_device_ops_t tty_functarray = { ttyInit, dummy0, (void *)dummy,
-	(void *)ttyOpen, (void *)ttyClose, (void *)dummy,
-	(void *)ttyWrite, (void *)dummy, (void *)dummy,
-	(void *)dummy, (void *)dummy, (void *)dummy,
-	(void *)dummy, (void *)dummy, (void *)dummy,
-	(void *)dummy, (void *)dummy };
+iop_device_ops_t tty_functarray = {ttyInit, dummy0, (void *)dummy,
+                                   (void *)ttyOpen, (void *)ttyClose, (void *)dummy,
+                                   (void *)ttyWrite, (void *)dummy, (void *)dummy,
+                                   (void *)dummy, (void *)dummy, (void *)dummy,
+                                   (void *)dummy, (void *)dummy, (void *)dummy,
+                                   (void *)dummy, (void *)dummy};
 
-iop_device_t tty_driver = { ttyname, 3, 1, "TTY via Udp",
-							&tty_functarray };
+iop_device_t tty_driver = {ttyname, 3, 1, "TTY via Udp",
+                           &tty_functarray};
 
 ////////////////////////////////////////////////////////////////////////
 // Entry point for mounting the file system
@@ -105,8 +105,12 @@ int ttyMount(void)
     close(1);
     DelDrv(ttyname);
     AddDrv(&tty_driver);
-    if(open("tty00:", O_RDONLY) != 0) while(1);
-    if(open("tty00:", O_WRONLY) != 1) while(1);
+    if (open("tty00:", O_RDONLY) != 0)
+        while (1)
+            ;
+    if (open("tty00:", O_WRONLY) != 1)
+        while (1)
+            ;
 
     return 0;
 }
