@@ -6,7 +6,7 @@ EE_INCS += -I../include
 EE_LIBS += -lpatches -ldebug
 
 # This is to builtin the IRXs into ps2link
-EE_LDFLAGS += ps2link_irx.o ps2ip_irx.o ps2smap_irx.o ps2dev9_irx.o ioptrap_irx.o poweroff_irx.o
+EE_LDFLAGS += ps2link_irx.o ps2ip_nm_irx.o netman_irx.o smap_irx.o ioptrap_irx.o ps2dev9_irx.o poweroff_irx.o
 
 # This is to enable the debug mode into ps2link
 ifeq ($(DEBUG),1)

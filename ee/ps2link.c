@@ -161,11 +161,14 @@ static void loadModules(void)
     dbgscr_printf("Exec ps2dev9 module. (%x,%d) ", (unsigned int)ps2dev9_irx, size_ps2dev9_irx);
     SifExecModuleBuffer(ps2dev9_irx, size_ps2dev9_irx, 0, NULL, &ret);
     dbgscr_printf("[%d] returned\n", ret);
-    dbgscr_printf("Exec ps2ip module. (%x,%d) ", (unsigned int)ps2ip_irx, size_ps2ip_irx);
-    SifExecModuleBuffer(ps2ip_irx, size_ps2ip_irx, 0, NULL, &ret);
+    dbgscr_printf("Exec netman module. (%x,%d) ", (unsigned int)netman_irx, size_netman_irx);
+    SifExecModuleBuffer(netman_irx, size_netman_irx, 0, NULL, &ret);
     dbgscr_printf("[%d] returned\n", ret);
-    dbgscr_printf("Exec ps2smap module. (%x,%d) ", (unsigned int)ps2smap_irx, size_ps2smap_irx);
-    SifExecModuleBuffer(ps2smap_irx, size_ps2smap_irx, if_conf_len, &if_conf[0], &ret);
+    dbgscr_printf("Exec smap module. (%x,%d) ", (unsigned int)smap_irx, size_smap_irx);
+    SifExecModuleBuffer(smap_irx, size_smap_irx, 0, NULL, &ret);
+    dbgscr_printf("[%d] returned\n", ret);
+    dbgscr_printf("Exec ps2ip module. (%x,%d) ", (unsigned int)ps2ip_nm_irx, size_ps2ip_nm_irx);
+    SifExecModuleBuffer(ps2ip_nm_irx, size_ps2ip_nm_irx, if_conf_len, &if_conf[0], &ret);
     dbgscr_printf("[%d] returned\n", ret);
     dbgscr_printf("Exec ioptrap module. (%x,%d) ", (unsigned int)ioptrap_irx, size_ioptrap_irx);
     SifExecModuleBuffer(ioptrap_irx, size_ioptrap_irx, 0, NULL, &ret);
@@ -220,15 +223,21 @@ static void restartIOP()
     SifExitRpc();
 
     dbgscr_printf("reset iop\n");
-    SifIopReset(NULL, 0);
-    while (!SifIopSync())
-        ;
 
-    dbgscr_printf("rpc init\n");
     SifInitRpc(0);
 
+    //Reboot IOP
+    while (!SifIopReset("", 0)) {};
+    while (!SifIopSync()) {};
+
+    //Initialize SIF services
+    SifInitRpc(0);
+    SifLoadFileInit();
+    SifInitIopHeap();
     sbv_patch_enable_lmb();
     sbv_patch_disable_prefix_check();
+
+    dbgscr_printf("reseted iop\n");
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -258,7 +267,6 @@ int main(int argc, char *argv[])
     if (if_conf_len == 0) {
         scr_printf("Initial boot, will load config then reset\n");
         getIpConfig();
-        printIpConfig();
         pkoReset(); // Will restart execution
     }
 
