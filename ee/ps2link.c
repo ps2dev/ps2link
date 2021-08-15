@@ -275,7 +275,7 @@ int main(int argc, char *argv[])
 
     dbgscr_printf("init cmdrpc\n");
     initCmdRpc();
-    scr_printf("Ready\n");
+    scr_printf("Ready with %i memory bytes\n", GetMemorySize());
 
     ExitDeleteThread();
     return 0;
