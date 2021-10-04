@@ -3,6 +3,9 @@
 # Set this to 1 to enable debug mode
 DEBUG = 0
 
+# Set this to 1 to build a highloading version, 0 for normal low version
+LOADHIGH = 0
+
 # Set this to 1 to enable zero-copy on fileio writes.
 ZEROCOPY = 0
 
@@ -51,7 +54,7 @@ ps2ip_nm_irx.o: ps2ip-nm.irx
 	$(EE_CC) -c $*.c -o ee/$*.o
 	rm $*.c
 
-VARIABLES=DEBUG=$(DEBUG) BUILTIN_IRXS=$(BUILTIN_IRXS) ZEROCOPY=$(ZEROCOPY) PWOFFONRESET=$(PWOFFONRESET)
+VARIABLES=DEBUG=$(DEBUG) LOADHIGH=$(LOADHIGH) BUILTIN_IRXS=$(BUILTIN_IRXS) ZEROCOPY=$(ZEROCOPY) PWOFFONRESET=$(PWOFFONRESET)
 
 TARGETS = iop builtins ee
 

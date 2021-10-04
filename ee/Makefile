@@ -18,7 +18,11 @@ APP_VERSION := $(shell git describe --tags --abbrev=0)
 EE_CFLAGS += -DAPP_VERSION=\"$(APP_VERSION)\"
 
 # Use custom linkfile
+ifeq ($(LOADHIGH),1)
+EE_LINKFILE = linkfile.loadhigh
+else
 EE_LINKFILE = linkfile
+endif
 
 ifeq ($(DEBUG),1)
 EE_LDFLAGS += -g
