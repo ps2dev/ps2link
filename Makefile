@@ -4,7 +4,7 @@
 DEBUG = 0
 
 # Set this to 1 to build a highloading version, 0 for normal low version
-LOADHIGH = 0
+LOADHIGH ?= 0
 
 # Set this to 1 to enable zero-copy on fileio writes.
 ZEROCOPY = 0
