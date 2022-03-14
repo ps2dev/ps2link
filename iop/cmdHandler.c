@@ -232,11 +232,7 @@ pkoWriteMem(char *buf, int len)
 static void
 cmdListener(int sock)
 {
-    int done;
-
-    done = 0;
-
-    while (!done) {
+    while (1) {
         struct sockaddr_in remote_addr;
         int len;
         int addrlen;
