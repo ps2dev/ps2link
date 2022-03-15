@@ -741,8 +741,6 @@ int pkoCmdIntrHandler()
 static int
 cmdThread()
 {
-    void *pkt;
-    unsigned int cmd;
     int ret;
     int done;
 
@@ -752,6 +750,8 @@ cmdThread()
 
     done = 0;
     while (!done) {
+        unsigned int cmd;
+        void *pkt;
         SleepThread();
 
         cmd = ntohl(sifDmaDataPtr[1]);

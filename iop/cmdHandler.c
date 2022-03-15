@@ -232,16 +232,12 @@ pkoWriteMem(char *buf, int len)
 static void
 cmdListener(int sock)
 {
-    int done;
-    int len;
-    int addrlen;
-    unsigned int cmd;
-    pko_pkt_hdr *header;
-    struct sockaddr_in remote_addr;
-
-    done = 0;
-
-    while (!done) {
+    while (1) {
+        struct sockaddr_in remote_addr;
+        int len;
+        int addrlen;
+        pko_pkt_hdr *header;
+        unsigned int cmd;
 
         addrlen = sizeof(remote_addr);
         len = recvfrom(sock, &recvbuf[0], BUF_SIZE, 0,
@@ -364,7 +360,6 @@ int cmdHandlerInit(void)
 {
     iop_thread_t thread;
     int pid;
-    int ret;
 
     dbgprintf("IOP cmd: Starting thread\n");
 
@@ -379,6 +374,7 @@ int cmdHandlerInit(void)
 
     pid = CreateThread(&thread);
     if (pid >= 0) {
+        int ret;
         ret = StartThread(pid, 0);
         if (ret < 0) {
             dbgprintf("IOP cmd: Could not start thread\n");
