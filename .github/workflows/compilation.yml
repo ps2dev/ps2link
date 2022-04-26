@@ -13,9 +13,9 @@ on:
 jobs:
   clean_release:
     steps:
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     - name: delete previous tag/release
-      if: github.ref == 'refs/heads/master'
       uses: dev-drprasad/delete-tag-and-release@v0.2.0
       with:
         delete_release: true
