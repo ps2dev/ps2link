@@ -54,6 +54,8 @@ jobs:
     - name: Compress & Rename bin folder
       run: |
         mv bin/ ps2link/
+        mv contrib/icon.sys ps2link/icon.sys
+        mv contrib/PS2LINK.icn ps2link/PS2LINK.icn
         tar -zcvf ps2link-${{ steps.slug.outputs.sha8 }}-${{ matrix.version[0] }}.tar.gz ps2link
   
     - name: Create pre-release
