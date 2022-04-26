@@ -54,7 +54,16 @@ jobs:
       run: |
         mv bin/ ps2link/
         tar -zcvf ps2link-${{ steps.slug.outputs.sha8 }}-${{ matrix.version[0] }}.tar.gz ps2link
-  
+
+    - name: delete previous tag/release
+      if: github.ref == 'refs/heads/master'
+      uses: dev-drprasad/delete-tag-and-release@v0.2.0
+      with:
+        delete_release: true
+        tag_name: "latest"
+      env:
+       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+       
     - name: Create pre-release
       if: github.ref == 'refs/heads/master'
       uses: softprops/action-gh-release@v1
