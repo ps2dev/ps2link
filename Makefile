@@ -53,7 +53,7 @@ ps2ip_nm_irx.o: ps2ip-nm.irx
 	$(EE_CC) -c $*.c -o ee/$*.o
 	rm $*.c
 
-VARIABLES=DEBUG=$(DEBUG) LOADHIGH=$(LOADHIGH) BUILTIN_IRXS=$(BUILTIN_IRXS) ZEROCOPY=$(ZEROCOPY) PWOFFONRESET=$(PWOFFONRESET)
+export DEBUG LOADHIGH ZEROCOPY PWOFFONRESET
 
 TARGETS = iop builtins ee
 
@@ -64,10 +64,10 @@ all: $(TARGETS)
 	done;
 
 ee:
-	$(VARIABLES) $(MAKE) -C ee
+	$(MAKE) -C ee
 
 iop:
-	$(VARIABLES) $(MAKE) -C iop
+	$(MAKE) -C iop
 
 clean:
 	$(MAKE) -C ee clean
