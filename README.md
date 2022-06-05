@@ -36,7 +36,7 @@ Building `ps2link` just requires project `PS2SDK`.
 For building against ps2sdk make sure `PS2SDK` is set to your ps2sdk release
 dir.
 
-    make clean all release
+    make clean all
 
 Credit for the icon logo goes to Revolt from `ps2dev`.
 
