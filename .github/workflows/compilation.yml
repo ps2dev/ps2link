@@ -37,13 +37,9 @@ jobs:
     steps:
     - name: Install dependencies
       run: |
-        apk add build-base git bash
+        apk add build-base git
 
-    - uses: actions/checkout@v2
-    - run: |
-        git config --global --add safe.directory "$GITHUB_WORKSPACE"
-        git fetch --prune --unshallow
-
+    - uses: actions/checkout@v3
     - name: Compile project
       run: |
         make clean all LOADHIGH=${{ matrix.version[1] }}
