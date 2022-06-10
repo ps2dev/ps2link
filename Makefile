@@ -36,7 +36,9 @@ IRXFILES=\
 	poweroff.irx \
 	ps2ip.irx \
 	netman.irx \
-	smap.irx
+	smap.irx \
+	udptty.irx
+
 EE_IRX_OBJS = $(addprefix ee/, $(addsuffix _irx.o, $(basename $(IRXFILES))))
 EE_IRX_OBJS += ps2ip_nm_irx.o
 # Where to find the IRX files
