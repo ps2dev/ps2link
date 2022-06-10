@@ -22,10 +22,12 @@ RM=rm -f
 #
 # You shouldn't need to modify anything below this point
 #
-
 include $(PS2SDK)/Defs.make
 
-EEFILES=ee/ps2link.elf
+EE_BIN_PKD = bin/PS2LINK.ELF
+EE_BIN = ee/ps2link.elf
+
+all: $(EE_BIN_PKD)
 
 IRXFILES=\
 	ps2link.irx \
@@ -53,17 +55,13 @@ ps2ip_nm_irx.o: ps2ip-nm.irx
 	$(EE_CC) -c $*.c -o ee/$*.o
 	rm $*.c
 
+$(EE_BIN): ee
+$(EE_BIN_PKD): $(EE_BIN)
+		@ps2-packer $< $@
+
 export DEBUG LOADHIGH ZEROCOPY PWOFFONRESET
 
-TARGETS = iop builtins ee
-
-all: $(TARGETS)
-	@for file in $(EEFILES); do \
-		new=`echo $${file/*\//}|tr "[:lower:]" "[:upper:]"`; \
-		ps2-packer $$file bin/$$new; \
-	done;
-
-ee:
+ee: iop builtins
 	$(MAKE) -C ee
 
 iop:

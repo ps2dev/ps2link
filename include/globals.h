@@ -11,7 +11,7 @@
 #define GLOBALS_H
 
 #ifdef DEBUG
-#define dbgprintf(args...)     printf(args)
+#define dbgprintf(args...)     printf("[PS2Link] " args)
 #define dbgscr_printf(args...) scr_printf(args)
 #else
 #define dbgprintf(args...) \
