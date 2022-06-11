@@ -16,9 +16,10 @@
 #include "excepHandler.h"
 #include "net_fsys.h"
 #include "cmdHandler.h"
-#include "tty.h"
 #include "nprintf.h"
 
+// Entry points
+extern int ttyMount(void);
 ////////////////////////////////////////////////////////////////////////
 // main
 //   start threads & init rpc & filesys
@@ -31,17 +32,6 @@ int _start(int argc, char **argv)
     sceCdStop();
 
     SifInitRpc(0);
-
-
-
-    if ((argc < 2) || (strncmp(argv[1], "-notty", 6))) {
-        ttyMount();
-        // Oh well.. There's a bug in either smapif or lwip's etharp
-        // that thrashes udp msgs which are queued while waiting for arp
-        // request
-        // alas, this msg will probably not be displayed
-        printf("tty mounted\n");
-    }
 
     fsysMount();
     printf("host: mounted\n");

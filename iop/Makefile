@@ -7,12 +7,12 @@
 #.SUFFIXES: .S .c .o .s .elf .irx
 
 IOP_BIN  = ps2link.irx
-IOP_OBJS = net_fsys.o net_fio.o ps2link.o cmdHandler.o tty.o nprintf.o excepHandler.o imports.o
+IOP_OBJS = net_fsys.o net_fio.o ps2link.o cmdHandler.o nprintf.o excepHandler.o imports.o
 
 IOP_INCS += -I../include
-IOP_LIBS += 
-IOP_LDFLAGS += 
-IOP_CFLAGS += 
+IOP_LIBS +=
+IOP_LDFLAGS +=
+IOP_CFLAGS +=
 
 # Enable zero-copy on fileio writes.
 ifeq ($(ZEROCOPY),1)

@@ -28,6 +28,7 @@ The IRX's and the IPCONFIG.DAT should be in the directory which PS2LINK is loade
     SMAP.IRX                        ps2sdk
     IOPTRAP.IRX                     ps2sdk
     POWEROFF.IRX                    ps2sdk
+    UDPTTY.IRX                      ps2sdk
 
 ## Compilation
 
