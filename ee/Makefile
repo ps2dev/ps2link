@@ -2,6 +2,9 @@ EE_BIN  = ps2link.elf
 EE_OBJS = ps2link.o cmdHandler.o excepHandler.o exceptions.o
 EE_INCS += -I../include
 
+# Using newlib nano for saving space
+NEWLIB_NANO = 1
+
 # This is for the sbv patch
 EE_LIBS += -lpatches -ldebug
 

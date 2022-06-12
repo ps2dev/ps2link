@@ -249,6 +249,9 @@ static void restartIOP()
 // we are not using time zone, so we can safe some KB
 void _ps2sdk_timezone_update() {}
 
+DISABLE_PATCHED_FUNCTIONS(); // Disable the patched functionalities
+DISABLE_EXTRA_TIMERS_FUNCTIONS(); // Disable the extra functionalities for timers
+
 int main(int argc, char *argv[])
 {
     char cwd[NAME_MAX];
