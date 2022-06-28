@@ -59,7 +59,7 @@ ps2ip_nm_irx.o: ps2ip-nm.irx
 
 $(EE_BIN): ee
 $(EE_BIN_PKD): $(EE_BIN)
-		@ps2-packer $< $@
+	ps2-packer $< $@ > /dev/null
 
 export DEBUG LOADHIGH ZEROCOPY PWOFFONRESET
 

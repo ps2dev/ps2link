@@ -18,8 +18,9 @@
 #include "cmdHandler.h"
 #include "nprintf.h"
 
-// Entry points
-extern int ttyMount(void);
+#define MODNAME "ps2link"
+IRX_ID(MODNAME, 1, 8);
+
 ////////////////////////////////////////////////////////////////////////
 // main
 //   start threads & init rpc & filesys
