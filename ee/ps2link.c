@@ -19,6 +19,7 @@
 #include <iopcontrol.h>
 #include <sbv_patches.h>
 #include <debug.h>
+#include <ps2sdkapi.h>
 
 
 #include "irx_variables.h"
@@ -251,6 +252,7 @@ void _ps2sdk_timezone_update() {}
 
 DISABLE_PATCHED_FUNCTIONS(); // Disable the patched functionalities
 DISABLE_EXTRA_TIMERS_FUNCTIONS(); // Disable the extra functionalities for timers
+PS2_DISABLE_AUTOSTART_PTHREAD(); // Disable pthread functionality
 
 int main(int argc, char *argv[])
 {
