@@ -14,6 +14,7 @@
 #include <intrman.h>
 #include <loadcore.h>
 #include <thsemap.h>
+#include <iox_stat.h>
 
 #include "net_fio.h"
 #include "globals.h"
@@ -302,7 +303,7 @@ static int fsysDclose(int fd)
 }
 
 ////////////////////////////////////////////////////////////////////////
-static int fsysGetstat(iop_file_t *file, const char *name, iox_stat_t *stat)
+static int fsysGetstat(iop_file_t *file, const char *name, io_stat_t *stat)
 {
     int ret;
     dbgprintf("fsysGetstat..\n");
