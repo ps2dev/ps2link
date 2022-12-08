@@ -31,8 +31,8 @@
 ////////////////////////////////////////////////////////////////////////
 
 // Argv name+path & just path
-char elfName[NAME_MAX] __attribute__((aligned(16)));
-static char elfPath[NAME_MAX - 14]; // It isn't 256 because elfPath will add subpaths
+char elfName[FILENAME_MAX] __attribute__((aligned(16)));
+static char elfPath[FILENAME_MAX - 14]; // It isn't 256 because elfPath will add subpaths
 
 ////////////////////////////////////////////////////////////////////////
 #define IPCONF_MAX_LEN 64 // Don't reduce even more this value
@@ -256,7 +256,7 @@ PS2_DISABLE_AUTOSTART_PTHREAD(); // Disable pthread functionality
 
 int main(int argc, char *argv[])
 {
-    char cwd[NAME_MAX];
+    char cwd[FILENAME_MAX];
 
     SifInitRpc(0);
     init_scr();
