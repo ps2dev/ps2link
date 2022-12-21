@@ -19,6 +19,7 @@
 #include <iopcontrol.h>
 #include <sbv_patches.h>
 #include <debug.h>
+#include <ps2sdkapi.h>
 
 
 #include "irx_variables.h"
@@ -30,8 +31,8 @@
 ////////////////////////////////////////////////////////////////////////
 
 // Argv name+path & just path
-char elfName[NAME_MAX] __attribute__((aligned(16)));
-static char elfPath[NAME_MAX - 14]; // It isn't 256 because elfPath will add subpaths
+char elfName[FILENAME_MAX] __attribute__((aligned(16)));
+static char elfPath[FILENAME_MAX - 14]; // It isn't 256 because elfPath will add subpaths
 
 ////////////////////////////////////////////////////////////////////////
 #define IPCONF_MAX_LEN 64 // Don't reduce even more this value
@@ -251,10 +252,11 @@ void _ps2sdk_timezone_update() {}
 
 DISABLE_PATCHED_FUNCTIONS(); // Disable the patched functionalities
 DISABLE_EXTRA_TIMERS_FUNCTIONS(); // Disable the extra functionalities for timers
+PS2_DISABLE_AUTOSTART_PTHREAD(); // Disable pthread functionality
 
 int main(int argc, char *argv[])
 {
-    char cwd[NAME_MAX];
+    char cwd[FILENAME_MAX];
 
     SifInitRpc(0);
     init_scr();
