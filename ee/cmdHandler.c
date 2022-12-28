@@ -16,6 +16,7 @@
 #include <loadfile.h>
 #include <iopcontrol.h>
 #include <debug.h>
+#include <startup.h>
 
 #include "excepHandler.h"
 #include "byteorder.h"
@@ -40,27 +41,13 @@ static int pkoWriteMem(pko_pkt_mem_io *);
 ////////////////////////////////////////////////////////////////////////
 
 int userThreadID = 0;
+static struct sargs_start userArgs;
 static int cmdThreadID = 0;
 static char userThreadStack[16 * 1024] __attribute__((aligned(16)));
 static char cmdThreadStack[16 * 1024] __attribute__((aligned(64)));
 static char dataBuffer[16384] __attribute__((aligned(16)));
 
-// The 'global' argv string area
-static char argvStrings[PKO_MAX_PATH];
 
-////////////////////////////////////////////////////////////////////////
-// How about that header file again?
-#define MAX_ARGS   16
-#define MAX_ARGLEN 256
-
-struct argData
-{
-    int flag; // Contains thread id atm
-    int argc;
-    char *argv[MAX_ARGS];
-} __attribute__((packed)) userArgs;
-
-////////////////////////////////////////////////////////////////////////
 int sifCmdSema;
 int sif0HandlerId = 0;
 // XXX: Hardcoded address atm.. Should be configurable!!
@@ -70,7 +57,7 @@ int excepscrdump = 1;
 
 ////////////////////////////////////////////////////////////////////////
 // Create the argument struct to send to the user thread
-int makeArgs(int cmdargc, char *cmdargv, struct argData *arg_data)
+int makeArgs(int cmdargc, char *cmdargv, struct sargs_start *arg_data)
 {
     int i;
     int t;
@@ -79,22 +66,22 @@ int makeArgs(int cmdargc, char *cmdargv, struct argData *arg_data)
         cmdargc = MAX_ARGS;
     cmdargv[PKO_MAX_PATH - 1] = '\0';
 
-    memcpy(argvStrings, cmdargv, PKO_MAX_PATH);
+    memcpy(arg_data->args.payload, cmdargv, PKO_MAX_PATH);
 
     dbgprintf("cmd->argc %d, argv[0]: %s\n", cmdargc, cmdargv);
 
     i = 0;
     t = 0;
     do {
-        arg_data->argv[i] = &argvStrings[t];
-        dbgprintf("arg_data[%d]=%s\n", i, arg_data->argv[i]);
-        dbgprintf("argvStrings[%d]=%s\n", t, &argvStrings[t]);
-        t += strlen(&argvStrings[t]);
+        arg_data->args.argv[i] = &arg_data->args.payload[t];
+        dbgprintf("arg_data->args.argv[%d]=%s\n", i, arg_data->args.argv[i]);
+        dbgprintf("arg_data->args.payload[%d]=%s\n", t, &arg_data->args.payload[t]);
+        t += strlen(&arg_data->args.payload[t]);
         t++;
         i++;
     } while ((i < cmdargc) && (t < PKO_MAX_PATH));
 
-    arg_data->argc = i;
+    arg_data->args.argc = i;
 
     return 0;
 }
@@ -180,7 +167,7 @@ pkoExecEE(pko_pkt_execee_req *cmd)
     makeArgs(ntohl(cmd->argc), path, &userArgs);
 
     // Hack away..
-    userArgs.flag = (int)&userThreadID;
+    userArgs.pid = (int)&userThreadID;
 
     ret = StartThread(userThreadID, &userArgs);
     if (ret < 0) {
