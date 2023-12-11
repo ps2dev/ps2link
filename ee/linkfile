@@ -1,8 +1,10 @@
+
 ENTRY(__start);
 
 MEMORY {
 	bios	: ORIGIN = 0x00000000, LENGTH = 528K /* 0x00000000 - 0x00084000: BIOS memory */
-	bram	: ORIGIN = 0x00084000, LENGTH = 496K /* 0x00084000 - 0x00100000: BIOS unused memory */
+	packer	: ORIGIN = 0x00084000, LENGTH = 112K /* 0x00084000 - 0x000a0000: Region used by ps2-packer */
+	bram	: ORIGIN = 0x000a0000, LENGTH = 384K /* 0x000a0000 - 0x00100000: BIOS unused memory */
 	gram	: ORIGIN = 0x00100000, LENGTH =  31M /* 0x00100000 - 0x02000000: GAME memory */
 }
 
