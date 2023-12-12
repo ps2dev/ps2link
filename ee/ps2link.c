@@ -249,6 +249,7 @@ static void restartIOP()
 // This function is defined as weak in ps2sdkc, so how
 // we are not using time zone, so we can safe some KB
 void _ps2sdk_timezone_update() {}
+void _libcglue_rtc_update() {}
 
 DISABLE_PATCHED_FUNCTIONS(); // Disable the patched functionalities
 DISABLE_EXTRA_TIMERS_FUNCTIONS(); // Disable the extra functionalities for timers
