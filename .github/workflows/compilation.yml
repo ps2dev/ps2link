@@ -52,6 +52,12 @@ jobs:
           name: ps2link-${{ steps.slug.outputs.sha8 }}-${{ matrix.version[0] }}
           path: ps2link-${{ steps.slug.outputs.sha8 }}-${{ matrix.version[0] }}.tar.gz
 
+      - name: Upload uncompressd artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ps2link-uncompressed-${{ steps.slug.outputs.sha8 }}-${{ matrix.version[0] }}
+          path: ee/ps2link.elf
+
   release:
     needs: [build]
     runs-on: ubuntu-latest
