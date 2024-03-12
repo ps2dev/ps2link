@@ -12,10 +12,10 @@
 #include <machine/endian.h>
 
 #if BYTE_ORDER == BIG_ENDIAN
-inline unsigned int htonl(unsigned int x) { return x; }
-inline unsigned short htons(unsigned short x) { return x; }
+static inline unsigned int htonl(unsigned int x) { return x; }
+static inline unsigned short htons(unsigned short x) { return x; }
 #else // LITTLE_ENDIAN
-inline unsigned int htonl(unsigned int x)
+static unsigned int htonl(unsigned int x)
 {
     return ((x & 0xff) << 24) |
            ((x & 0xff00) << 8) |
@@ -23,7 +23,7 @@ inline unsigned int htonl(unsigned int x)
            ((x & 0xff000000) >> 24);
 }
 
-inline unsigned short htons(unsigned short x)
+static inline unsigned short htons(unsigned short x)
 {
     return ((x & 0xff) << 8) | ((x & 0xff00) >> 8);
 }

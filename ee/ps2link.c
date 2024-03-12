@@ -31,9 +31,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 // Argv name+path & just path
-char elfName[FILENAME_MAX] __attribute__((aligned(16)));
-static char elfPath[FILENAME_MAX - 14]; // It isn't 256 because elfPath will add subpaths
-
+char elfName[MAXNAMLEN] __attribute__((aligned(16)));
 ////////////////////////////////////////////////////////////////////////
 #define IPCONF_MAX_LEN 64 // Don't reduce even more this value
 
@@ -63,10 +61,8 @@ static int readIpConfigFromFile(char *buf)
 {
     int fd;
     int len;
-    char path[256];
 
-    sprintf(path, "%s%s", elfPath, "IPCONFIG.DAT");
-    fd = open(path, O_RDONLY);
+    fd = open("IPCONFIG.DAT", O_RDONLY);
 
     if (fd < 0) {
         dbgprintf("Error reading ipconfig.dat\n");
@@ -140,7 +136,7 @@ static void pkoLoadModule(char *path, int argc, char *argv)
         scr_printf("Could not load module %s: %d\n", path, ret);
         SleepThread();
     }
-    dbgscr_printf("[%d] returned\n", ret);
+    dbgscr_printf("Load %s, returned [%d]\n", path, ret);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -183,63 +179,25 @@ static void loadModules(void)
     dbgscr_printf("All modules loaded on IOP.\n");
 }
 
-////////////////////////////////////////////////////////////////////////
-// Split path (argv[0]) at the last '/', '\' or ':' and initialise
-// elfName (whole path & name to the elf, for example 'cdrom:\pukklink.elf')
-// elfPath (path to where the elf was started, for example 'cdrom:\')
-static void setPathInfo(char *path)
-{
-    char *ptr;
-
-    strcpy(elfName, path);
-    strcpy(elfPath, path);
-
-
-    ptr = strrchr(elfPath, '/');
-    if (ptr == NULL) {
-        ptr = strrchr(elfPath, '\\');
-        if (ptr == NULL) {
-            ptr = strrchr(elfPath, ':');
-            if (ptr == NULL) {
-                scr_printf("Did not find path (%s)!\n", path);
-                SleepThread();
-            }
-        }
-    }
-
-    ptr++;
-    *ptr = '\0';
-
-    dbgscr_printf("path is %s\n", elfPath);
-}
-
 static void printWelcomeInfo()
 {
+    scr_printf("\n\n\n\n");
     scr_printf("Welcome to ps2link %s\n", APP_VERSION);
-    scr_printf("ps2link loaded at 0x%08X-0x%08X\n", ((u32)__start) - 8, (u32)&_end);
+    scr_printf("ps2link loaded at 0x%08X-0x%08X, size: 0x%08X\n", (unsigned int)&__start, (unsigned int)&_end, (unsigned int)&_end - (unsigned int)&__start);
     scr_printf("Initializing...\n");
 }
 
 static void restartIOP()
 {
-    SifExitIopHeap();
-    SifLoadFileExit();
-    SifExitRpc();
-
     dbgscr_printf("reset iop\n");
 
-    SifInitRpc(0);
-
-    //Reboot IOP
-    while (!SifIopReset("", 0)) {};
-    while (!SifIopSync()) {};
-
-    //Initialize SIF services
-    SifInitRpc(0);
-    SifLoadFileInit();
-    SifInitIopHeap();
-    sbv_patch_enable_lmb();
-    sbv_patch_disable_prefix_check();
+   SifInitRpc(0);
+   while(!SifIopReset(NULL, 0)){};
+   while(!SifIopSync()){};
+   
+   SifInitRpc(0);
+   sbv_patch_enable_lmb();
+   sbv_patch_disable_prefix_check();
 
     dbgscr_printf("reseted iop\n");
 }
@@ -257,8 +215,6 @@ PS2_DISABLE_AUTOSTART_PTHREAD(); // Disable pthread functionality
 
 int main(int argc, char *argv[])
 {
-    char cwd[FILENAME_MAX];
-
     SifInitRpc(0);
     init_scr();
 
@@ -266,9 +222,8 @@ int main(int argc, char *argv[])
     restartIOP();
     printWelcomeInfo();
 
-    getcwd(cwd, sizeof(cwd));
-    scr_printf("Booting from %s\n", cwd);
-    setPathInfo(cwd);
+    strcpy(elfName, argv[0]);
+    dbgscr_printf("argv[0] is %s\n", elfName);   
 
     dbgscr_printf("loading modules\n");
     loadModules();

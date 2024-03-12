@@ -16,6 +16,8 @@
 #include <loadfile.h>
 #include <iopcontrol.h>
 #include <debug.h>
+#include <startup.h>
+#include <ee_regs.h>
 
 #include "excepHandler.h"
 #include "byteorder.h"
@@ -24,9 +26,11 @@
 #include "ps2link.h"
 #include "globals.h"
 
+#define STAT_SIF0      0x20
+
 ////////////////////////////////////////////////////////////////////////
 // Prototypes
-static int cmdThread(void);
+static int cmdThread(void *arg);
 static int pkoExecEE(pko_pkt_execee_req *cmd);
 static int pkoStopVU(pko_pkt_stop_vu *);
 static int pkoStartVU(pko_pkt_start_vu *);
@@ -40,27 +44,13 @@ static int pkoWriteMem(pko_pkt_mem_io *);
 ////////////////////////////////////////////////////////////////////////
 
 int userThreadID = 0;
+static struct sargs_start userArgs;
 static int cmdThreadID = 0;
 static char userThreadStack[16 * 1024] __attribute__((aligned(16)));
 static char cmdThreadStack[16 * 1024] __attribute__((aligned(64)));
 static char dataBuffer[16384] __attribute__((aligned(16)));
 
-// The 'global' argv string area
-static char argvStrings[PKO_MAX_PATH];
 
-////////////////////////////////////////////////////////////////////////
-// How about that header file again?
-#define MAX_ARGS   16
-#define MAX_ARGLEN 256
-
-struct argData
-{
-    int flag; // Contains thread id atm
-    int argc;
-    char *argv[MAX_ARGS];
-} __attribute__((packed)) userArgs;
-
-////////////////////////////////////////////////////////////////////////
 int sifCmdSema;
 int sif0HandlerId = 0;
 // XXX: Hardcoded address atm.. Should be configurable!!
@@ -70,7 +60,7 @@ int excepscrdump = 1;
 
 ////////////////////////////////////////////////////////////////////////
 // Create the argument struct to send to the user thread
-int makeArgs(int cmdargc, char *cmdargv, struct argData *arg_data)
+static int makeArgs(int cmdargc, char *cmdargv, struct sargs_start *arg_data)
 {
     int i;
     int t;
@@ -79,22 +69,22 @@ int makeArgs(int cmdargc, char *cmdargv, struct argData *arg_data)
         cmdargc = MAX_ARGS;
     cmdargv[PKO_MAX_PATH - 1] = '\0';
 
-    memcpy(argvStrings, cmdargv, PKO_MAX_PATH);
+    memcpy(arg_data->args.payload, cmdargv, PKO_MAX_PATH);
 
     dbgprintf("cmd->argc %d, argv[0]: %s\n", cmdargc, cmdargv);
 
     i = 0;
     t = 0;
     do {
-        arg_data->argv[i] = &argvStrings[t];
-        dbgprintf("arg_data[%d]=%s\n", i, arg_data->argv[i]);
-        dbgprintf("argvStrings[%d]=%s\n", t, &argvStrings[t]);
-        t += strlen(&argvStrings[t]);
+        arg_data->args.argv[i] = &arg_data->args.payload[t];
+        dbgprintf("arg_data->args.argv[%d]=%s\n", i, arg_data->args.argv[i]);
+        dbgprintf("arg_data->args.payload[%d]=%s\n", t, &arg_data->args.payload[t]);
+        t += strlen(&arg_data->args.payload[t]);
         t++;
         i++;
     } while ((i < cmdargc) && (t < PKO_MAX_PATH));
 
-    arg_data->argc = i;
+    arg_data->args.argc = i;
 
     return 0;
 }
@@ -180,7 +170,7 @@ pkoExecEE(pko_pkt_execee_req *cmd)
     makeArgs(ntohl(cmd->argc), path, &userArgs);
 
     // Hack away..
-    userArgs.flag = (int)&userThreadID;
+    userArgs.pid = (int)&userThreadID;
 
     ret = StartThread(userThreadID, &userArgs);
     if (ret < 0) {
@@ -681,42 +671,12 @@ pkoStartVU(pko_pkt_start_vu *cmd)
     return 0;
 }
 
-////////////////////////////////////////////////////////////////////////
-void pkoReset(void)
-{
-    char *argv[1];
-    // Check if user thread is running, if so kill it
-
-    if (userThreadID) {
-        TerminateThread(userThreadID);
-        DeleteThread(userThreadID);
-    }
-    userThreadID = 0;
-
-    RemoveDmacHandler(5, sif0HandlerId);
-    sif0HandlerId = 0;
-
-    SifInitRpc(0);
-    SifExitRpc();
-
-    SifIopReset(NULL, 0);
-    while (SifIopSync())
-        ;
-
-    SifInitRpc(0);
-    SifExitRpc();
-
-    argv[0] = elfName;
-    SifLoadFileExit();
-    ExecPS2(&__start, 0, 1, argv);
-}
-
 
 ////////////////////////////////////////////////////////////////////////
 // Sif dma interrupt handler, wakes up the cmd handler thread if
 // data was sent to our dma area
 
-int pkoCmdIntrHandler()
+static int pkoCmdIntrHandler(int channel)
 {
     int flag;
 
@@ -733,20 +693,19 @@ int pkoCmdIntrHandler()
 
     asm __volatile__("sync");
     asm __volatile__("ei");
+
+    ExitHandler();
     return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////
 // Sif cmd handler thread, waits to be woken by the sif dma intr handler
-static int
-cmdThread()
+static int cmdThread(void *arg)
 {
     int ret;
     int done;
 
-    //dbgprintf("EE: Cmd thread\n");
-
-    printf("EE: Cmd thread\n");
+    dbgprintf("EE: Cmd thread\n");
 
     done = 0;
     while (!done) {
@@ -817,7 +776,7 @@ int initCmdRpc(void)
     ee_thread_t th_attr;
     int ret;
 
-    th_attr.func = cmdThread;
+    th_attr.func = &cmdThread;
     th_attr.stack = cmdThreadStack;
     th_attr.stack_size = sizeof(cmdThreadStack);
     th_attr.gp_reg = &_gp;
@@ -843,12 +802,46 @@ int initCmdRpc(void)
     FlushCache(0);
     sifDmaDataPtr[0] = 0;
 
-    if (D_STAT & 0x20)
-        D_STAT = 0x20; // Clear dma chan 5 irq
-    if (!(D5_CHCR & 0x100))
+    if (_lw(A_EE_D_STAT) & STAT_SIF0)
+        _sw(STAT_SIF0, A_EE_D_STAT);
+
+    // If SIF0 (IOP -> EE) is not enabled, enable it.
+    if (!(_lw(A_EE_D5_CHCR) & EE_CHCR_STR))
         SifSetDChain();
 
-    sif0HandlerId = AddDmacHandler(5, pkoCmdIntrHandler, 0);
-    EnableDmac(5);
+    sif0HandlerId = AddDmacHandler(DMAC_SIF0, &pkoCmdIntrHandler, 0);
+    EnableDmac(DMAC_SIF0);
     return 0;
+}
+
+////////////////////////////////////////////////////////////////////////
+void pkoReset(void)
+{
+    char *argv[1];
+    // Check if user thread is running, if so kill it
+    if (userThreadID) {
+        TerminateThread(userThreadID);
+        DeleteThread(userThreadID);
+    }
+    userThreadID = 0;
+
+    if (sif0HandlerId >= 0) {
+        DisableDmac(DMAC_SIF0);
+        RemoveDmacHandler(DMAC_SIF0, sif0HandlerId);
+    }
+
+    SifInitRpc(0);
+    SifExitRpc();
+
+    SifIopReset(NULL, 0);
+    while (SifIopSync())
+        ;
+
+    SifInitRpc(0);
+    SifExitRpc();
+
+    argv[0] = elfName;
+    SifLoadFileExit();
+
+    ExecPS2(&__start, 0, 1, argv);
 }
