@@ -1,9 +1,21 @@
+/*
+# _____     ___ ____     ___ ____
+#  ____|   |    ____|   |        | |____|
+# |     ___|   |____ ___|    ____| |    \    PS2DEV Open Source Project.
+#-----------------------------------------------------------------------
+# Copyright 2001-2004, ps2dev - http://www.ps2dev.org
+# Licenced under Academic Free License version 2.0
+# Review ps2sdk README & LICENSE files for further details.
+#
+# Linkfile script for ee-ld
+*/
+
 ENTRY(__start);
 
 MEMORY {
-	bios	: ORIGIN = 0x00000000, LENGTH =  528K /* 0x00000000 - 0x00084000: BIOS memory */
-	bram	: ORIGIN = 0x00084000, LENGTH =  496K /* 0x00084000 - 0x00100000: BIOS unused memory */
-	gram	: ORIGIN = 0x00100000, LENGTH =   31M /* 0x00100000 - 0x02000000: GAME memory */
+	bios	: ORIGIN = 0x00000000, LENGTH = 592K /* 0x00000000 - 0x00094000: BIOS memory & patched area */
+	bram	: ORIGIN = 0x00094000, LENGTH = 432K /* 0x00094000 - 0x00100000: BIOS unused memory */
+	gram	: ORIGIN = 0x00100000, LENGTH =  31M /* 0x00100000 - 0x02000000: GAME memory */
 
 	high	: ORIGIN = 0x01ee8000, LENGTH = 1120K /* 0x01ee8000 - 0x02000000: */
 }
@@ -16,11 +28,21 @@ PHDRS {
 
 SECTIONS {
 	.text : {
+		_ftext = . ;
 		*(.text)
+		*(.text.*)
+		*(.gnu.linkonce.t*)
+		KEEP(*(.init))
+		KEEP(*(.fini))
+		QUAD(0)
 	} >MAIN_REGION :text
+
+	PROVIDE(_etext = .);
+	PROVIDE(etext = .);
 
 	.reginfo : { *(.reginfo) } >MAIN_REGION
 
+	/* Global/static constructors and deconstructors. */
 	.ctors ALIGN(16): {
 		KEEP(*crtbegin*.o(.ctors))
 		KEEP(*(EXCLUDE_FILE(*crtend*.o) .ctors))
@@ -35,15 +57,23 @@ SECTIONS {
 		KEEP(*(.dtors))
 	} >MAIN_REGION
 
+	/* Static data.  */
 	.rodata ALIGN(128): {
 		*(.rodata)
+		*(.rodata.*)
+		*(.gnu.linkonce.r*)
 	} >MAIN_REGION
 
 	.data ALIGN(128): {
 		_fdata = . ;
 		*(.data)
+		*(.data.*)
+		*(.gnu.linkonce.d*)
 		SORT(CONSTRUCTORS)
 	} >MAIN_REGION
+
+	.rdata ALIGN(128): { *(.rdata) } >MAIN_REGION
+	.gcc_except_table ALIGN(128): { *(.gcc_except_table) } >MAIN_REGION
 
 	_gp = ALIGN(128) + 0x7ff0;
 	.lit4 ALIGN(128): { *(.lit4) } >MAIN_REGION
@@ -51,19 +81,34 @@ SECTIONS {
 
 	.sdata ALIGN(128): {
 		*(.sdata)
+		*(.sdata.*)
+		*(.gnu.linkonce.s*)
 	} >MAIN_REGION
 
+	_edata = .;
+	PROVIDE(edata = .);
+
+	/* Uninitialized data.  */
 	.sbss ALIGN(128) : {
 		_fbss = . ;
 		*(.sbss)
+		*(.sbss.*)
+		*(.gnu.linkonce.sb*)
+		*(.scommon)
 	} >MAIN_REGION
 
 	.bss ALIGN(128) : {
 		*(.bss)
+		*(.bss.*)
+		*(.gnu.linkonce.b*)
+		*(COMMON)
 	} >MAIN_REGION
+	_end_bss = .;
+
+	_end = . ;
+	PROVIDE(end = .);
 
 	/* Symbols needed by crt0.s.  */
-	PROVIDE(_end = .);
 	PROVIDE(_heap_size = -1);
 
 	PROVIDE(_stack = .);
