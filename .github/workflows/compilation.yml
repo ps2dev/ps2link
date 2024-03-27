@@ -33,7 +33,7 @@ jobs:
       - name: Get short SHA
         id: slug
         run: |
-          echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
+          printf '%s\n' "sha8=$(printf '%s\n' ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
 
       - name: Extract tag name
         if: startsWith(github.ref, 'refs/tags/')
