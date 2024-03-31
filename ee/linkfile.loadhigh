@@ -22,6 +22,8 @@ MEMORY {
 
 REGION_ALIAS("MAIN_REGION", high);
 
+END_MAIN_REGION = ORIGIN(MAIN_REGION) + LENGTH(MAIN_REGION);
+
 PHDRS {
   text PT_LOAD;
 }
@@ -40,8 +42,6 @@ SECTIONS {
 	PROVIDE(_etext = .);
 	PROVIDE(etext = .);
 
-	.reginfo : { *(.reginfo) } >MAIN_REGION
-
 	/* Global/static constructors and deconstructors. */
 	.ctors ALIGN(16): {
 		KEEP(*crtbegin*.o(.ctors))
@@ -49,7 +49,6 @@ SECTIONS {
 		KEEP(*(SORT(.ctors.*)))
 		KEEP(*(.ctors))
 	} >MAIN_REGION
-
 	.dtors ALIGN(16): {
 		KEEP(*crtbegin*.o(.dtors))
 		KEEP(*(EXCLUDE_FILE(*crtend*.o) .dtors))
@@ -57,12 +56,7 @@ SECTIONS {
 		KEEP(*(.dtors))
 	} >MAIN_REGION
 
-	/* Static data.  */
-	.rodata ALIGN(128): {
-		*(.rodata)
-		*(.rodata.*)
-		*(.gnu.linkonce.r*)
-	} >MAIN_REGION
+	.reginfo : { *(.reginfo) } >MAIN_REGION
 
 	.data ALIGN(128): {
 		_fdata = . ;
@@ -70,6 +64,13 @@ SECTIONS {
 		*(.data.*)
 		*(.gnu.linkonce.d*)
 		SORT(CONSTRUCTORS)
+	} >MAIN_REGION
+
+	/* Static data.  */
+	.rodata ALIGN(128): {
+		*(.rodata)
+		*(.rodata.*)
+		*(.gnu.linkonce.r*)
 	} >MAIN_REGION
 
 	.rdata ALIGN(128): { *(.rdata) } >MAIN_REGION
@@ -108,9 +109,13 @@ SECTIONS {
 	_end = . ;
 	PROVIDE(end = .);
 
-	/* Symbols needed by crt0.s.  */
-	PROVIDE(_heap_size = -1);
+	.spad 0x70000000: {
+		*(.spad)
+	} >MAIN_REGION
 
-	PROVIDE(_stack = .);
-	PROVIDE(_stack_size = ORIGIN(MAIN_REGION) + LENGTH(MAIN_REGION) - _stack);
+	/* Symbols needed by crt0.c.  */
+	/* We set a fixed stack size and the pointer for the stack, letting the remaining memory be the heap. */
+	PROVIDE(_stack_size = 32 * 1024);
+	PROVIDE(_stack = END_MAIN_REGION - _stack_size);
+	PROVIDE(_heap_size = -1);
 }
