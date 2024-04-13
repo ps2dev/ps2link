@@ -218,21 +218,21 @@ int main(int argc, char *argv[])
     SifInitRpc(0);
     init_scr();
 
+    printWelcomeInfo();
+    if (if_conf_len == 0) {
+        scr_printf("Initial boot, will load config then reset\n");
+        getIpConfig();
+        pkoReset(); // Will restart execution
+    }
+
     installExceptionHandlers();
     restartIOP();
-    printWelcomeInfo();
 
     strcpy(elfName, argv[0]);
     dbgscr_printf("argv[0] is %s\n", elfName);   
 
     dbgscr_printf("loading modules\n");
     loadModules();
-
-    if (if_conf_len == 0) {
-        scr_printf("Initial boot, will load config then reset\n");
-        getIpConfig();
-        pkoReset(); // Will restart execution
-    }
 
     scr_printf("Using cached config\n");
     printIpConfig();
