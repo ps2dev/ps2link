@@ -7,6 +7,14 @@
             (C) 2003,2004,2005 Khaled (khaled@w-arts.com)
             (C) 2019,2020,2021 fjtrujy (fjtrujy@gmail.com)
 
+## **ATTENTION**
+
+If you are confused on how to start developing for PS2, see the
+[getting started](https://ps2dev.github.io/#getting-started) section on
+the ps2dev main page.  
+
+## Overview
+
 Please read the file LICENSE regarding PS2Link licensing.
 
 PS2Link is a 'bootloader' which, used together with an Ethernet driver and
@@ -48,4 +56,7 @@ IPCONFIG.DAT uses the following format:
 PS2IPADDRESS NETMASK GATEWAYIP
 seperated by a single space.
 
-If you have any questions or bugreports about ps2link go to forums.ps2dev.org.
+## Community
+
+Links for discussion and chat are available
+[here](https://ps2dev.github.io/#community).  
