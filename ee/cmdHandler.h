@@ -8,7 +8,7 @@
  */
 
 #ifndef CMD_HANDLER_H
-#define CMD_HANDLER
+#define CMD_HANDLER_H
 
 int initCmdRpc(void);
 void pkoReset(void);
@@ -16,4 +16,4 @@ void pkoReset(void);
 extern int userThreadID;
 extern int excepscrdump;
 
-#endif /* CMD_HANDLER */
+#endif /* CMD_HANDLER_H */

@@ -27,7 +27,7 @@ IRX_ID(MODNAME, 1, 8);
 int _start(int argc, char **argv)
 {
     FlushDcache();
-    CpuEnableIntr(0);
+    CpuEnableIntr();
 
     sceCdInit(1);
     sceCdStop();

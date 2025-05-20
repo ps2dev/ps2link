@@ -8,11 +8,11 @@
  */
 
 #ifndef CMD_HANDLER_H
-#define CMD_HANDLER
+#define CMD_HANDLER_H
 
 extern int excepscrdump;
 
 unsigned int pkoSendSifCmd(unsigned int cmd, void *src, unsigned int len);
 int cmdHandlerInit(void);
 
-#endif /* CMD_HANDLER */
+#endif /* CMD_HANDLER_H */
