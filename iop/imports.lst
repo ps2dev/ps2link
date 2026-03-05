@@ -41,6 +41,7 @@ I_lwip_recvfrom
 I_lwip_close
 I_lwip_bind
 I_lwip_accept
+I_lwip_setsockopt
 ps2ip_IMPORTS_end
 
 sifcmd_IMPORTS_start
