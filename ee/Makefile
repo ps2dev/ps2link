@@ -17,17 +17,16 @@ EE_CFLAGS += -Werror
 # This is to enable the debug mode into ps2link
 ifeq ($(DEBUG),1)
 EE_CFLAGS += -DDEBUG -g
-else
+endif
 EE_CFLAGS += -Os
 EE_CFLAGS += -fdata-sections -ffunction-sections
-endif
 
 ifeq ($(DEBUG),1)
 EE_LDFLAGS += -g
 else
 EE_LDFLAGS += -s
-EE_LDFLAGS += -Wl,--gc-sections
 endif
+EE_LDFLAGS += -Wl,--gc-sections
 EE_LDFLAGS += -Wl,-Map,ps2link.map
 
 # This is to read the closest tag version
