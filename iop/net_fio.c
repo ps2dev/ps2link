@@ -752,6 +752,13 @@ int pko_file_serv(void *argv)
             ret = disconnect(pko_fileio_sock);
             dbgprintf("close ret %d\n", ret);
         }
+
+        /* Disable Nagle on IOP side so small request packets are sent
+         * immediately without waiting for previous data to be ACKed. */
+        {
+            int one = 1;
+            setsockopt(client_sock, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+        }
         pko_fileio_sock = client_sock;
     }
 
