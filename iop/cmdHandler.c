@@ -129,6 +129,7 @@ unsigned int
 pkoSendSifCmd(unsigned int cmd, void *src, unsigned int len)
 {
     unsigned int dmaId;
+    unsigned int dmaLen;
 
     rpc_data[0] = cmd;
 
@@ -137,7 +138,12 @@ pkoSendSifCmd(unsigned int cmd, void *src, unsigned int len)
 
     len = len > sizeof(rpc_data) ? sizeof(rpc_data) : len;
 
-    dmaId = pkoSetSifDma(PKO_DMA_DEST, rpc_data, len, 4);
+    /* Round DMA size up to 16-byte boundary — real HW SIF DMA
+       requires aligned transfer sizes.  rpc_data is 1KB so the
+       extra bytes are just trailing zeros. */
+    dmaLen = (len + 15) & ~15;
+
+    dmaId = pkoSetSifDma(PKO_DMA_DEST, rpc_data, dmaLen, 4);
 
     if (dmaId == 0) {
         printf("IOP: sifSendCmd %x failed\n", cmd);
