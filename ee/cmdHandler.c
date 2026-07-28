@@ -833,8 +833,9 @@ void pkoReset(void)
     SifInitRpc(0);
     SifExitRpc();
 
-    SifIopReset(NULL, 0);
-    while (SifIopSync())
+    while (!SifIopReset(NULL, 0))
+        ;
+    while (!SifIopSync())
         ;
 
     SifInitRpc(0);
