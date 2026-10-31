@@ -79,11 +79,13 @@ static void excep_handler2(exception_frame_t *frame)
     if (module_name == NULL) {
         module_name = "unknown";
         r_epc = frame->epc;
+        len = sizeof("unknown") - 1;
+    } else {
+        len = 0;
+        while (len < 127 && module_name[len] != '\0')
+            len++;
     }
     // Leave room for the header, frame, metadata and terminating NUL.
-    len = 0;
-    while (len < 127 && module_name[len] != '\0')
-        len++;
 
 
     buffer[0] = 0x0d02beba; // reverse engineering..
