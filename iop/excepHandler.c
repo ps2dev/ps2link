@@ -9,10 +9,9 @@
 #include "irx_imports.h"
 #include "hostlink.h"
 #include "cmdHandler.h"
+#include "exception_packet.h"
 
-#define BUFFER_SIZE sizeof(exception_frame_t) + 4 + 4 + 128
-
-u32 excep_buffer[BUFFER_SIZE / 4] __attribute__((aligned(16)));
+static pko_iop_exception_packet_t excep_buffer __attribute__((aligned(16)));
 
 // taken from smod by mrbrown, only use one function, didn't wanna include another irx.
 
@@ -70,8 +69,6 @@ static void excep_handler2(exception_frame_t *frame)
 {
     u32 r_epc; // relative epc
     char *module_name;
-    u32 len;
-    u32 *buffer = excep_buffer;
 
     module_name = ExceptionGetModuleName(frame->epc, &r_epc);
 
@@ -79,28 +76,20 @@ static void excep_handler2(exception_frame_t *frame)
     if (module_name == NULL) {
         module_name = "unknown";
         r_epc = frame->epc;
-        len = sizeof("unknown") - 1;
+        excep_buffer.name_length =
+            pko_copy_exception_name(&excep_buffer, module_name,
+                                    sizeof("unknown") - 1);
     } else {
-        len = 0;
-        while (len < 127 && module_name[len] != '\0')
-            len++;
+        excep_buffer.name_length =
+            pko_copy_exception_name(&excep_buffer, module_name,
+                                    PKO_IOP_EXCEPTION_NAME_BYTES - 1);
     }
-    // Leave room for the header, frame, metadata and terminating NUL.
 
+    excep_buffer.command = 0x0d02beba;
+    memcpy(&excep_buffer.frame, frame, sizeof(*frame));
+    excep_buffer.relative_epc = r_epc;
 
-    buffer[0] = 0x0d02beba; // reverse engineering..
-    buffer++;
-
-    memcpy(buffer, frame, sizeof(*frame));
-    buffer += (sizeof(exception_frame_t) / 4);
-
-    buffer[0] = r_epc;
-    buffer[1] = len;
-    buffer += 2;
-    memcpy(buffer, module_name, len);
-    ((char *)buffer)[len] = '\0';
-
-    pkoSendSifCmd(PKO_RPC_IOPEXCEP, excep_buffer, BUFFER_SIZE);
+    pkoSendSifCmd(PKO_RPC_IOPEXCEP, &excep_buffer, sizeof(excep_buffer));
 }
 
 
