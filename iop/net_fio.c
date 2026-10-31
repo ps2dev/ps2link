@@ -37,6 +37,8 @@ void pko_close_socket(void)
 {
     int ret;
 
+    if (pko_fileio_sock < 0)
+        return;
     ret = disconnect(pko_fileio_sock);
     if (ret < 0) {
         printf("pko_file: disconnect returned error %d\n", ret);
@@ -56,20 +58,21 @@ void pko_close_fsys(void)
 }
 
 //----------------------------------------------------------------------
-// XXX: Hm, this func should behave sorta like pko_recv_bytes imho..
-// i.e. check if it was able to send just a part of the packet etc..
+// TCP send() can transmit fewer bytes than requested.
 static inline int
 pko_lwip_send(int sock, void *buf, int len, int flag)
 {
-    int ret;
-    ret = send(sock, buf, len, flag);
-    if (ret < 0) {
-        dbgprintf("pko_file: lwip_send() error %d\n", ret);
-        pko_close_socket();
-        return -1;
-    } else {
-        return ret;
+    int sent = 0;
+    while (sent < len) {
+        int ret = send(sock, (char *)buf + sent, len - sent, flag);
+        if (ret <= 0) {
+            dbgprintf("pko_file: lwip_send() error %d\n", ret);
+            pko_close_socket();
+            return -1;
+        }
+        sent += ret;
     }
+    return sent;
 }
 
 
@@ -85,8 +88,9 @@ int pko_recv_bytes(int sock, char *buf, int bytes)
     while (left > 0) {
         int len;
         len = recv(sock, &buf[bytes - left], left, 0);
-        if (len < 0) {
+        if (len <= 0) {
             dbgprintf("pko_file: pko_recv_bytes error!!\n");
+            pko_close_socket();
             return -1;
         }
         left -= len;
@@ -108,7 +112,7 @@ int pko_accept_pkt(int sock, char *buf, int len, int pkt_type)
     length = pko_recv_bytes(sock, buf, sizeof(pko_pkt_hdr));
     if (length < 0) {
         dbgprintf("pko_file: accept_pkt recv error\n");
-        return -1;
+        return 0;
     }
 
     if (length < sizeof(pko_pkt_hdr)) {
@@ -127,9 +131,9 @@ int pko_accept_pkt(int sock, char *buf, int len, int pkt_type)
         return 0;
     }
 
-    if (hlen > len) {
-        dbgprintf("pko_file: pko_accept_pkt: hdr->len is too large!! "
-                  "(%d, can only receive %d)\n",
+    if (hlen != len || hlen < sizeof(pko_pkt_hdr)) {
+        dbgprintf("pko_file: pko_accept_pkt: unexpected packet length "
+                  "(%d, expected %d)\n",
                   hlen, len);
         return 0;
     }
@@ -300,7 +304,7 @@ int pko_write_file(int fd, char *buf, int length)
 
         if ((length - writtenbytes) > PKO_MAX_WRITE_SEGMENT) {
             // Need to split in several read reqs
-            nbytes = PKO_MAX_READ_SEGMENT;
+            nbytes = PKO_MAX_WRITE_SEGMENT;
         } else {
             nbytes = length - writtenbytes;
         }
@@ -380,7 +384,8 @@ int pko_read_file(int fd, char *buf, int length)
 
     readcmd->nbytes = htonl(length);
 
-    i = send(pko_fileio_sock, readcmd, sizeof(pko_pkt_read_req), 0);
+    i = pko_lwip_send(pko_fileio_sock, readcmd,
+                      sizeof(pko_pkt_read_req), 0);
     if (i < 0) {
         dbgprintf("pko_file: pko_read_file: send failed (%d)\n", i);
         return -1;
@@ -397,6 +402,12 @@ int pko_read_file(int fd, char *buf, int length)
     dbgprintf("pko_file: pko_read_file: Reply said there's %d bytes to read "
               "(wanted %d)\n",
               nbytes, length);
+
+    if (nbytes < 0 || nbytes > length) {
+        dbgprintf("pko_file: invalid read length %d (requested %d)\n",
+                  nbytes, length);
+        return -1;
+    }
 
     // Now read the actual file data
     i = pko_recv_bytes(pko_fileio_sock, &buf[0], nbytes);
