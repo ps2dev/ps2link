@@ -10,7 +10,8 @@ typedef struct {
 
 #include "../iop/exception_packet.h"
 
-static int check_name(const char *src, unsigned int expected_length)
+static int check_name(const char *src, unsigned int source_length,
+                      unsigned int expected_length)
 {
     struct {
         unsigned char before;
@@ -20,7 +21,7 @@ static int check_name(const char *src, unsigned int expected_length)
     unsigned int length;
 
     memset(&data, 0xa5, sizeof(data));
-    length = pko_copy_exception_name(&data.packet, src, strlen(src));
+    length = pko_copy_exception_name(&data.packet, src, source_length);
     return length == expected_length &&
            data.packet.module_name[length] == '\0' &&
            data.before == 0xa5 && data.after == 0xa5 &&
@@ -47,13 +48,13 @@ int main(void)
         return 1;
     }
 
-    if (!check_name("", 0) || !check_name("unknown", 7) ||
-        !check_name(long_name, 127)) {
+    if (!check_name("", 0, 0) || !check_name("unknown", 7, 7) ||
+        !check_name(long_name, sizeof(long_name) - 1, 127)) {
         fputs("FAIL IOP exception name bounds\n", stderr);
         return 1;
     }
     long_name[123] = '\0';
-    if (!check_name(long_name, 123)) {
+    if (!check_name(long_name, 123, 123)) {
         fputs("FAIL boundary-length module name\n", stderr);
         return 1;
     }
