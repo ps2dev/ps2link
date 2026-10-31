@@ -36,3 +36,5 @@ clean:
 
 include $(PS2SDK)/Defs.make
 include $(PS2SDK)/samples/Makefile.iopglobal
+
+$(IOP_OBJS_DIR)excepHandler.o: exception_packet.h
