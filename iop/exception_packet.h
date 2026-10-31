@@ -13,15 +13,20 @@ typedef struct {
 } pko_iop_exception_packet_t;
 
 /* Always leave a NUL inside the fixed-size packet name field. */
-static unsigned int pko_copy_exception_name(char *dest, const char *src)
+static unsigned int pko_copy_exception_name(pko_iop_exception_packet_t *packet,
+                                            const char *src,
+                                            unsigned int source_limit)
 {
     unsigned int len = 0;
 
-    while (len < PKO_IOP_EXCEPTION_NAME_BYTES - 1 && src[len] != '\0') {
-        dest[len] = src[len];
+    if (source_limit >= PKO_IOP_EXCEPTION_NAME_BYTES)
+        source_limit = PKO_IOP_EXCEPTION_NAME_BYTES - 1;
+
+    while (len < source_limit && src[len] != '\0') {
+        packet->module_name[len] = src[len];
         len++;
     }
-    dest[len] = '\0';
+    packet->module_name[len] = '\0';
     return len;
 }
 

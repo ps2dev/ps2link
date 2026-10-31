@@ -14,17 +14,17 @@ static int check_name(const char *src, unsigned int expected_length)
 {
     struct {
         unsigned char before;
-        char name[PKO_IOP_EXCEPTION_NAME_BYTES];
+        pko_iop_exception_packet_t packet;
         unsigned char after;
     } data;
     unsigned int length;
 
     memset(&data, 0xa5, sizeof(data));
-    length = pko_copy_exception_name(data.name, src);
+    length = pko_copy_exception_name(&data.packet, src, strlen(src));
     return length == expected_length &&
-           data.name[length] == '\0' &&
+           data.packet.module_name[length] == '\0' &&
            data.before == 0xa5 && data.after == 0xa5 &&
-           memcmp(data.name, src, length) == 0;
+           memcmp(data.packet.module_name, src, length) == 0;
 }
 
 int main(void)

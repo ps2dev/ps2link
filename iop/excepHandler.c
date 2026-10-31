@@ -76,13 +76,18 @@ static void excep_handler2(exception_frame_t *frame)
     if (module_name == NULL) {
         module_name = "unknown";
         r_epc = frame->epc;
+        excep_buffer.name_length =
+            pko_copy_exception_name(&excep_buffer, module_name,
+                                    sizeof("unknown") - 1);
+    } else {
+        excep_buffer.name_length =
+            pko_copy_exception_name(&excep_buffer, module_name,
+                                    PKO_IOP_EXCEPTION_NAME_BYTES - 1);
     }
 
     excep_buffer.command = 0x0d02beba;
     memcpy(&excep_buffer.frame, frame, sizeof(*frame));
     excep_buffer.relative_epc = r_epc;
-    excep_buffer.name_length =
-        pko_copy_exception_name(excep_buffer.module_name, module_name);
 
     pkoSendSifCmd(PKO_RPC_IOPEXCEP, &excep_buffer, sizeof(excep_buffer));
 }
