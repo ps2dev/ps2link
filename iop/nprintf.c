@@ -25,7 +25,9 @@ naplinkRpcHandler(int cmd, void *buffer, int size)
     // Only supports npmPrintf of course
     switch (cmd) {
         case NPM_PUTS:
-            printf(buffer);
+            // The RPC payload is data, not a printf format string.
+            if (size > 0)
+                printf("%.*s", size, (const char *)buffer);
             break;
         default:
             printf("unknown npm rpc call\n");

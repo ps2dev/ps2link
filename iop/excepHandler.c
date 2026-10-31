@@ -75,19 +75,30 @@ static void excep_handler2(exception_frame_t *frame)
 
     module_name = ExceptionGetModuleName(frame->epc, &r_epc);
 
-    len = strlen(module_name);
+    // Exceptions can occur outside a loaded module's text range.
+    if (module_name == NULL) {
+        module_name = "unknown";
+        r_epc = frame->epc;
+        len = sizeof("unknown") - 1;
+    } else {
+        len = 0;
+        while (len < 127 && module_name[len] != '\0')
+            len++;
+    }
+    // Leave room for the header, frame, metadata and terminating NUL.
 
 
     buffer[0] = 0x0d02beba; // reverse engineering..
     buffer++;
 
-    memcpy(buffer, frame, BUFFER_SIZE);
+    memcpy(buffer, frame, sizeof(*frame));
     buffer += (sizeof(exception_frame_t) / 4);
 
     buffer[0] = r_epc;
     buffer[1] = len;
     buffer += 2;
-    memcpy(buffer, module_name, len + 1);
+    memcpy(buffer, module_name, len);
+    ((char *)buffer)[len] = '\0';
 
     pkoSendSifCmd(PKO_RPC_IOPEXCEP, excep_buffer, BUFFER_SIZE);
 }
