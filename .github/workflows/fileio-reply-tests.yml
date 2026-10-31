@@ -1,0 +1,16 @@
+name: IOP File-I/O Reply Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch: {}
+
+jobs:
+  fileio-reply-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate TCP reply types, bounds and socket invalidation (plain C)
+        run: |
+          cc -std=c99 -Wall -Wextra -Werror -Iinclude tests/fileio_reply.c -o /tmp/ps2link-fileio-reply-test
+          /tmp/ps2link-fileio-reply-test
