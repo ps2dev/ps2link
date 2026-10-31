@@ -12,6 +12,15 @@ on:
   workflow_dispatch: {}
 
 jobs:
+  fileio-reply-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test malformed file-I/O replies (plain C)
+        run: |
+          cc -std=c99 -Wall -Wextra -Werror -Iinclude tests/fileio_reply.c -o /tmp/ps2link-fileio-reply-test
+          /tmp/ps2link-fileio-reply-test
+
   build:
     runs-on: ubuntu-latest
     container: ghcr.io/ps2dev/ps2-packer:latest
@@ -60,7 +69,7 @@ jobs:
           path: ee/ps2link.elf
 
   release:
-    needs: [build]
+    needs: [build, fileio-reply-test]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/master'
     steps:

@@ -18,12 +18,12 @@
 
 #include "ps2ip.h"
 #include "net_fio.h"
-#include "hostlink.h"
+#include "fileio_reply.h"
 #include "globals.h"
 
 unsigned int remote_pc_addr = 0xffffffff;
 
-#define PACKET_MAXSIZE 4096
+#define PACKET_MAXSIZE PKO_FILEIO_PACKET_LIMIT
 
 static char send_packet[PACKET_MAXSIZE] __attribute__((aligned(16)));
 static char recv_packet[PACKET_MAXSIZE] __attribute__((aligned(16)));
@@ -36,25 +36,22 @@ static int pko_fileio_active = 0;
 void pko_close_socket(void)
 {
     int ret;
+    int sock = pko_fileio_detach_socket(&pko_fileio_sock);
 
-    if (pko_fileio_sock < 0)
+    if (sock < 0)
         return;
-    ret = disconnect(pko_fileio_sock);
+    ret = disconnect(sock);
     if (ret < 0) {
         printf("pko_file: disconnect returned error %d\n", ret);
     }
-    pko_fileio_sock = -1;
 }
 
 //----------------------------------------------------------------------
 //
 void pko_close_fsys(void)
 {
-    if (pko_fileio_sock > 0) {
-        disconnect(pko_fileio_sock);
-    }
     pko_fileio_active = 0;
-    return;
+    pko_close_socket();
 }
 
 //----------------------------------------------------------------------
@@ -109,6 +106,12 @@ int pko_accept_pkt(int sock, char *buf, int len, int pkt_type)
     unsigned short hlen;
 
 
+    if (len < (int)sizeof(pko_pkt_hdr) || len > PACKET_MAXSIZE) {
+        dbgprintf("pko_file: invalid expected reply size %d\n", len);
+        pko_close_socket();
+        return 0;
+    }
+
     length = pko_recv_bytes(sock, buf, sizeof(pko_pkt_hdr));
     if (length < 0) {
         dbgprintf("pko_file: accept_pkt recv error\n");
@@ -128,32 +131,20 @@ int pko_accept_pkt(int sock, char *buf, int len, int pkt_type)
     if (hcmd != pkt_type) {
         dbgprintf("pko_file: pko_accept_pkt: Expected %x, got %x\n",
                   pkt_type, hcmd);
-        return 0;
-    }
-
-    if (hlen != len || hlen < sizeof(pko_pkt_hdr)) {
+    } else if (!pko_fileio_reply_header_valid(hcmd, hlen, pkt_type, len)) {
         dbgprintf("pko_file: pko_accept_pkt: unexpected packet length "
                   "(%d, expected %d)\n",
                   hlen, len);
-        return 0;
+    } else {
+        /* Only a fully validated reply may remain on the TCP stream. */
+        length = pko_recv_bytes(sock, buf + sizeof(pko_pkt_hdr),
+                                hlen - sizeof(pko_pkt_hdr));
+        return length == (int)(hlen - sizeof(pko_pkt_hdr));
     }
 
-    // get the actual packet data
-    length = pko_recv_bytes(sock, buf + sizeof(pko_pkt_hdr),
-                            hlen - sizeof(pko_pkt_hdr));
-
-    if (length < 0) {
-        dbgprintf("pko_file: accept recv2 error!!\n");
-        return 0;
-    }
-
-    if (length < (hlen - sizeof(pko_pkt_hdr))) {
-        dbgprintf("pko_accept_pkt: Did not receive full packet!!! "
-                  "Fix this! (%d)\n",
-                  length);
-    }
-
-    return 1;
+    /* The remaining stream cannot be resynchronized after a bad header. */
+    pko_close_socket();
+    return 0;
 }
 
 //----------------------------------------------------------------------
@@ -284,7 +275,7 @@ int pko_write_file(int fd, char *buf, int length)
     int nbytes;
     int retval;
 
-    if (pko_fileio_sock < 0) {
+    if (pko_fileio_sock < 0 || length < 0) {
         return -1;
     }
 
@@ -346,6 +337,13 @@ int pko_write_file(int fd, char *buf, int length)
             return retval;
         }
 
+        if (!pko_fileio_write_progress_valid(retval, nbytes)) {
+            dbgprintf("pko_file: invalid write reply %d (requested %d)\n",
+                      retval, nbytes);
+            pko_close_socket();
+            return -1;
+        }
+
         writtenbytes += retval;
         if (retval < nbytes) {
             // EOF?
@@ -403,9 +401,10 @@ int pko_read_file(int fd, char *buf, int length)
               "(wanted %d)\n",
               nbytes, length);
 
-    if (nbytes < 0 || nbytes > length) {
+    if (!pko_fileio_read_length_valid(nbytes, length)) {
         dbgprintf("pko_file: invalid read length %d (requested %d)\n",
                   nbytes, length);
+        pko_close_socket();
         return -1;
     }
 
@@ -758,10 +757,9 @@ int pko_file_serv(void *argv)
 
         remote_pc_addr = client_addr.sin_addr.s_addr;
 
-        if (pko_fileio_sock > 0) {
+        if (pko_fileio_sock >= 0) {
             dbgprintf("Client reconnected\n");
-            ret = disconnect(pko_fileio_sock);
-            dbgprintf("close ret %d\n", ret);
+            pko_close_socket();
         }
 
         /* Disable Nagle on IOP side so small request packets are sent
@@ -773,9 +771,7 @@ int pko_file_serv(void *argv)
         pko_fileio_sock = client_sock;
     }
 
-    if (pko_fileio_sock > 0) {
-        disconnect(pko_fileio_sock);
-    }
+    pko_close_socket();
 
     disconnect(sock);
 
