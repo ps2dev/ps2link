@@ -6,9 +6,6 @@ DEBUG ?= 0
 # Set this to 1 to build a highloading version, 0 for normal low version
 LOADHIGH ?= 0
 
-# Set this to 1 to enable zero-copy on fileio writes.
-ZEROCOPY ?= 0
-
 # Set this to 1 to power off the ps2 when the reset button is tapped
 # otherwise it will try and reset ps2link
 PWOFFONRESET ?= 0
@@ -29,7 +26,7 @@ $(EE_BIN): ee
 $(EE_BIN_PKD): $(EE_BIN)
 	ps2-packer $< $@ > /dev/null
 
-export DEBUG LOADHIGH ZEROCOPY PWOFFONRESET
+export DEBUG LOADHIGH PWOFFONRESET
 
 ee: iop
 	$(MAKE) -C ee
