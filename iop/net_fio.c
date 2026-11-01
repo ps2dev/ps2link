@@ -265,21 +265,26 @@ int pko_lseek_file(int fd, unsigned int offset, int whence)
 
 
 //----------------------------------------------------------------------
-//
+// Write: one request for the whole length, the data after it as one
+// stream, then one reply. ps2client takes the request's nbytes from the
+// socket whatever their size, so the data need not be split into
+// PKO_MAX_WRITE_SEGMENT pieces with a reply each (a round trip per 1448
+// bytes, which held writes to about 0.8 MB/s).
 int pko_write_file(int fd, char *buf, int length)
 {
     pko_pkt_write_req *writecmd;
     pko_pkt_file_rly *writerly;
     int hlen;
-    int writtenbytes;
-    int nbytes;
     int retval;
 
     if (pko_fileio_sock < 0 || length < 0) {
         return -1;
     }
+    if (length == 0) {
+        return 0;
+    }
 
-    dbgprintf("pko_file: file write req (fd: %d)\n", fd);
+    dbgprintf("pko_file: file write req (fd: %d, %d bytes)\n", fd, length);
 
     writecmd = (pko_pkt_write_req *)&send_packet[0];
     writerly = (pko_pkt_file_rly *)&recv_packet[0];
@@ -288,69 +293,40 @@ int pko_write_file(int fd, char *buf, int length)
     writecmd->cmd = htonl(PKO_WRITE_CMD);
     writecmd->len = htons(hlen);
     writecmd->fd = htonl(fd);
+    writecmd->nbytes = htonl(length);
 
-    // Divide the write request
-    writtenbytes = 0;
-    while (writtenbytes < length) {
+    /* The packet header, then the write() data straight from buf.  */
+    if (pko_lwip_send(pko_fileio_sock, writecmd, hlen, 0) < 0)
+        return -1;
+    if (pko_lwip_send(pko_fileio_sock, buf, length, 0) < 0)
+        return -1;
 
-        if ((length - writtenbytes) > PKO_MAX_WRITE_SEGMENT) {
-            // Need to split in several read reqs
-            nbytes = PKO_MAX_WRITE_SEGMENT;
-        } else {
-            nbytes = length - writtenbytes;
-        }
-
-        writecmd->nbytes = htonl(nbytes);
-#ifdef ZEROCOPY
-        /* Send the packet header.  */
-        if (pko_lwip_send(pko_fileio_sock, writecmd, hlen, 0) < 0)
-            return -1;
-        /* Send the write() data.  */
-        if (pko_lwip_send(pko_fileio_sock, &buf[writtenbytes], nbytes, 0) < 0)
-            return -1;
-#else
-        // Copy data to the acutal packet
-        memcpy(&send_packet[sizeof(pko_pkt_write_req)], &buf[writtenbytes],
-               nbytes);
-
-        if (pko_lwip_send(pko_fileio_sock, writecmd, hlen + nbytes, 0) < 0)
-            return -1;
-#endif
-
-
-        // Get reply
-        if (!pko_accept_pkt(pko_fileio_sock, (char *)writerly,
-                            sizeof(pko_pkt_file_rly), PKO_WRITE_RLY)) {
-            dbgprintf("pko_file: pko_write_file: "
-                      "did not receive PKO_WRITE_RLY\n");
-            return -1;
-        }
-        retval = ntohl(writerly->retval);
-
-        dbgprintf("pko_file: wrote %d bytes (asked for %d)\n",
-                  retval, nbytes);
-
-        if (retval < 0) {
-            // Error
-            dbgprintf("pko_file: pko_write_file: received error on write req (%d)\n",
-                      retval);
-            return retval;
-        }
-
-        if (!pko_fileio_write_progress_valid(retval, nbytes)) {
-            dbgprintf("pko_file: invalid write reply %d (requested %d)\n",
-                      retval, nbytes);
-            pko_close_socket();
-            return -1;
-        }
-
-        writtenbytes += retval;
-        if (retval < nbytes) {
-            // EOF?
-            break;
-        }
+    // Get reply
+    if (!pko_accept_pkt(pko_fileio_sock, (char *)writerly,
+                        sizeof(pko_pkt_file_rly), PKO_WRITE_RLY)) {
+        dbgprintf("pko_file: pko_write_file: "
+                  "did not receive PKO_WRITE_RLY\n");
+        return -1;
     }
-    return writtenbytes;
+    retval = ntohl(writerly->retval);
+
+    dbgprintf("pko_file: wrote %d bytes (asked for %d)\n", retval, length);
+
+    if (retval < 0) {
+        // Error
+        dbgprintf("pko_file: pko_write_file: received error on write req (%d)\n",
+                  retval);
+        return retval;
+    }
+
+    if (!pko_fileio_write_progress_valid(retval, length)) {
+        dbgprintf("pko_file: invalid write reply %d (requested %d)\n",
+                  retval, length);
+        pko_close_socket();
+        return -1;
+    }
+
+    return retval;
 }
 
 //----------------------------------------------------------------------
