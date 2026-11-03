@@ -14,10 +14,6 @@ IOP_LIBS +=
 IOP_LDFLAGS +=
 IOP_CFLAGS += -Werror
 
-# Enable zero-copy on fileio writes.
-ifeq ($(ZEROCOPY),1)
-IOP_CFLAGS += -DZEROCOPY
-endif
 
 # Enable debug mode
 ifeq ($(DEBUG),1)
