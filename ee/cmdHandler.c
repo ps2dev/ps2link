@@ -90,6 +90,47 @@ static int makeArgs(int cmdargc, char *cmdargv, struct sargs_start *arg_data)
 }
 
 ////////////////////////////////////////////////////////////////////////
+// Threads that existed before the first program was started: ps2link's own and any
+// kernel/patch threads. pkoReset() leaves these alone and terminates all others.
+// Kept in .bss, so the list starts empty again after the ExecPS2() in pkoReset().
+static unsigned char baseThreads[MAX_THREADS];
+static int baseThreadsValid;
+
+static void rememberBaseThreads(void)
+{
+    ee_thread_status_t status;
+    int id;
+
+    if (baseThreadsValid)
+        return;
+    // Id 0 means "the calling thread" for ReferThreadStatus() (TH_SELF), so start at 1.
+    for (id = 1; id < MAX_THREADS; id++)
+        baseThreads[id] = (ReferThreadStatus(id, &status) >= 0);
+    baseThreadsValid = 1;
+}
+
+// Terminate and delete every thread the loaded program created (its main thread,
+// audio, pad, ... threads), not only userThreadID.
+static void terminateUserThreads(void)
+{
+    ee_thread_status_t status;
+    int id, self;
+
+    if (!baseThreadsValid)
+        return; // no program was started since ps2link came up
+    self = GetThreadId();
+    for (id = 1; id < MAX_THREADS; id++) {
+        if (id == self || baseThreads[id])
+            continue;
+        if (ReferThreadStatus(id, &status) < 0)
+            continue;
+        if (status.status != THS_DORMANT)
+            TerminateThread(id);
+        DeleteThread(id);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // Load the actual elf, and create a thread for it
 // Return the thread id
 static int
@@ -156,6 +197,7 @@ pkoExecEE(pko_pkt_execee_req *cmd)
 
     scr_printf("Executing file %s...\n", path);
 
+    rememberBaseThreads();
     pid = pkoLoadElf(path);
     if (pid < 0) {
         scr_printf("Could not execute file %s\n", path);
@@ -831,6 +873,10 @@ void pkoReset(void)
         DeleteThread(userThreadID);
     }
     userThreadID = 0;
+
+    // The program's other threads (audio, pad, ...) would otherwise keep running,
+    // e.g. calling RPCs into the IOP while it is being reset below.
+    terminateUserThreads();
 
     if (sif0HandlerId >= 0) {
         DisableDmac(DMAC_SIF0);
