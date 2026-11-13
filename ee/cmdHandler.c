@@ -90,6 +90,63 @@ static int makeArgs(int cmdargc, char *cmdargv, struct sargs_start *arg_data)
 }
 
 ////////////////////////////////////////////////////////////////////////
+// Threads that existed before the first program was started: ps2link's own and any
+// kernel/patch threads. pkoReset() leaves these alone and terminates all others.
+// Kept in .bss, so the list starts empty again after the ExecPS2() in pkoReset().
+static unsigned char baseThreads[MAX_THREADS];
+static int baseThreadsValid;
+
+static void rememberBaseThreads(void)
+{
+    ee_thread_status_t status;
+    int id;
+
+    if (baseThreadsValid)
+        return;
+    // Id 0 means "the calling thread" for ReferThreadStatus() (TH_SELF), so start at 1.
+    for (id = 1; id < MAX_THREADS; id++)
+        baseThreads[id] = (ReferThreadStatus(id, &status) >= 0);
+    baseThreadsValid = 1;
+}
+
+// Terminate and delete every thread the loaded program created (its main thread,
+// audio, pad, ... threads), not only userThreadID.
+static void terminateUserThreads(void)
+{
+    ee_thread_status_t status;
+    int id, self;
+
+    if (!baseThreadsValid)
+        return; // no program was started since ps2link came up
+    self = GetThreadId();
+    for (id = 1; id < MAX_THREADS; id++) {
+        if (id == self || baseThreads[id])
+            continue;
+        if (ReferThreadStatus(id, &status) < 0)
+            continue;
+        if (status.status != THS_DORMANT)
+            TerminateThread(id);
+        DeleteThread(id);
+    }
+}
+
+// Stop GIF (channel 2) and VIF1 (channel 1) DMA the program may have left running
+// and reset VIF1 and GIF, so no transfer continues across the IOP reset and the
+// restart. All registers are in kuseg (0x1000xxxx): no KSEG access, fine in user mode.
+static void stopGraphicsDma(void)
+{
+    unsigned int enabler = D_ENABLER;
+
+    D_ENABLEW = enabler | 0x10000; // CPND: hold all channels while STR is cleared
+    D1_CHCR &= ~0x100;
+    D2_CHCR &= ~0x100;
+    D_ENABLEW = enabler;
+    VIF1_FBRST = 1; // VIF1 reset (also drops a MSKPATH3 mask)
+    GIF_CTRL = 1;   // GIF reset
+    asm __volatile__("sync.l");
+}
+
+////////////////////////////////////////////////////////////////////////
 // Load the actual elf, and create a thread for it
 // Return the thread id
 static int
@@ -156,6 +213,7 @@ pkoExecEE(pko_pkt_execee_req *cmd)
 
     scr_printf("Executing file %s...\n", path);
 
+    rememberBaseThreads();
     pid = pkoLoadElf(path);
     if (pid < 0) {
         scr_printf("Could not execute file %s\n", path);
@@ -676,6 +734,29 @@ pkoStartVU(pko_pkt_start_vu *cmd)
 // Sif dma interrupt handler, wakes up the cmd handler thread if
 // data was sent to our dma area
 
+// A reset has to get through even when the program keeps the CPU busy at a high
+// priority: ps2sdk's InitThread() moves a program's main thread to priority 1, SDL2
+// runs its audio thread one above that (0), and while the IOP side goes down their
+// RPC calls can spin. Right here in the interrupt, demote every thread of the
+// program to the lowest priority and raise the command thread to 0, so the kernel
+// switches to the command thread when this handler returns.
+static void prepareResetFromIntr(void)
+{
+    ee_thread_status_t status;
+    int id;
+
+    if (baseThreadsValid) {
+        for (id = 1; id < MAX_THREADS; id++) {
+            if (baseThreads[id])
+                continue;
+            if (iReferThreadStatus(id, &status) < 0 || status.status == THS_DORMANT)
+                continue;
+            iChangeThreadPriority(id, MAX_PRIORITY - 2);
+        }
+    }
+    iChangeThreadPriority(cmdThreadID, 0);
+}
+
 static int pkoCmdIntrHandler(int channel)
 {
     int flag;
@@ -687,6 +768,9 @@ static int pkoCmdIntrHandler(int channel)
     if (flag) {
         // Clear new packet flag
         *sifDmaDataPtr = 0;
+
+        if (flag == PKO_RPC_RESET)
+            prepareResetFromIntr();
 
         iWakeupThread(cmdThreadID);
     }
@@ -780,7 +864,14 @@ int initCmdRpc(void)
     th_attr.stack = cmdThreadStack;
     th_attr.stack_size = sizeof(cmdThreadStack);
     th_attr.gp_reg = &_gp;
-    th_attr.initial_priority = 20;
+    // (Almost) highest priority: the cmd thread must be able to run pkoReset() even
+    // when the loaded program has a thread that never blocks (e.g. a busy render or
+    // audio loop at a priority numerically below 20). The EE kernel schedules strictly
+    // by priority, so with 20 such a thread starves the cmd thread and "reset" is never
+    // executed. The thread sleeps in SleepThread() unless a command arrives, so this
+    // costs the user program nothing. 1 instead of 0 leaves 0 free for anything that
+    // really has to preempt even ps2link.
+    th_attr.initial_priority = 1;
 
     ret = CreateThread(&th_attr);
     if (ret < 0) {
@@ -815,6 +906,18 @@ int initCmdRpc(void)
 }
 
 ////////////////////////////////////////////////////////////////////////
+// Start of struct _reent as newlib-nano is built (_REENT_SMALL, see the
+// "#ifdef _REENT_SMALL" variant in <sys/reent.h>), up to __cleanup.
+struct reentSmallHead {
+    int errno_;
+    void *stdin_, *stdout_, *stderr_;
+    int inc;
+    char *emergency;
+    void *locale;
+    void *mp;
+    void (*cleanup)(struct _reent *);
+};
+
 void pkoReset(void)
 {
     char *argv[1];
@@ -825,6 +928,11 @@ void pkoReset(void)
     }
     userThreadID = 0;
 
+    // The program's other threads (audio, pad, ...) would otherwise keep running,
+    // e.g. calling RPCs into the IOP while it is being reset below.
+    terminateUserThreads();
+    stopGraphicsDma();
+
     if (sif0HandlerId >= 0) {
         DisableDmac(DMAC_SIF0);
         RemoveDmacHandler(DMAC_SIF0, sif0HandlerId);
@@ -834,7 +942,11 @@ void pkoReset(void)
     SifExitRpc();
 
     SifIopReset(NULL, 0);
-    while (SifIopSync())
+    // SifIopSync() returns 1 once the IOP has finished rebooting (BOOTEND), so wait
+    // while it returns 0 -- the same loop as restartIOP() in ps2link.c. The old
+    // "while (SifIopSync())" fell through at once and called SifInitRpc() on an IOP
+    // that was still rebooting.
+    while (!SifIopSync())
         ;
 
     SifInitRpc(0);
@@ -842,6 +954,20 @@ void pkoReset(void)
 
     argv[0] = elfName;
     SifLoadFileExit();
+
+    // The restart below keeps .data but crt0 clears .bss. newlib keeps the "stdio is
+    // initialized" mark (__cleanup) in _impure_data (.data), while the stdio FILE structs
+    // and their locks (__sf) are in .bss. Without clearing the mark, __sinit() skips the
+    // re-initialization after the restart and the first printf() runs with a NULL lock
+    // (TLB miss at address 8 in __retarget_lock_acquire_recursive). This happens whenever
+    // stdio was used before the restart, e.g. the initial boot printing "Error reading
+    // ipconfig.dat" when there is no IPCONFIG.DAT.
+    // ps2sdk's libcglue clears the mark in __locks_init(), but through the full
+    // struct _reent of the installed headers, while ps2link links newlib-nano
+    // (NEWLIB_NANO = 1), which is built with _REENT_SMALL: there __cleanup sits at
+    // another offset (32 instead of 52), so that reset hits the wrong field. Clear
+    // it through the _REENT_SMALL layout that libc_nano's __sinit() actually reads.
+    ((struct reentSmallHead *)_impure_ptr)->cleanup = NULL;
 
     ExecPS2(&__start, 0, 1, argv);
 }
