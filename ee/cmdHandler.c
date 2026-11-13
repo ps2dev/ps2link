@@ -780,7 +780,14 @@ int initCmdRpc(void)
     th_attr.stack = cmdThreadStack;
     th_attr.stack_size = sizeof(cmdThreadStack);
     th_attr.gp_reg = &_gp;
-    th_attr.initial_priority = 20;
+    // (Almost) highest priority: the cmd thread must be able to run pkoReset() even
+    // when the loaded program has a thread that never blocks (e.g. a busy render or
+    // audio loop at a priority numerically below 20). The EE kernel schedules strictly
+    // by priority, so with 20 such a thread starves the cmd thread and "reset" is never
+    // executed. The thread sleeps in SleepThread() unless a command arrives, so this
+    // costs the user program nothing. 1 instead of 0 leaves 0 free for anything that
+    // really has to preempt even ps2link.
+    th_attr.initial_priority = 1;
 
     ret = CreateThread(&th_attr);
     if (ret < 0) {
