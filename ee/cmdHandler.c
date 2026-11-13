@@ -880,6 +880,18 @@ int initCmdRpc(void)
 }
 
 ////////////////////////////////////////////////////////////////////////
+// Start of struct _reent as newlib-nano is built (_REENT_SMALL, see the
+// "#ifdef _REENT_SMALL" variant in <sys/reent.h>), up to __cleanup.
+struct reentSmallHead {
+    int errno_;
+    void *stdin_, *stdout_, *stderr_;
+    int inc;
+    char *emergency;
+    void *locale;
+    void *mp;
+    void (*cleanup)(struct _reent *);
+};
+
 void pkoReset(void)
 {
     char *argv[1];
@@ -916,6 +928,20 @@ void pkoReset(void)
 
     argv[0] = elfName;
     SifLoadFileExit();
+
+    // The restart below keeps .data but crt0 clears .bss. newlib keeps the "stdio is
+    // initialized" mark (__cleanup) in _impure_data (.data), while the stdio FILE structs
+    // and their locks (__sf) are in .bss. Without clearing the mark, __sinit() skips the
+    // re-initialization after the restart and the first printf() runs with a NULL lock
+    // (TLB miss at address 8 in __retarget_lock_acquire_recursive). This happens whenever
+    // stdio was used before the restart, e.g. the initial boot printing "Error reading
+    // ipconfig.dat" when there is no IPCONFIG.DAT.
+    // ps2sdk's libcglue clears the mark in __locks_init(), but through the full
+    // struct _reent of the installed headers, while ps2link links newlib-nano
+    // (NEWLIB_NANO = 1), which is built with _REENT_SMALL: there __cleanup sits at
+    // another offset (32 instead of 52), so that reset hits the wrong field. Clear
+    // it through the _REENT_SMALL layout that libc_nano's __sinit() actually reads.
+    ((struct reentSmallHead *)_impure_ptr)->cleanup = NULL;
 
     ExecPS2(&__start, 0, 1, argv);
 }
