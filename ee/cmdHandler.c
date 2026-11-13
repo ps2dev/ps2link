@@ -841,7 +841,11 @@ void pkoReset(void)
     SifExitRpc();
 
     SifIopReset(NULL, 0);
-    while (SifIopSync())
+    // SifIopSync() returns 1 once the IOP has finished rebooting (BOOTEND), so wait
+    // while it returns 0 -- the same loop as restartIOP() in ps2link.c. The old
+    // "while (SifIopSync())" fell through at once and called SifInitRpc() on an IOP
+    // that was still rebooting.
+    while (!SifIopSync())
         ;
 
     SifInitRpc(0);
