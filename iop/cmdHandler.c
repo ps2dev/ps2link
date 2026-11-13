@@ -196,12 +196,17 @@ pkoReset(char *buf, int len)
         return;
     }
 
+    // Tell the EE first: it terminates the program's threads and resets the IOP.
+    // Removing host: and tty before that broke the reset with programs that keep
+    // talking to the IOP (e.g. an SDL2 program printing once a second while
+    // streaming audio): the reset never ran (host: gone, TCP 18193 refused, only
+    // ICMP answered).
+    pkoSendSifCmd(PKO_RPC_RESET, buf, len);
+
     printf("unmounting\n");
     fsysUnmount();
     printf("unmounted\n");
     DelDrv("tty");
-
-    pkoSendSifCmd(PKO_RPC_RESET, buf, len);
 };
 
 static void
