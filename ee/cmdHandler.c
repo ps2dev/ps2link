@@ -130,6 +130,22 @@ static void terminateUserThreads(void)
     }
 }
 
+// Stop GIF (channel 2) and VIF1 (channel 1) DMA the program may have left running
+// and reset VIF1 and GIF, so no transfer continues across the IOP reset and the
+// restart. All registers are in kuseg (0x1000xxxx): no KSEG access, fine in user mode.
+static void stopGraphicsDma(void)
+{
+    unsigned int enabler = D_ENABLER;
+
+    D_ENABLEW = enabler | 0x10000; // CPND: hold all channels while STR is cleared
+    D1_CHCR &= ~0x100;
+    D2_CHCR &= ~0x100;
+    D_ENABLEW = enabler;
+    VIF1_FBRST = 1; // VIF1 reset (also drops a MSKPATH3 mask)
+    GIF_CTRL = 1;   // GIF reset
+    asm __volatile__("sync.l");
+}
+
 ////////////////////////////////////////////////////////////////////////
 // Load the actual elf, and create a thread for it
 // Return the thread id
@@ -877,6 +893,7 @@ void pkoReset(void)
     // The program's other threads (audio, pad, ...) would otherwise keep running,
     // e.g. calling RPCs into the IOP while it is being reset below.
     terminateUserThreads();
+    stopGraphicsDma();
 
     if (sif0HandlerId >= 0) {
         DisableDmac(DMAC_SIF0);
