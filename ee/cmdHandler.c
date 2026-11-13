@@ -734,6 +734,29 @@ pkoStartVU(pko_pkt_start_vu *cmd)
 // Sif dma interrupt handler, wakes up the cmd handler thread if
 // data was sent to our dma area
 
+// A reset has to get through even when the program keeps the CPU busy at a high
+// priority: ps2sdk's InitThread() moves a program's main thread to priority 1, SDL2
+// runs its audio thread one above that (0), and while the IOP side goes down their
+// RPC calls can spin. Right here in the interrupt, demote every thread of the
+// program to the lowest priority and raise the command thread to 0, so the kernel
+// switches to the command thread when this handler returns.
+static void prepareResetFromIntr(void)
+{
+    ee_thread_status_t status;
+    int id;
+
+    if (baseThreadsValid) {
+        for (id = 1; id < MAX_THREADS; id++) {
+            if (baseThreads[id])
+                continue;
+            if (iReferThreadStatus(id, &status) < 0 || status.status == THS_DORMANT)
+                continue;
+            iChangeThreadPriority(id, MAX_PRIORITY - 2);
+        }
+    }
+    iChangeThreadPriority(cmdThreadID, 0);
+}
+
 static int pkoCmdIntrHandler(int channel)
 {
     int flag;
@@ -745,6 +768,9 @@ static int pkoCmdIntrHandler(int channel)
     if (flag) {
         // Clear new packet flag
         *sifDmaDataPtr = 0;
+
+        if (flag == PKO_RPC_RESET)
+            prepareResetFromIntr();
 
         iWakeupThread(cmdThreadID);
     }
