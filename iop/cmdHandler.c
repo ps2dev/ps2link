@@ -130,6 +130,7 @@ pkoSendSifCmd(unsigned int cmd, void *src, unsigned int len)
 {
     unsigned int dmaId;
     unsigned int dmaLen;
+    int i;
 
     rpc_data[0] = cmd;
 
@@ -144,6 +145,13 @@ pkoSendSifCmd(unsigned int cmd, void *src, unsigned int len)
     dmaLen = (len + 15) & ~15;
 
     dmaId = pkoSetSifDma(PKO_DMA_DEST, rpc_data, dmaLen, 4);
+    // sceSifSetDma() returns 0 when the SIF DMA queue is full, e.g. while a program
+    // streams audio or pad data over SIF. Retry for up to ~1 s instead of dropping
+    // the command (a dropped reset leaves the EE program running and ps2link dead).
+    for (i = 0; dmaId == 0 && i < 100; i++) {
+        DelayThread(10000);
+        dmaId = pkoSetSifDma(PKO_DMA_DEST, rpc_data, dmaLen, 4);
+    }
 
     if (dmaId == 0) {
         printf("IOP: sifSendCmd %x failed\n", cmd);
