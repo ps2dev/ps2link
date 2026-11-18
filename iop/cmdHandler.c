@@ -130,6 +130,7 @@ pkoSendSifCmd(unsigned int cmd, void *src, unsigned int len)
 {
     unsigned int dmaId;
     unsigned int dmaLen;
+    int i;
 
     rpc_data[0] = cmd;
 
@@ -144,6 +145,13 @@ pkoSendSifCmd(unsigned int cmd, void *src, unsigned int len)
     dmaLen = (len + 15) & ~15;
 
     dmaId = pkoSetSifDma(PKO_DMA_DEST, rpc_data, dmaLen, 4);
+    // sceSifSetDma() returns 0 when the SIF DMA queue is full, e.g. while a program
+    // streams audio or pad data over SIF. Retry for up to ~1 s instead of dropping
+    // the command (a dropped reset leaves the EE program running and ps2link dead).
+    for (i = 0; dmaId == 0 && i < 100; i++) {
+        DelayThread(10000);
+        dmaId = pkoSetSifDma(PKO_DMA_DEST, rpc_data, dmaLen, 4);
+    }
 
     if (dmaId == 0) {
         printf("IOP: sifSendCmd %x failed\n", cmd);
@@ -196,12 +204,17 @@ pkoReset(char *buf, int len)
         return;
     }
 
+    // Tell the EE first: it terminates the program's threads and resets the IOP.
+    // Removing host: and tty before that broke the reset with programs that keep
+    // talking to the IOP (e.g. an SDL2 program printing once a second while
+    // streaming audio): the reset never ran (host: gone, TCP 18193 refused, only
+    // ICMP answered).
+    pkoSendSifCmd(PKO_RPC_RESET, buf, len);
+
     printf("unmounting\n");
     fsysUnmount();
     printf("unmounted\n");
     DelDrv("tty");
-
-    pkoSendSifCmd(PKO_RPC_RESET, buf, len);
 };
 
 static void
