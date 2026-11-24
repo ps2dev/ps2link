@@ -424,7 +424,8 @@ int cmdHandlerInit(void)
     thread.option = 0;
     thread.thread = resetWorker;
     thread.stacksize = 0x800;
-    thread.priority = 8;
+    // Reset must preempt busy IOP threads; this worker sleeps between requests.
+    thread.priority = HIGHEST_PRIORITY;
 
     resetThreadID = CreateThread(&thread);
     if (resetThreadID < 0) {
