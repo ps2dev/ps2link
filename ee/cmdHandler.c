@@ -768,10 +768,9 @@ pkoStartVU(pko_pkt_start_vu *cmd)
 static void prepareResetFromIntr(void)
 {
     ee_thread_status_t status;
-    int id;
 
     if (baseThreadsValid) {
-        for (id = 1; id < MAX_THREADS; id++) {
+        for (int id = 1; id < MAX_THREADS; id++) {
             if (iReferThreadStatus(id, &status) < 0 || status.status == THS_DORMANT)
                 continue;
             if (isBaseThread(id, &status))

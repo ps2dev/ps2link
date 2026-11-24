@@ -349,13 +349,14 @@ resetWorker(void *arg)
 {
     pko_pkt_reset_req reset;
     int oldIrq;
-    unsigned int actions;
 
     (void)arg;
     reset.cmd = htonl(PKO_RESET_CMD);
     reset.len = 0;
 
     for (;;) {
+        unsigned int actions;
+
         SleepThread();
 
         CpuSuspendIntr(&oldIrq);
