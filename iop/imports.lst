@@ -23,6 +23,9 @@ I_StartThread
 I_GetThreadId
 I_ExitDeleteThread
 I_DelayThread
+I_SleepThread
+I_WakeupThread
+I_iWakeupThread
 thbase_IMPORTS_end
 
 ioman_IMPORTS_start

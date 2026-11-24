@@ -28,6 +28,10 @@
 
 #define STAT_SIF0      0x20
 
+// delaythread.h includes timer.h, whose register macros conflict with the
+// legacy ps2regs.h definitions below. Keep the SDK API declaration here.
+extern int DelayThread(int microseconds);
+
 ////////////////////////////////////////////////////////////////////////
 // Prototypes
 static int cmdThread(void *arg);
@@ -52,7 +56,7 @@ static char dataBuffer[16384] __attribute__((aligned(16)));
 
 
 int sifCmdSema;
-int sif0HandlerId = 0;
+int sif0HandlerId = -1;
 // XXX: Hardcoded address atm.. Should be configurable!!
 unsigned int *sifDmaDataPtr = (unsigned int *)(0x20100000 - 2048);
 int excepscrdump = 1;
@@ -90,11 +94,24 @@ static int makeArgs(int cmdargc, char *cmdargv, struct sargs_start *arg_data)
 }
 
 ////////////////////////////////////////////////////////////////////////
-// Threads that existed before the first program was started: ps2link's own and any
-// kernel/patch threads. pkoReset() leaves these alone and terminates all others.
-// Kept in .bss, so the list starts empty again after the ExecPS2() in pkoReset().
-static unsigned char baseThreads[MAX_THREADS];
+// Snapshot ps2link/kernel threads before the program starts. IDs alone are not
+// stable: a deleted base thread's ID may be reused by an application thread.
+// Kept in .bss, so ExecPS2() clears the snapshot on restart.
+static struct {
+    int valid;
+    void *func;
+    void *stack;
+    void *gp_reg;
+} baseThreads[MAX_THREADS];
 static int baseThreadsValid;
+
+static int isBaseThread(int id, const ee_thread_status_t *status)
+{
+    return baseThreads[id].valid &&
+           baseThreads[id].func == status->func &&
+           baseThreads[id].stack == status->stack &&
+           baseThreads[id].gp_reg == status->gp_reg;
+}
 
 static void rememberBaseThreads(void)
 {
@@ -104,8 +121,14 @@ static void rememberBaseThreads(void)
     if (baseThreadsValid)
         return;
     // Id 0 means "the calling thread" for ReferThreadStatus() (TH_SELF), so start at 1.
-    for (id = 1; id < MAX_THREADS; id++)
-        baseThreads[id] = (ReferThreadStatus(id, &status) >= 0);
+    for (id = 1; id < MAX_THREADS; id++) {
+        if (ReferThreadStatus(id, &status) >= 0) {
+            baseThreads[id].valid = 1;
+            baseThreads[id].func = status.func;
+            baseThreads[id].stack = status.stack;
+            baseThreads[id].gp_reg = status.gp_reg;
+        }
+    }
     baseThreadsValid = 1;
 }
 
@@ -120,9 +143,11 @@ static void terminateUserThreads(void)
         return; // no program was started since ps2link came up
     self = GetThreadId();
     for (id = 1; id < MAX_THREADS; id++) {
-        if (id == self || baseThreads[id])
+        if (id == self)
             continue;
         if (ReferThreadStatus(id, &status) < 0)
+            continue;
+        if (isBaseThread(id, &status))
             continue;
         if (status.status != THS_DORMANT)
             TerminateThread(id);
@@ -747,9 +772,9 @@ static void prepareResetFromIntr(void)
 
     if (baseThreadsValid) {
         for (id = 1; id < MAX_THREADS; id++) {
-            if (baseThreads[id])
-                continue;
             if (iReferThreadStatus(id, &status) < 0 || status.status == THS_DORMANT)
+                continue;
+            if (isBaseThread(id, &status))
                 continue;
             iChangeThreadPriority(id, MAX_PRIORITY - 2);
         }
@@ -908,6 +933,9 @@ int initCmdRpc(void)
 void pkoReset(void)
 {
     char *argv[1];
+    int attempt;
+    int iopResetAccepted = 0;
+    int iopBootComplete = 0;
     // Check if user thread is running, if so kill it
     if (userThreadID) {
         TerminateThread(userThreadID);
@@ -923,21 +951,41 @@ void pkoReset(void)
     if (sif0HandlerId >= 0) {
         DisableDmac(DMAC_SIF0);
         RemoveDmacHandler(DMAC_SIF0, sif0HandlerId);
+        sif0HandlerId = -1;
     }
 
     SifInitRpc(0);
     SifExitRpc();
 
-    SifIopReset(NULL, 0);
-    // SifIopSync() returns 1 once the IOP has finished rebooting (BOOTEND), so wait
-    // while it returns 0 -- the same loop as restartIOP() in ps2link.c. The old
-    // "while (SifIopSync())" fell through at once and called SifInitRpc() on an IOP
-    // that was still rebooting.
-    while (!SifIopSync())
-        ;
+    // SifIopReset() can reject its SIF DMA when the queue is full. Never
+    // interpret that as a reboot in progress and wait indefinitely for BOOTEND.
+    for (attempt = 0; attempt < 100; attempt++) {
+        if (SifIopReset(NULL, 0)) {
+            iopResetAccepted = 1;
+            break;
+        }
+        DelayThread(10000);
+    }
 
-    SifInitRpc(0);
-    SifExitRpc();
+    if (iopResetAccepted) {
+        // The SDK reports BOOTEND only after the IOP finished booting.
+        for (attempt = 0; attempt < 1500; attempt++) {
+            if (SifIopSync()) {
+                iopBootComplete = 1;
+                break;
+            }
+            DelayThread(10000);
+        }
+    }
+
+    if (iopBootComplete) {
+        SifInitRpc(0);
+        SifExitRpc();
+    } else {
+        // Reset is already destructive: the application threads are gone.
+        // Restart the EE anyway and let ps2link's startup retry the IOP reboot.
+        scr_printf("IOP reset incomplete; retrying on ps2link restart\n");
+    }
 
     argv[0] = elfName;
     SifLoadFileExit();

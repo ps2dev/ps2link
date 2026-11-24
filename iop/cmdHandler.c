@@ -21,12 +21,18 @@
 
 #include "ps2ip.h"
 #include "hostlink.h"
-#include "net_fsys.h"
 #include "globals.h"
 
 #define BUF_SIZE 1024
 static char recvbuf[BUF_SIZE] __attribute__((aligned(16)));
 static unsigned int rpc_data[1024 / 4] __attribute__((aligned(16)));
+static unsigned int reset_rpc_data[1024 / 4] __attribute__((aligned(16)));
+static unsigned int exception_rpc_data[1024 / 4] __attribute__((aligned(16)));
+static int resetThreadID = -1;
+static volatile unsigned int pendingResetActions;
+
+#define RESET_ACTION_RESET    1
+#define RESET_ACTION_POWEROFF 2
 
 int excepscrdump = 1;
 
@@ -125,32 +131,31 @@ pkoSetSifDma(void *dest, void *src, unsigned int length, unsigned int mode)
 }
 
 //////////////////////////////////////////////////////////////////////////
-unsigned int
+int
 pkoSendSifCmd(unsigned int cmd, void *src, unsigned int len)
 {
     unsigned int dmaId;
     unsigned int dmaLen;
+    unsigned int *dmaData = cmd == PKO_RPC_RESET ? reset_rpc_data :
+                            cmd == PKO_RPC_IOPEXCEP ? exception_rpc_data : rpc_data;
     int i;
 
-    rpc_data[0] = cmd;
+    dmaData[0] = cmd;
 
-    memcpy(&rpc_data[1], src,
-           (len > sizeof(rpc_data) ? sizeof(rpc_data) : len));
+    // Reserve the first word for the RPC type, and include it in DMA size.
+    if (len > sizeof(rpc_data) - sizeof(rpc_data[0]))
+        len = sizeof(rpc_data) - sizeof(rpc_data[0]);
+    memcpy(&dmaData[1], src, len);
 
-    len = len > sizeof(rpc_data) ? sizeof(rpc_data) : len;
+    /* The first word is the EE-side pending-command flag. */
+    dmaLen = (len + sizeof(dmaData[0]) + 15) & ~15;
 
-    /* Round DMA size up to 16-byte boundary — real HW SIF DMA
-       requires aligned transfer sizes.  rpc_data is 1KB so the
-       extra bytes are just trailing zeros. */
-    dmaLen = (len + 15) & ~15;
-
-    dmaId = pkoSetSifDma(PKO_DMA_DEST, rpc_data, dmaLen, 4);
+    dmaId = pkoSetSifDma(PKO_DMA_DEST, dmaData, dmaLen, 4);
     // sceSifSetDma() returns 0 when the SIF DMA queue is full, e.g. while a program
-    // streams audio or pad data over SIF. Retry for up to ~1 s instead of dropping
-    // the command (a dropped reset leaves the EE program running and ps2link dead).
-    for (i = 0; dmaId == 0 && i < 100; i++) {
+    // streams audio or pad data over SIF. The exception reporter must never sleep.
+    for (i = 0; dmaId == 0 && cmd != PKO_RPC_IOPEXCEP && i < 100; i++) {
         DelayThread(10000);
-        dmaId = pkoSetSifDma(PKO_DMA_DEST, rpc_data, dmaLen, 4);
+        dmaId = pkoSetSifDma(PKO_DMA_DEST, dmaData, dmaLen, 4);
     }
 
     if (dmaId == 0) {
@@ -197,6 +202,8 @@ pkoPowerOff()
 static void
 pkoReset(char *buf, int len)
 {
+    int oldIrq;
+
     dbgprintf("IOP cmd: RESET\n");
 
     if (len != sizeof(pko_pkt_reset_req)) {
@@ -204,17 +211,16 @@ pkoReset(char *buf, int len)
         return;
     }
 
-    // Tell the EE first: it terminates the program's threads and resets the IOP.
-    // Removing host: and tty before that broke the reset with programs that keep
-    // talking to the IOP (e.g. an SDL2 program printing once a second while
-    // streaming audio): the reset never ran (host: gone, TCP 18193 refused, only
-    // ICMP answered).
-    pkoSendSifCmd(PKO_RPC_RESET, buf, len);
-
-    printf("unmounting\n");
-    fsysUnmount();
-    printf("unmounted\n");
-    DelDrv("tty");
+    // The EE will reboot the whole IOP; keep host: and tty intact until then.
+    // Route all reset requests through the worker to serialize DMA submissions.
+    if (resetThreadID < 0) {
+        printf("IOP: reset worker not available\n");
+        return;
+    }
+    CpuSuspendIntr(&oldIrq);
+    pendingResetActions |= RESET_ACTION_RESET;
+    CpuResumeIntr(oldIrq);
+    WakeupThread(resetThreadID);
 };
 
 static void
@@ -325,16 +331,46 @@ cmdListener(int sock)
 static void
 cmdPowerOff(void *arg)
 {
+    (void)arg;
+    // The poweroff module calls this from its CDVD interrupt handler.
+    // Only wake the worker here: DMA retries and shutdown callbacks may block.
+    if (resetThreadID < 0)
+        return;
 #ifdef PWOFFONRESET
-    pkoPowerOff();
+    pendingResetActions |= RESET_ACTION_POWEROFF;
 #else
-    pko_pkt_reset_req reset;
+    pendingResetActions |= RESET_ACTION_RESET;
+#endif
+    iWakeupThread(resetThreadID);
+}
 
+static void
+resetWorker(void *arg)
+{
+    pko_pkt_reset_req reset;
+    int oldIrq;
+    unsigned int actions;
+
+    (void)arg;
     reset.cmd = htonl(PKO_RESET_CMD);
     reset.len = 0;
 
-    pkoReset((char *)&reset, sizeof(reset));
-#endif
+    for (;;) {
+        SleepThread();
+
+        CpuSuspendIntr(&oldIrq);
+        actions = pendingResetActions;
+        pendingResetActions = 0;
+        CpuResumeIntr(oldIrq);
+
+        if (actions & RESET_ACTION_POWEROFF) {
+            pkoPowerOff();
+            continue;
+        }
+        if ((actions & RESET_ACTION_RESET) &&
+            pkoSendSifCmd(PKO_RPC_RESET, &reset, sizeof(reset)) < 0)
+            printf("IOP: reset not delivered, services remain mounted\n");
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -383,6 +419,24 @@ int cmdHandlerInit(void)
     dbgprintf("IOP cmd: Starting thread\n");
 
     SifInitRpc(0);
+
+    thread.attr = 0x02000000;
+    thread.option = 0;
+    thread.thread = resetWorker;
+    thread.stacksize = 0x800;
+    thread.priority = 8;
+
+    resetThreadID = CreateThread(&thread);
+    if (resetThreadID < 0) {
+        printf("IOP cmd: Could not start reset worker\n");
+        return -1;
+    }
+    if (StartThread(resetThreadID, NULL) < 0) {
+        DeleteThread(resetThreadID);
+        resetThreadID = -1;
+        printf("IOP cmd: Could not start reset worker\n");
+        return -1;
+    }
     SetPowerButtonHandler(cmdPowerOff, NULL);
 
     thread.attr = 0x02000000;
