@@ -12,7 +12,7 @@
 
 extern int excepscrdump;
 
-unsigned int pkoSendSifCmd(unsigned int cmd, void *src, unsigned int len);
+int pkoSendSifCmd(unsigned int cmd, void *src, unsigned int len);
 int cmdHandlerInit(void);
 
 #endif /* CMD_HANDLER_H */
